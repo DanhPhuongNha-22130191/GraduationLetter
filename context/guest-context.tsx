@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-export type GuestPronounMode = "friend" | "elder" | "senior";
+export type GuestPronounMode = "friend" | "elder" | "senior" | "junior";
 
 interface GuestContextType {
   guestName: string;
@@ -10,6 +10,7 @@ interface GuestContextType {
   pronounMode: GuestPronounMode;
   isFormal: boolean;
   isSenior: boolean;
+  isJunior: boolean;
   setGuestName: (name: string, mode?: GuestPronounMode) => void;
   getGreetingPrefix: () => string;
   getSelfPronoun: () => string;
@@ -22,6 +23,7 @@ const GuestContext = createContext<GuestContextType>({
   pronounMode: "friend",
   isFormal: false,
   isSenior: false,
+  isJunior: false,
   setGuestName: () => {},
   getGreetingPrefix: () => "Thân mời",
   getSelfPronoun: () => "Nhã",
@@ -37,13 +39,16 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
 
-        // 1. Check senior mode (t3o, tooo, em) -> xưng "em", "Thân mời"
+        // 1. Check junior mode (t4o, toooo, anh) -> xưng "anh", dùng từ "Mời"
+        const juniorParam = params.get("t4o") || params.get("toooo") || params.get("anh");
+
+        // 2. Check senior mode (t3o, tooo, em) -> xưng "em", "Thân ái mời"
         const seniorParam = params.get("t3o") || params.get("tooo") || params.get("em");
 
-        // 2. Check elder / formal mode (too, kinh, formal) -> xưng "con", "Kính mời"
+        // 3. Check elder / formal mode (too, kinh, formal) -> xưng "con", "Kính mời"
         const elderParam = params.get("too") || params.get("kinh") || params.get("formal");
 
-        // 3. Check friend mode (to, guest, name, ...) -> xưng "Nhã", "Thân mời"
+        // 4. Check friend mode (to, guest, name, ...) -> xưng "Nhã", "Thân mời"
         const friendParam =
           params.get("to") ||
           params.get("guest") ||
@@ -56,7 +61,10 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         let detectedMode: GuestPronounMode = "friend";
         let rawName = "";
 
-        if (seniorParam) {
+        if (juniorParam) {
+          detectedMode = "junior";
+          rawName = juniorParam;
+        } else if (seniorParam) {
           detectedMode = "senior";
           rawName = seniorParam;
         } else if (elderParam) {
@@ -111,6 +119,8 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const getGreetingPrefix = (): string => {
     switch (pronounMode) {
+      case "junior":
+        return "Mời";
       case "elder":
         return "Kính mời";
       case "senior":
@@ -123,6 +133,8 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const getSelfPronoun = (): string => {
     switch (pronounMode) {
+      case "junior":
+        return "anh";
       case "elder":
         return "con";
       case "senior":
@@ -142,6 +154,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     let paramKey = "to";
     if (mode === "elder") paramKey = "too";
     if (mode === "senior") paramKey = "t3o";
+    if (mode === "junior") paramKey = "t4o";
 
     return `${origin}?${paramKey}=${encodeURIComponent(clean)}`;
   };
@@ -154,6 +167,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         pronounMode,
         isFormal: pronounMode === "elder",
         isSenior: pronounMode === "senior",
+        isJunior: pronounMode === "junior",
         setGuestName,
         getGreetingPrefix,
         getSelfPronoun,

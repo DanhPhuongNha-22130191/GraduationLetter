@@ -91,6 +91,8 @@ export const InvitationSection: React.FC = () => {
                     `Sau những năm tháng học tập, nỗ lực và trưởng thành tại Trường Đại học Nông Lâm TP.HCM, con Danh Phương Nhã đã chính thức hoàn thành hành trình đại học ngành Công nghệ thông tin (Lớp DH22DTB).`
                   ) : pronounMode === "senior" ? (
                     `Sau những năm tháng học tập, nỗ lực và trưởng thành tại Trường Đại học Nông Lâm TP.HCM, em Danh Phương Nhã đã chính thức hoàn thành hành trình đại học ngành Công nghệ thông tin (Lớp DH22DTB).`
+                  ) : pronounMode === "junior" ? (
+                    `Sau những năm tháng học tập, nỗ lực và trưởng thành tại Trường Đại học Nông Lâm TP.HCM, anh Danh Phương Nhã đã chính thức hoàn thành hành trình đại học ngành Công nghệ thông tin (Lớp DH22DTB).`
                   ) : (
                     `Sau những năm tháng học tập, nỗ lực và trưởng thành tại Trường Đại học Nông Lâm TP.HCM, mình Danh Phương Nhã đã chính thức hoàn thành hành trình đại học ngành Công nghệ thông tin (Lớp DH22DTB).`
                   )
@@ -115,6 +117,14 @@ export const InvitationSection: React.FC = () => {
                   ) : pronounMode === "senior" ? (
                     <>
                       Với tất cả niềm vui và sự biết ơn, em thân ái mời{" "}
+                      <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                        {guestName}
+                      </strong>{" "}
+                      đến chung vui và cùng lưu lại những khoảnh khắc ý nghĩa nhất trong ngày đặc biệt này.
+                    </>
+                  ) : pronounMode === "junior" ? (
+                    <>
+                      Với tất cả niềm vui và sự biết ơn, anh mời{" "}
                       <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
                         {guestName}
                       </strong>{" "}
