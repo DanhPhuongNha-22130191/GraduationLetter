@@ -33,27 +33,15 @@ export const MusicToggle: React.FC = () => {
   };
 
   useEffect(() => {
-    startPlayback();
-
     const handleCustomPlaySignal = () => {
       isManuallyPausedRef.current = false;
       startPlayback(true);
     };
 
-    const handleFirstGesture = () => {
-      startPlayback();
-    };
-
     window.addEventListener("PLAY_BACKGROUND_MUSIC", handleCustomPlaySignal);
-    window.addEventListener("pointerdown", handleFirstGesture, { once: true });
-    window.addEventListener("touchstart", handleFirstGesture, { once: true });
-    window.addEventListener("click", handleFirstGesture, { once: true });
 
     return () => {
       window.removeEventListener("PLAY_BACKGROUND_MUSIC", handleCustomPlaySignal);
-      window.removeEventListener("pointerdown", handleFirstGesture);
-      window.removeEventListener("touchstart", handleFirstGesture);
-      window.removeEventListener("click", handleFirstGesture);
     };
   }, []);
 
