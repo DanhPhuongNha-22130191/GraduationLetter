@@ -85,7 +85,21 @@ export const InvitationSection: React.FC = () => {
           {/* Graceful Script/Serif Italic Typography */}
           <div className="space-y-5 text-base sm:text-lg md:text-xl text-emerald-deep/95 leading-loose font-serif italic font-normal px-2 sm:px-4 tracking-wide relative z-10">
             <p className="first-letter:text-3xl sm:first-letter:text-4xl first-letter:font-serif first-letter:font-bold first-letter:text-gold-dark first-letter:mr-1">
-              {t.invitation.para1}
+              {lang === "vi" ? (
+                hasCustomGuest ? (
+                  pronounMode === "elder" ? (
+                    `Sau những năm tháng học tập, nỗ lực và trưởng thành tại Trường Đại học Nông Lâm TP.HCM, con Danh Phương Nhã đã chính thức hoàn thành hành trình đại học ngành Công nghệ thông tin (Lớp DH22DTB).`
+                  ) : pronounMode === "senior" ? (
+                    `Sau những năm tháng học tập, nỗ lực và trưởng thành tại Trường Đại học Nông Lâm TP.HCM, em Danh Phương Nhã đã chính thức hoàn thành hành trình đại học ngành Công nghệ thông tin (Lớp DH22DTB).`
+                  ) : (
+                    `Sau những năm tháng học tập, nỗ lực và trưởng thành tại Trường Đại học Nông Lâm TP.HCM, mình Danh Phương Nhã đã chính thức hoàn thành hành trình đại học ngành Công nghệ thông tin (Lớp DH22DTB).`
+                  )
+                ) : (
+                  t.invitation.para1
+                )
+              ) : (
+                t.invitation.para1
+              )}
             </p>
             <p>
               {hasCustomGuest ? (
