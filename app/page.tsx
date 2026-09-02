@@ -17,7 +17,6 @@ import { MobileNav } from "@/components/mobile-nav";
 import { MusicToggle } from "@/components/music-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { EnvelopeOverlay } from "@/components/envelope-overlay";
-import { GuestLinkModal } from "@/components/guest-link-modal";
 
 export default function Home() {
   return (
@@ -33,7 +32,6 @@ export default function Home() {
           {/* Floating Controls */}
           <LanguageToggle />
           <MusicToggle />
-          <GuestLinkModal />
 
           {/* Main Single Page Sections */}
           <HeroSection />
