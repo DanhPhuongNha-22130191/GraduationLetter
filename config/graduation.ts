@@ -33,8 +33,8 @@ export const graduationConfig = {
   email: "danhphnha@gmail.com",
   mottoQuote: "The future belongs to those who believe in the beauty of their dreams.",
 
-  // Endpoint Google Sheets gửi dữ liệu RSVP
-  googleScriptUrl: "https://script.google.com/macros/s/AKfycbwbWii8xG_oPS1TD_nMyUwP9U8I7hWIM2SnGoAfywsK2vD8J_yjdzkIe2GriUIZctDESg/exec",
+  // Endpoint Google Sheets gửi dữ liệu RSVP & Lượt xem
+  googleScriptUrl: "https://script.google.com/macros/s/AKfycbxQoThyIHuq91ntM6jg_32opbdDJIaEPxieKnSFS3P3QHp4wDExRNGP3M7Gpn0zxqnAag/exec",
 
   // Thông tin ngày lễ
   date: "Thứ Tư, Ngày 21 Tháng 10 Năm 2026",
