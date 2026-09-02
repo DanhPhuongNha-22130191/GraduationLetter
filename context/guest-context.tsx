@@ -87,32 +87,39 @@ function autoDetectModeFromName(name: string): GuestPronounMode {
 }
 
 /**
- * Gửi log ngầm (Silent Beacon) về Google Sheets để biết ai đã mở thiệp
+ * Gửi log ngầm (Silent Beacon) về Google Sheets để biết ai đã mở thiệp (kể cả khách link chung)
  */
-export function trackOpenInvitation(guestName: string, mode: string) {
-  if (!guestName || typeof window === "undefined") return;
-  const sessionKey = `tracked_open_${encodeURIComponent(guestName)}`;
+export function trackOpenInvitation(guestName?: string, mode?: string) {
+  if (typeof window === "undefined") return;
+  const isAnonymous = !guestName || !guestName.trim();
+  const nameToLog = isAnonymous ? "Khách vãng lai (Link chung)" : guestName.trim();
+  const sessionKey = `tracked_open_${encodeURIComponent(nameToLog)}`;
   if (sessionStorage.getItem(sessionKey)) return;
 
   sessionStorage.setItem(sessionKey, "1");
 
   try {
     if (graduationConfig.googleScriptUrl) {
-      const modeLabel =
-        mode === "elder" ? "Người lớn (con)" :
-        mode === "senior" ? "Anh/Chị (em)" :
-        mode === "junior" ? "Đàn em (anh)" : "Bạn bè (mình)";
+      const modeLabel = isAnonymous
+        ? "Mời chung"
+        : mode === "elder"
+        ? "Người lớn (con)"
+        : mode === "senior"
+        ? "Anh/Chị (em)"
+        : mode === "junior"
+        ? "Đàn em (anh)"
+        : "Bạn bè (mình)";
 
       const payload = {
         type: "OPEN",
         action: "OPEN",
         sheet: "LuotXem",
-        name: guestName,
+        name: nameToLog,
         phone: "-",
         attending: "ĐÃ MỞ THIỆP 💌",
         guests: 0,
         mode: modeLabel,
-        message: `Khách mở thiệp (${modeLabel})`,
+        message: isAnonymous ? "Khách mở thiệp (Link chung)" : `Khách mở thiệp (${modeLabel})`,
         timestamp: new Date().toLocaleString("vi-VN"),
       };
 

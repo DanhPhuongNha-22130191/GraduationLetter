@@ -129,10 +129,8 @@ export const EnvelopeOverlay: React.FC = () => {
     setIsOpening(true);
     playBackgroundMusic();
 
-    // Ghi nhận tên khách vào Google Sheets ngay khi bấm Mở Thiệp
-    if (hasCustomGuest && guestName) {
-      trackOpenInvitation(guestName, pronounMode);
-    }
+    // Ghi nhận lượt mở thiệp vào Google Sheets ngay khi bấm Mở Thiệp
+    trackOpenInvitation(guestName, pronounMode);
 
     setTimeout(() => {
       setIsOpen(true);
