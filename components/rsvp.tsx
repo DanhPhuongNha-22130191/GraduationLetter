@@ -329,7 +329,7 @@ export const RsvpSection: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full h-13 rounded-xl bg-gold-gradient text-emerald-deep font-sans text-sm font-bold tracking-widest uppercase hover:brightness-110 transition-all duration-300 shadow-gold-glow flex items-center justify-center gap-2 border border-ivory/60 active:scale-98 touch-manipulation cursor-pointer disabled:opacity-70 shimmer-gold"
+                  className="w-full py-4 rounded-full bg-gold-gradient text-emerald-deep font-sans text-sm font-bold tracking-widest uppercase hover:brightness-110 transition-all duration-300 shadow-gold-glow flex items-center justify-center gap-2 border border-ivory/60 active:scale-95 touch-manipulation cursor-pointer disabled:opacity-70 shimmer-gold"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center gap-2 font-sans text-xs font-bold">

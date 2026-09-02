@@ -81,12 +81,12 @@ export const MusicToggle: React.FC = () => {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-deep border border-gold/50 shadow-md"
+          className="flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-emerald-deep border border-gold/50 shadow-md"
         >
           <div className="w-1 h-3 bg-gold rounded-full animate-bounce" style={{ animationDuration: '0.6s' }} />
           <div className="w-1 h-4 bg-gold-shimmer rounded-full animate-bounce" style={{ animationDuration: '0.4s' }} />
           <div className="w-1 h-2 bg-gold rounded-full animate-bounce" style={{ animationDuration: '0.8s' }} />
-          <span className="text-[10px] font-sans font-bold text-gold uppercase tracking-wider ml-1">PLAYING</span>
+          <span className="text-[9px] sm:text-[10px] font-sans font-bold text-gold uppercase tracking-wider ml-0.5 sm:ml-1">PLAYING</span>
         </motion.div>
       )}
 

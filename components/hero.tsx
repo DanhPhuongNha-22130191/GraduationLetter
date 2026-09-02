@@ -132,7 +132,7 @@ export const HeroSection: React.FC = () => {
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
           onClick={scrollToNext}
-          className="w-full sm:w-auto px-10 py-3.5 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-sm tracking-widest uppercase shadow-gold-glow flex items-center justify-center gap-2.5 border border-ivory/60 hover:brightness-110 transition-all active:scale-95 touch-manipulation cursor-pointer shimmer-gold"
+          className="w-full sm:w-auto px-10 py-4 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-sm tracking-widest uppercase shadow-gold-glow flex items-center justify-center gap-2.5 border border-ivory/60 hover:brightness-110 transition-all active:scale-95 touch-manipulation cursor-pointer shimmer-gold"
         >
           <MailOpen className="w-4 h-4 stroke-[2]" />
           <span>{t.hero.openBtn}</span>

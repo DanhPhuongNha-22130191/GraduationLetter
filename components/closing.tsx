@@ -102,7 +102,7 @@ export const ClosingSection: React.FC = () => {
 
             <button
               onClick={handleShare}
-              className="w-full py-3.5 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-xs tracking-wider uppercase hover:brightness-110 transition-all flex items-center justify-center gap-2 border border-ivory/40 active:scale-95 touch-manipulation cursor-pointer shadow-gold-glow shimmer-gold"
+              className="w-full py-4 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-sm tracking-wider uppercase hover:brightness-110 transition-all flex items-center justify-center gap-2 border border-ivory/60 active:scale-95 touch-manipulation cursor-pointer shadow-gold-glow shimmer-gold"
             >
               {copiedLink ? (
                 <>
