@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   description: "Thư mời lễ tốt nghiệp của Danh Phương Nhã — Công nghệ thông tin, Class of 2026.",
   openGraph: {
     title: "Lễ Tốt Nghiệp — Danh Phương Nhã",
-    description: "Trân trọng kính mời tham dự Lễ Tốt Nghiệp ngành Công nghệ thông tin của Danh Phương Nhã.",
+    description: "Thân mời tham dự Lễ Tốt Nghiệp ngành Công nghệ thông tin của Danh Phương Nhã.",
     type: "website",
     locale: "vi_VN",
   },

@@ -19,6 +19,8 @@ export interface TranslationSchema {
   };
   invitation: {
     title: string;
+    guestEyebrow: string;
+    defaultGuest: string;
     para1: string;
     para2: string;
   };
@@ -123,9 +125,11 @@ export const translations: Record<Language, TranslationSchema> = {
       swipeDown: "Vuốt xuống",
     },
     invitation: {
-      title: "TRÂN TRỌNG KÍNH MỜI",
+      title: "THÂN MỜI",
+      guestEyebrow: "THÂN MỜI",
+      defaultGuest: "Quý Khách & Người Thân",
       para1: "Sau những năm tháng học tập, nỗ lực và trưởng thành tại Trường Đại học Nông Lâm TP.HCM, Danh Phương Nhã đã chính thức hoàn thành hành trình đại học ngành Công nghệ thông tin (Lớp DH22DTB).",
-      para2: "Với tất cả niềm vui và sự biết ơn, Nhã trân trọng kính mời gia đình, Thầy Cô, bạn bè và những người thân yêu đến chung vui trong ngày đặc biệt này.",
+      para2: "Với tất cả niềm vui và sự biết ơn, Nhã thân mời gia đình, Thầy Cô, bạn bè và những người thân yêu đến chung vui trong ngày đặc biệt này.",
     },
     details: {
       eyebrow: "THÔNG TIN SỰ KIỆN",
@@ -308,6 +312,8 @@ export const translations: Record<Language, TranslationSchema> = {
     },
     invitation: {
       title: "CORDIALLY INVITED",
+      guestEyebrow: "CORDIALLY INVITED",
+      defaultGuest: "Honored Guests & Friends",
       para1: "After years of dedication, effort, and personal growth at Nong Lam University Ho Chi Minh City, Danh Phuong Nha has officially completed the journey toward an Engineering Degree in Information Technology (Class DH22DTB).",
       para2: "With joy and deepest gratitude, Nha warmly invites family, mentors, and beloved friends to join in celebrating this special milestone.",
     },
@@ -492,6 +498,8 @@ export const translations: Record<Language, TranslationSchema> = {
     },
     invitation: {
       title: "សូមគោរពអញ្ជើញ",
+      guestEyebrow: "សូមគោរពអញ្ជើញ",
+      defaultGuest: "ភ្ញៀវកិត្តិយស និងមិត្តភក្តិ",
       para1: "បន្ទាប់ពីការខិតខំប្រឹងប្រែងសិក្សា និងការលូតលាស់នៅសាកលវិទ្យាល័យកសិកម្ម និងរុក្ខាប្រមាញ់ទីក្រុងហូជីមិញ Danh Phuong Nha បានបញ្ចប់ការសិក្សាជាផ្លូវការថ្នាក់វិស្វករបច្ចេកវិទ្យាព័ត៌មាន (ថ្នាក់ DH22DTB)។",
       para2: "ដោយក្តីរីករាយ និងការដឹងគុណ ខ្ញុំបាទសូមគោរពអញ្ជើញ លោកអ្នកឧកញ៉ា លោក លោកស្រី លោកគ្រូ អ្នកគ្រូ មិត្តភក្តិ និងបងប្អូនទាំងអស់ មកចូលរួមអបអរសាទរក្នុងថ្ងៃដ៏ពិសេសនេះ។",
     },

@@ -6,11 +6,13 @@ import { motion } from "framer-motion";
 import { ChevronDown, Sparkles, GraduationCap, MailOpen } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
+import { useGuest } from "@/context/guest-context";
 import { playBackgroundMusic } from "@/components/music-toggle";
 import { RotatingBotanicalCrest, AnimatedFlourishDivider } from "@/components/animated-motifs";
 
 export const HeroSection: React.FC = () => {
   const { t } = useLanguage();
+  const { guestName, hasCustomGuest, getGreetingPrefix } = useGuest();
 
   const scrollToNext = () => {
     playBackgroundMusic();
@@ -123,9 +125,24 @@ export const HeroSection: React.FC = () => {
         </motion.div>
 
         {/* Subtitle quote */}
-        <p className="font-serif italic text-sm text-emerald-soft/90 max-w-xs mb-6">
+        <p className="font-serif italic text-sm text-emerald-soft/90 max-w-xs mb-3">
           &ldquo;{t.hero.subTitle}&rdquo;
         </p>
+
+        {/* Personalized Guest Badge */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.7 }}
+          className="w-full my-2.5 py-2 px-3 rounded-2xl bg-gold/15 border border-gold/40 shadow-xs"
+        >
+          <span className="block text-[10px] font-sans uppercase tracking-[0.2em] text-gold-dark font-bold mb-0.5">
+            ✦ {getGreetingPrefix()} ✦
+          </span>
+          <span className="font-serif italic text-base sm:text-lg font-bold text-emerald-deep line-clamp-1">
+            {hasCustomGuest ? guestName : t.invitation.defaultGuest}
+          </span>
+        </motion.div>
 
         {/* Gold Gradient Action Button */}
         <motion.button

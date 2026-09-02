@@ -17,7 +17,7 @@ export const ClosingSection: React.FC = () => {
       try {
         await navigator.share({
           title: `Lễ Tốt Nghiệp — ${graduationConfig.name}`,
-          text: `Trân trọng kính mời bạn đến tham dự Lễ Tốt Nghiệp của ${graduationConfig.name}!`,
+          text: `Thân mời bạn đến tham dự Lễ Tốt Nghiệp của ${graduationConfig.name}!`,
           url: window.location.href,
         });
         return;

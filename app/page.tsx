@@ -2,6 +2,7 @@
 
 import React from "react";
 import { LanguageProvider } from "@/context/language-context";
+import { GuestProvider } from "@/context/guest-context";
 import { ParticleCanvas } from "@/components/particle-canvas";
 import { HeroSection } from "@/components/hero";
 import { InvitationSection } from "@/components/invitation";
@@ -16,35 +17,39 @@ import { MobileNav } from "@/components/mobile-nav";
 import { MusicToggle } from "@/components/music-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { EnvelopeOverlay } from "@/components/envelope-overlay";
+import { GuestLinkModal } from "@/components/guest-link-modal";
 
 export default function Home() {
   return (
     <LanguageProvider>
-      <main className="relative min-h-screen w-full overflow-hidden bg-ivory">
-        {/* Background Ambient Gold Sparkle Particle System */}
-        <ParticleCanvas />
+      <GuestProvider>
+        <main className="relative min-h-screen w-full overflow-hidden bg-ivory">
+          {/* Background Ambient Gold Sparkle Particle System */}
+          <ParticleCanvas />
 
-        {/* Envelope Opening Screen Modal */}
-        <EnvelopeOverlay />
+          {/* Envelope Opening Screen Modal */}
+          <EnvelopeOverlay />
 
-        {/* Floating Controls */}
-        <LanguageToggle />
-        <MusicToggle />
+          {/* Floating Controls */}
+          <LanguageToggle />
+          <MusicToggle />
+          <GuestLinkModal />
 
-        {/* Main Single Page Sections */}
-        <HeroSection />
-        <InvitationSection />
-        <GraduationInfoSection />
-        <CountdownSection />
-        <JourneySection />
-        <GallerySection />
-        <LocationSection />
-        <RsvpSection />
-        <ClosingSection />
+          {/* Main Single Page Sections */}
+          <HeroSection />
+          <InvitationSection />
+          <GraduationInfoSection />
+          <CountdownSection />
+          <JourneySection />
+          <GallerySection />
+          <LocationSection />
+          <RsvpSection />
+          <ClosingSection />
 
-        {/* Mobile Floating Navigation */}
-        <MobileNav />
-      </main>
+          {/* Mobile Floating Navigation */}
+          <MobileNav />
+        </main>
+      </GuestProvider>
     </LanguageProvider>
   );
 }

@@ -5,10 +5,12 @@ import { motion } from "framer-motion";
 import { HeartHandshake, Sparkles } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
+import { useGuest } from "@/context/guest-context";
 import { AnimatedFlourishDivider, RotatingBotanicalCrest } from "@/components/animated-motifs";
 
 export const InvitationSection: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const { guestName, hasCustomGuest, getGreetingPrefix } = useGuest();
 
   return (
     <section id="invitation" className="relative py-16 sm:py-24 px-4 bg-ivory text-emerald-deep flex justify-center overflow-hidden">
@@ -60,13 +62,59 @@ export const InvitationSection: React.FC = () => {
 
           <AnimatedFlourishDivider className="my-4" />
 
+          {/* Personalized Guest Recipient Plaque */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="my-5 py-3.5 px-6 rounded-2xl bg-gold/15 border-2 border-gold/45 shadow-sm relative overflow-hidden"
+          >
+            <div className="absolute top-1 left-2 text-gold/40 font-serif text-2xl select-none pointer-events-none">❧</div>
+            <div className="absolute top-1 right-2 text-gold/40 font-serif text-2xl select-none pointer-events-none">☙</div>
+            <span className="block text-[11px] sm:text-xs font-sans uppercase tracking-[0.25em] text-gold-dark font-bold mb-1">
+              ✦ {getGreetingPrefix()} ✦
+            </span>
+            <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-emerald-deep italic drop-shadow-xs">
+              {hasCustomGuest ? guestName : t.invitation.defaultGuest}
+            </h3>
+          </motion.div>
+
           {/* Graceful Script/Serif Italic Typography */}
           <div className="space-y-5 text-base sm:text-lg md:text-xl text-emerald-deep/95 leading-loose font-serif italic font-normal px-2 sm:px-4 tracking-wide relative z-10">
             <p className="first-letter:text-3xl sm:first-letter:text-4xl first-letter:font-serif first-letter:font-bold first-letter:text-gold-dark first-letter:mr-1">
               {t.invitation.para1}
             </p>
             <p>
-              {t.invitation.para2}
+              {hasCustomGuest ? (
+                lang === "vi" ? (
+                  <>
+                    Với tất cả niềm vui và sự biết ơn, Nhã thân mời{" "}
+                    <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                      {guestName}
+                    </strong>{" "}
+                    đến chung vui và cùng lưu lại những khoảnh khắc ý nghĩa nhất trong ngày đặc biệt này.
+                  </>
+                ) : lang === "en" ? (
+                  <>
+                    With immense joy and gratitude, Nha warmly invites{" "}
+                    <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                      {guestName}
+                    </strong>{" "}
+                    to join and celebrate this momentous milestone together.
+                  </>
+                ) : (
+                  <>
+                    ដោយក្តីរីករាយ និងការដឹងគុណ ខ្ញុំបាទសូមគោរពអញ្ជើញ{" "}
+                    <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                      {guestName}
+                    </strong>{" "}
+                    មកចូលរួមអបអរសាទរក្នុងថ្ងៃដ៏ពិសេសនេះ។
+                  </>
+                )
+              ) : (
+                t.invitation.para2
+              )}
             </p>
           </div>
 

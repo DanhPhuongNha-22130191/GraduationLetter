@@ -47,8 +47,8 @@ export const graduationConfig = {
   graduationDate: "2026-10-21T08:00:00",
 
   // Lời mời & Thông điệp
-  invitationTitle: "TRÂN TRỌNG KÍNH MỜI",
-  invitationMessage: "Sau những năm tháng học tập, nỗ lực và trưởng thành tại Trường Đại học Nông Lâm TP.HCM, Danh Phương Nhã đã chính thức hoàn thành hành trình đại học ngành Công nghệ thông tin (Lớp DH22DTB).\n\nVới tất cả niềm vui và sự biết ơn, Nhã trân trọng kính mời gia đình, bạn bè và những người thân yêu đến chung vui trong ngày đặc biệt này.",
+  invitationTitle: "THÂN MỜI",
+  invitationMessage: "Sau những năm tháng học tập, nỗ lực và trưởng thành tại Trường Đại học Nông Lâm TP.HCM, Danh Phương Nhã đã chính thức hoàn thành hành trình đại học ngành Công nghệ thông tin (Lớp DH22DTB).\n\nVới tất cả niềm vui và sự biết ơn, Nhã thân mời gia đình, bạn bè và những người thân yêu đến chung vui trong ngày đặc biệt này.",
   
   thankYouMessage: "Sự đồng hành, dạy bảo của Thầy Cô, tình yêu thương của Cha Mẹ cùng sự sẻ chia của bạn bè là hành trang quý giá nhất trên con đường học tập và trưởng thành của Nhã.",
 

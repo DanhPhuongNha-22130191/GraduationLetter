@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Send, CheckCircle2, User, Phone, MessageSquare, Plus, Minus, Sparkles, Heart } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
+import { useGuest } from "@/context/guest-context";
 
 interface WishItem {
   name: string;
@@ -14,11 +15,18 @@ interface WishItem {
 
 export const RsvpSection: React.FC = () => {
   const { t, lang } = useLanguage();
+  const { guestName } = useGuest();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [attending, setAttending] = useState<"yes" | "no">("yes");
   const [guestCount, setGuestCount] = useState(0);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (guestName && !fullName) {
+      setFullName(guestName);
+    }
+  }, [guestName]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);

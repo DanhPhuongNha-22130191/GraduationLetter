@@ -6,6 +6,7 @@ import { MailOpen, Sparkles, GraduationCap, Award } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { playBackgroundMusic } from "@/components/music-toggle";
 import { useLanguage } from "@/context/language-context";
+import { useGuest } from "@/context/guest-context";
 
 /* ── Animated background motifs ── */
 
@@ -118,6 +119,7 @@ const AnimatedBackground: React.FC = () => (
 
 export const EnvelopeOverlay: React.FC = () => {
   const { t } = useLanguage();
+  const { guestName, hasCustomGuest, getGreetingPrefix } = useGuest();
   const [isOpening, setIsOpening] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -215,9 +217,19 @@ export const EnvelopeOverlay: React.FC = () => {
                 {graduationConfig.name}
               </h2>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/15 text-gold-light font-sans text-[11px] sm:text-xs tracking-wider uppercase mb-5 font-semibold border border-gold/40">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/15 text-gold-light font-sans text-[11px] sm:text-xs tracking-wider uppercase mb-3 font-semibold border border-gold/40">
                 <Award className="w-3.5 h-3.5 text-gold" />
                 <span>{graduationConfig.major}</span>
+              </div>
+
+              {/* Personalized Recipient Badge on Envelope */}
+              <div className="w-full my-2.5 py-2.5 px-3 rounded-2xl bg-gold/15 border border-gold/45 text-center shadow-inner">
+                <span className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold font-bold mb-0.5">
+                  ✦ {getGreetingPrefix()} ✦
+                </span>
+                <span className="font-serif italic text-base sm:text-lg font-bold text-ivory drop-shadow-xs line-clamp-2">
+                  {hasCustomGuest ? guestName : t.invitation.defaultGuest}
+                </span>
               </div>
 
               {/* Main Interactive Button */}
