@@ -2,20 +2,26 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
+export type GuestPronounMode = "friend" | "elder" | "senior";
+
 interface GuestContextType {
   guestName: string;
   hasCustomGuest: boolean;
+  pronounMode: GuestPronounMode;
   isFormal: boolean;
-  setGuestName: (name: string, formal?: boolean) => void;
+  isSenior: boolean;
+  setGuestName: (name: string, mode?: GuestPronounMode) => void;
   getGreetingPrefix: () => string;
   getSelfPronoun: () => string;
-  generateGuestUrl: (name: string, formal?: boolean) => string;
+  generateGuestUrl: (name: string, mode?: GuestPronounMode) => string;
 }
 
 const GuestContext = createContext<GuestContextType>({
   guestName: "",
   hasCustomGuest: false,
+  pronounMode: "friend",
   isFormal: false,
+  isSenior: false,
   setGuestName: () => {},
   getGreetingPrefix: () => "Thân mời",
   getSelfPronoun: () => "Nhã",
@@ -24,16 +30,21 @@ const GuestContext = createContext<GuestContextType>({
 
 export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [guestName, setGuestNameState] = useState<string>("");
-  const [isFormal, setIsFormalState] = useState<boolean>(false);
+  const [pronounMode, setPronounModeState] = useState<GuestPronounMode>("friend");
 
   useEffect(() => {
     try {
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
 
-        // Check if `too` parameter exists (Formal mode: Kính mời, xưng con)
-        const formalParam = params.get("too") || params.get("kinh") || params.get("formal");
-        const normalParam =
+        // 1. Check senior mode (t3o, tooo, em) -> xưng "em", "Thân mời"
+        const seniorParam = params.get("t3o") || params.get("tooo") || params.get("em");
+
+        // 2. Check elder / formal mode (too, kinh, formal) -> xưng "con", "Kính mời"
+        const elderParam = params.get("too") || params.get("kinh") || params.get("formal");
+
+        // 3. Check friend mode (to, guest, name, ...) -> xưng "Nhã", "Thân mời"
+        const friendParam =
           params.get("to") ||
           params.get("guest") ||
           params.get("name") ||
@@ -42,26 +53,37 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           params.get("n") ||
           params.get("u");
 
-        const rawName = formalParam || normalParam || "";
-        const formalFlag = Boolean(formalParam);
+        let detectedMode: GuestPronounMode = "friend";
+        let rawName = "";
+
+        if (seniorParam) {
+          detectedMode = "senior";
+          rawName = seniorParam;
+        } else if (elderParam) {
+          detectedMode = "elder";
+          rawName = elderParam;
+        } else if (friendParam) {
+          detectedMode = "friend";
+          rawName = friendParam;
+        }
 
         if (rawName && rawName.trim()) {
           const decoded = decodeURIComponent(rawName.replace(/\+/g, " ")).trim();
           setGuestNameState(decoded);
-          setIsFormalState(formalFlag);
+          setPronounModeState(detectedMode);
           try {
             sessionStorage.setItem("invitation_guest_name", decoded);
-            sessionStorage.setItem("invitation_guest_formal", formalFlag ? "1" : "0");
+            sessionStorage.setItem("invitation_guest_mode", detectedMode);
           } catch {
             // ignore
           }
         } else {
           // Check session storage
           const saved = sessionStorage.getItem("invitation_guest_name");
-          const savedFormal = sessionStorage.getItem("invitation_guest_formal") === "1";
+          const savedMode = (sessionStorage.getItem("invitation_guest_mode") as GuestPronounMode) || "friend";
           if (saved) {
             setGuestNameState(saved);
-            setIsFormalState(savedFormal);
+            setPronounModeState(savedMode);
           }
         }
       }
@@ -70,17 +92,17 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  const setGuestName = (name: string, formal = false) => {
+  const setGuestName = (name: string, mode: GuestPronounMode = "friend") => {
     const clean = name.trim();
     setGuestNameState(clean);
-    setIsFormalState(formal);
+    setPronounModeState(mode);
     try {
       if (clean) {
         sessionStorage.setItem("invitation_guest_name", clean);
-        sessionStorage.setItem("invitation_guest_formal", formal ? "1" : "0");
+        sessionStorage.setItem("invitation_guest_mode", mode);
       } else {
         sessionStorage.removeItem("invitation_guest_name");
-        sessionStorage.removeItem("invitation_guest_formal");
+        sessionStorage.removeItem("invitation_guest_mode");
       }
     } catch {
       // ignore
@@ -88,19 +110,31 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const getGreetingPrefix = (): string => {
-    return isFormal ? "Kính mời" : "Thân mời";
+    return pronounMode === "elder" ? "Kính mời" : "Thân mời";
   };
 
   const getSelfPronoun = (): string => {
-    return isFormal ? "con" : "Nhã";
+    switch (pronounMode) {
+      case "elder":
+        return "con";
+      case "senior":
+        return "em";
+      case "friend":
+      default:
+        return "Nhã";
+    }
   };
 
-  const generateGuestUrl = (name: string, formal = false): string => {
+  const generateGuestUrl = (name: string, mode: GuestPronounMode = "friend"): string => {
     if (typeof window === "undefined") return "";
     const origin = window.location.origin + window.location.pathname;
     const clean = name.trim();
     if (!clean) return origin;
-    const paramKey = formal ? "too" : "to";
+
+    let paramKey = "to";
+    if (mode === "elder") paramKey = "too";
+    if (mode === "senior") paramKey = "t3o";
+
     return `${origin}?${paramKey}=${encodeURIComponent(clean)}`;
   };
 
@@ -109,7 +143,9 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value={{
         guestName,
         hasCustomGuest: Boolean(guestName.trim()),
-        isFormal,
+        pronounMode,
+        isFormal: pronounMode === "elder",
+        isSenior: pronounMode === "senior",
         setGuestName,
         getGreetingPrefix,
         getSelfPronoun,

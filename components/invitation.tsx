@@ -10,7 +10,7 @@ import { AnimatedFlourishDivider, RotatingBotanicalCrest } from "@/components/an
 
 export const InvitationSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { guestName, hasCustomGuest, isFormal, getGreetingPrefix } = useGuest();
+  const { guestName, hasCustomGuest, pronounMode, getGreetingPrefix } = useGuest();
 
   return (
     <section id="invitation" className="relative py-16 sm:py-24 px-4 bg-ivory text-emerald-deep flex justify-center overflow-hidden">
@@ -90,9 +90,17 @@ export const InvitationSection: React.FC = () => {
             <p>
               {hasCustomGuest ? (
                 lang === "vi" ? (
-                  isFormal ? (
+                  pronounMode === "elder" ? (
                     <>
                       Với tất cả niềm vui và lòng biết ơn sâu sắc, con kính mời{" "}
+                      <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                        {guestName}
+                      </strong>{" "}
+                      đến chung vui và cùng lưu lại những khoảnh khắc ý nghĩa nhất trong ngày đặc biệt này.
+                    </>
+                  ) : pronounMode === "senior" ? (
+                    <>
+                      Với tất cả niềm vui và sự biết ơn, em thân mời{" "}
                       <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
                         {guestName}
                       </strong>{" "}
