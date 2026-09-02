@@ -52,7 +52,7 @@ export const GraduationInfoSection: React.FC = () => {
     <section id="details" className="py-14 sm:py-20 px-4 max-w-3xl mx-auto relative z-10">
       <div className="text-center mb-8 sm:mb-12">
         <span className="text-xs font-sans uppercase tracking-[0.25em] text-gold-dark font-semibold">
-          {t.details.subTitle}
+          {t.details.eyebrow}
         </span>
         <h2 className="font-serif text-3xl sm:text-4xl text-emerald-deep font-bold mt-1">
           {t.details.title}
