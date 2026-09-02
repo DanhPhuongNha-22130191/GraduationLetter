@@ -114,7 +114,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       case "elder":
         return "Kính mời";
       case "senior":
-        return "Mời";
+        return "Thân ái mời";
       case "friend":
       default:
         return "Thân mời";
