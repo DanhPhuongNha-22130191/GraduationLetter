@@ -30,6 +30,63 @@ const GuestContext = createContext<GuestContextType>({
   generateGuestUrl: () => "",
 });
 
+/**
+ * Helper to auto-detect pronoun mode from the guest name's prefix
+ * Example:
+ * - "Thầy Hoàng", "Cô Thuý", "Bác Ba", "Chú Tư" -> 'elder' (xưng con, kính mời)
+ * - "Anh Nam", "Chị Hà", "Anh Chị" -> 'senior' (xưng em, thân ái mời)
+ * - "Em Linh", "Bé Quỳnh" -> 'junior' (xưng anh, mời)
+ * - "Gia Bảo", "Bạn Lan", ... -> 'friend' (xưng mình, Nhã thân mời)
+ */
+function autoDetectModeFromName(name: string): GuestPronounMode {
+  const clean = name.trim().toLowerCase();
+  if (!clean) return "friend";
+
+  // Check elder keywords
+  if (
+    clean.startsWith("thầy") ||
+    clean.startsWith("thay ") ||
+    clean.startsWith("cô ") ||
+    clean.startsWith("co ") ||
+    clean.startsWith("bác") ||
+    clean.startsWith("bac ") ||
+    clean.startsWith("chú") ||
+    clean.startsWith("chu ") ||
+    clean.startsWith("cô chú") ||
+    clean.startsWith("co chu") ||
+    clean.startsWith("ông") ||
+    clean.startsWith("ong ") ||
+    clean.startsWith("bà") ||
+    clean.startsWith("ba ") ||
+    clean.startsWith("gia đình") ||
+    clean.startsWith("gia dinh")
+  ) {
+    return "elder";
+  }
+
+  // Check senior keywords (Anh / Chị)
+  if (
+    clean.startsWith("anh ") ||
+    clean.startsWith("chị ") ||
+    clean.startsWith("chi ") ||
+    clean.startsWith("anh chị") ||
+    clean.startsWith("anh chi")
+  ) {
+    return "senior";
+  }
+
+  // Check junior keywords (Em / Bé)
+  if (
+    clean.startsWith("em ") ||
+    clean.startsWith("bé ") ||
+    clean.startsWith("be ")
+  ) {
+    return "junior";
+  }
+
+  return "friend";
+}
+
 export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [guestName, setGuestNameState] = useState<string>("");
   const [pronounMode, setPronounModeState] = useState<GuestPronounMode>("friend");
@@ -39,18 +96,36 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
 
-        // 1. Check junior mode (t4o, toooo, anh) -> xưng "anh", dùng từ "Mời"
-        const juniorParam = params.get("t4o") || params.get("toooo") || params.get("anh");
+        // 1. Explicit parameter by pronoun keyword:
+        // Nhã xưng anh (dành cho các em): ?anh=..., ?t4o=..., ?toooo=..., ?junior=...
+        const juniorParam =
+          params.get("anh") ||
+          params.get("t4o") ||
+          params.get("toooo") ||
+          params.get("junior");
 
-        // 2. Check senior mode (t3o, tooo, em) -> xưng "em", "Thân ái mời"
-        const seniorParam = params.get("t3o") || params.get("tooo") || params.get("em");
+        // Nhã xưng em (dành cho anh/chị): ?em=..., ?t3o=..., ?tooo=..., ?senior=...
+        const seniorParam =
+          params.get("em") ||
+          params.get("t3o") ||
+          params.get("tooo") ||
+          params.get("senior");
 
-        // 3. Check elder / formal mode (too, kinh, formal) -> xưng "con", "Kính mời"
-        const elderParam = params.get("too") || params.get("kinh") || params.get("formal");
+        // Nhã xưng con (dành cho người lớn/thầy cô): ?con=..., ?too=..., ?kinh=..., ?elder=...
+        const elderParam =
+          params.get("con") ||
+          params.get("too") ||
+          params.get("kinh") ||
+          params.get("elder");
 
-        // 4. Check friend mode (to, guest, name, ...) -> xưng "Nhã", "Thân mời"
-        const friendParam =
+        // Nhã xưng mình / bạn bè: ?ban=..., ?friend=...
+        const friendParamExplicit = params.get("ban") || params.get("friend");
+
+        // Generic / Standard parameter: ?to=..., ?gui=..., ?ten=..., ?guest=..., ?name=...
+        const generalParam =
           params.get("to") ||
+          params.get("gui") ||
+          params.get("ten") ||
           params.get("guest") ||
           params.get("name") ||
           params.get("recipient") ||
@@ -70,9 +145,14 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } else if (elderParam) {
           detectedMode = "elder";
           rawName = elderParam;
-        } else if (friendParam) {
+        } else if (friendParamExplicit) {
           detectedMode = "friend";
-          rawName = friendParam;
+          rawName = friendParamExplicit;
+        } else if (generalParam) {
+          rawName = generalParam;
+          // Auto-detect based on prefix like "Thầy", "Cô", "Anh", "Chị", "Em", "Bé", ...
+          const decoded = decodeURIComponent(rawName.replace(/\+/g, " ")).trim();
+          detectedMode = autoDetectModeFromName(decoded);
         }
 
         if (rawName && rawName.trim()) {
@@ -100,14 +180,15 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  const setGuestName = (name: string, mode: GuestPronounMode = "friend") => {
+  const setGuestName = (name: string, mode?: GuestPronounMode) => {
     const clean = name.trim();
+    const finalMode = mode !== undefined ? mode : autoDetectModeFromName(clean);
     setGuestNameState(clean);
-    setPronounModeState(mode);
+    setPronounModeState(finalMode);
     try {
       if (clean) {
         sessionStorage.setItem("invitation_guest_name", clean);
-        sessionStorage.setItem("invitation_guest_mode", mode);
+        sessionStorage.setItem("invitation_guest_mode", finalMode);
       } else {
         sessionStorage.removeItem("invitation_guest_name");
         sessionStorage.removeItem("invitation_guest_mode");
@@ -145,16 +226,19 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const generateGuestUrl = (name: string, mode: GuestPronounMode = "friend"): string => {
+  const generateGuestUrl = (name: string, mode?: GuestPronounMode): string => {
     if (typeof window === "undefined") return "";
     const origin = window.location.origin + window.location.pathname;
     const clean = name.trim();
     if (!clean) return origin;
 
+    // Use intuitive param keywords: con, em, anh, ban or standard to
+    const finalMode = mode !== undefined ? mode : autoDetectModeFromName(clean);
     let paramKey = "to";
-    if (mode === "elder") paramKey = "too";
-    if (mode === "senior") paramKey = "t3o";
-    if (mode === "junior") paramKey = "t4o";
+    if (finalMode === "elder") paramKey = "con";
+    else if (finalMode === "senior") paramKey = "em";
+    else if (finalMode === "junior") paramKey = "anh";
+    else paramKey = "ban";
 
     return `${origin}?${paramKey}=${encodeURIComponent(clean)}`;
   };
