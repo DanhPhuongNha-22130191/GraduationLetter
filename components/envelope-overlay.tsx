@@ -6,7 +6,7 @@ import { MailOpen, Sparkles, GraduationCap, Award } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { playBackgroundMusic } from "@/components/music-toggle";
 import { useLanguage } from "@/context/language-context";
-import { useGuest } from "@/context/guest-context";
+import { useGuest, trackOpenInvitation } from "@/context/guest-context";
 
 /* ── Animated background motifs ── */
 
@@ -119,7 +119,7 @@ const AnimatedBackground: React.FC = () => (
 
 export const EnvelopeOverlay: React.FC = () => {
   const { t } = useLanguage();
-  const { guestName, hasCustomGuest, getGreetingPrefix } = useGuest();
+  const { guestName, hasCustomGuest, pronounMode, getGreetingPrefix } = useGuest();
   const [isOpening, setIsOpening] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -128,6 +128,11 @@ export const EnvelopeOverlay: React.FC = () => {
     if (isOpening || isOpen) return;
     setIsOpening(true);
     playBackgroundMusic();
+
+    // Ghi nhận tên khách vào Google Sheets ngay khi bấm Mở Thiệp
+    if (hasCustomGuest && guestName) {
+      trackOpenInvitation(guestName, pronounMode);
+    }
 
     setTimeout(() => {
       setIsOpen(true);

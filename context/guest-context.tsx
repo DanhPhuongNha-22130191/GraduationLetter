@@ -89,7 +89,7 @@ function autoDetectModeFromName(name: string): GuestPronounMode {
 /**
  * Gửi log ngầm (Silent Beacon) về Google Sheets để biết ai đã mở thiệp
  */
-function trackOpenInvitation(guestName: string, mode: string) {
+export function trackOpenInvitation(guestName: string, mode: string) {
   if (!guestName || typeof window === "undefined") return;
   const sessionKey = `tracked_open_${encodeURIComponent(guestName)}`;
   if (sessionStorage.getItem(sessionKey)) return;
@@ -99,19 +99,20 @@ function trackOpenInvitation(guestName: string, mode: string) {
   try {
     if (graduationConfig.googleScriptUrl) {
       const payload = {
-        action: "OPEN_INVITATION",
-        fullName: guestName,
-        guestCount: 0,
-        attending: "viewed",
-        phone: `Mode: ${mode}`,
-        message: `Khách đã mở thiệp lúc ${new Date().toLocaleString("vi-VN")}`,
-        timestamp: new Date().toISOString(),
+        name: guestName,
+        phone: "Đã mở thiệp",
+        attending: "ĐÃ MỞ THIỆP 💌",
+        guests: 0,
+        message: `Khách đã mở thiệp mời (Chế độ: ${mode}) lúc ${new Date().toLocaleString("vi-VN")}`,
+        timestamp: new Date().toLocaleString("vi-VN"),
       };
 
       fetch(graduationConfig.googleScriptUrl, {
         method: "POST",
         mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8",
+        },
         body: JSON.stringify(payload),
       }).catch(() => {
         // Silent fail
