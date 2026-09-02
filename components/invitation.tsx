@@ -62,23 +62,25 @@ export const InvitationSection: React.FC = () => {
 
           <AnimatedFlourishDivider className="my-4" />
 
-          {/* Personalized Guest Recipient Plaque */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="my-5 py-3.5 px-6 rounded-2xl bg-gold/15 border-2 border-gold/45 shadow-sm relative overflow-hidden"
-          >
-            <div className="absolute top-1 left-2 text-gold/40 font-serif text-2xl select-none pointer-events-none">❧</div>
-            <div className="absolute top-1 right-2 text-gold/40 font-serif text-2xl select-none pointer-events-none">☙</div>
-            <span className="block text-[11px] sm:text-xs font-sans uppercase tracking-[0.25em] text-gold-dark font-bold mb-1">
-              ✦ {getGreetingPrefix()} ✦
-            </span>
-            <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-emerald-deep italic drop-shadow-xs">
-              {hasCustomGuest ? guestName : t.invitation.defaultGuest}
-            </h3>
-          </motion.div>
+          {/* Personalized Guest Recipient Plaque - Only shown when a specific guest is invited */}
+          {hasCustomGuest && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="my-5 py-3.5 px-6 rounded-2xl bg-gold/15 border-2 border-gold/45 shadow-sm relative overflow-hidden"
+            >
+              <div className="absolute top-1 left-2 text-gold/40 font-serif text-2xl select-none pointer-events-none">❧</div>
+              <div className="absolute top-1 right-2 text-gold/40 font-serif text-2xl select-none pointer-events-none">☙</div>
+              <span className="block text-[11px] sm:text-xs font-sans uppercase tracking-[0.25em] text-gold-dark font-bold mb-1">
+                ✦ THÂN MỜI ✦
+              </span>
+              <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-emerald-deep italic drop-shadow-xs">
+                {guestName}
+              </h3>
+            </motion.div>
+          )}
 
           {/* Graceful Script/Serif Italic Typography */}
           <div className="space-y-5 text-base sm:text-lg md:text-xl text-emerald-deep/95 leading-loose font-serif italic font-normal px-2 sm:px-4 tracking-wide relative z-10">

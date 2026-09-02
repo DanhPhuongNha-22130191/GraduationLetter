@@ -129,20 +129,22 @@ export const HeroSection: React.FC = () => {
           &ldquo;{t.hero.subTitle}&rdquo;
         </p>
 
-        {/* Personalized Guest Badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
-          className="w-full my-2.5 py-2 px-3 rounded-2xl bg-gold/15 border border-gold/40 shadow-xs"
-        >
-          <span className="block text-[10px] font-sans uppercase tracking-[0.2em] text-gold-dark font-bold mb-0.5">
-            ✦ {getGreetingPrefix()} ✦
-          </span>
-          <span className="font-serif italic text-base sm:text-lg font-bold text-emerald-deep line-clamp-1">
-            {hasCustomGuest ? guestName : t.invitation.defaultGuest}
-          </span>
-        </motion.div>
+        {/* Personalized Guest Badge - Only shown when a specific guest is invited */}
+        {hasCustomGuest && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.7 }}
+            className="w-full my-2.5 py-2 px-3 rounded-2xl bg-gold/15 border border-gold/40 shadow-xs"
+          >
+            <span className="block text-[10px] font-sans uppercase tracking-[0.2em] text-gold-dark font-bold mb-0.5">
+              ✦ THÂN MỜI ✦
+            </span>
+            <span className="font-serif italic text-base sm:text-lg font-bold text-emerald-deep line-clamp-1">
+              {guestName}
+            </span>
+          </motion.div>
+        )}
 
         {/* Gold Gradient Action Button */}
         <motion.button

@@ -223,14 +223,22 @@ export const EnvelopeOverlay: React.FC = () => {
               </div>
 
               {/* Personalized Recipient Badge on Envelope */}
-              <div className="w-full my-2.5 py-2.5 px-3 rounded-2xl bg-gold/15 border border-gold/45 text-center shadow-inner">
-                <span className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold font-bold mb-0.5">
-                  ✦ {getGreetingPrefix()} ✦
-                </span>
-                <span className="font-serif italic text-base sm:text-lg font-bold text-ivory drop-shadow-xs line-clamp-2">
-                  {hasCustomGuest ? guestName : t.invitation.defaultGuest}
-                </span>
-              </div>
+              {hasCustomGuest ? (
+                <div className="w-full my-2.5 py-2.5 px-3 rounded-2xl bg-gold/15 border border-gold/45 text-center shadow-inner">
+                  <span className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold font-bold mb-0.5">
+                    ✦ THÂN MỜI ✦
+                  </span>
+                  <span className="font-serif italic text-base sm:text-lg font-bold text-ivory drop-shadow-xs line-clamp-2">
+                    {guestName}
+                  </span>
+                </div>
+              ) : (
+                <div className="my-2 px-4 py-1.5 rounded-full bg-gold/15 border border-gold/30 text-center">
+                  <span className="text-xs font-sans uppercase tracking-[0.25em] text-gold font-semibold">
+                    ✦ THÂN MỜI ✦
+                  </span>
+                </div>
+              )}
 
               {/* Main Interactive Button */}
               <motion.button
