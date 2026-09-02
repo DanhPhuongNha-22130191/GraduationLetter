@@ -117,9 +117,12 @@ export const RsvpSection: React.FC = () => {
     setIsSubmitting(true);
 
     const payload = {
+      type: "RSVP",
+      action: "RSVP",
+      sheet: "RSVP",
       name: fullName.trim(),
       phone: phone.trim(),
-      attending: attending,
+      attending: attending === "yes" ? "Có" : "Không",
       guests: attending === "yes" ? guestCount : 0,
       message: message.trim(),
       timestamp: new Date().toLocaleString(lang === "vi" ? "vi-VN" : "en-US"),

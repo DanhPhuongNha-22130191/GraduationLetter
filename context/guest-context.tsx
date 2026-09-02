@@ -98,12 +98,21 @@ export function trackOpenInvitation(guestName: string, mode: string) {
 
   try {
     if (graduationConfig.googleScriptUrl) {
+      const modeLabel =
+        mode === "elder" ? "Người lớn (con)" :
+        mode === "senior" ? "Anh/Chị (em)" :
+        mode === "junior" ? "Đàn em (anh)" : "Bạn bè (mình)";
+
       const payload = {
+        type: "OPEN",
+        action: "OPEN",
+        sheet: "LuotXem",
         name: guestName,
-        phone: "Đã mở thiệp",
+        phone: "-",
         attending: "ĐÃ MỞ THIỆP 💌",
         guests: 0,
-        message: `Khách đã mở thiệp mời (Chế độ: ${mode}) lúc ${new Date().toLocaleString("vi-VN")}`,
+        mode: modeLabel,
+        message: `Khách mở thiệp (${modeLabel})`,
         timestamp: new Date().toLocaleString("vi-VN"),
       };
 
