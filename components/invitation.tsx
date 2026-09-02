@@ -10,7 +10,7 @@ import { AnimatedFlourishDivider, RotatingBotanicalCrest } from "@/components/an
 
 export const InvitationSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { guestName, hasCustomGuest, pronounMode, getGreetingPrefix } = useGuest();
+  const { guestName, hasCustomGuest, pronounMode, customMessage, getGreetingPrefix } = useGuest();
 
   return (
     <section id="invitation" className="relative py-16 sm:py-24 px-4 bg-ivory text-emerald-deep flex justify-center overflow-hidden">
@@ -160,6 +160,25 @@ export const InvitationSection: React.FC = () => {
                 t.invitation.para2
               )}
             </p>
+
+            {/* Dedicated Custom Letter for VIP / Close Friends */}
+            {customMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="mt-6 p-4 sm:p-5 rounded-2xl bg-gold/15 border border-gold/45 text-left relative shadow-xs"
+              >
+                <div className="flex items-center gap-1.5 text-gold-dark font-sans text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-2">
+                  <Sparkles className="w-3.5 h-3.5 text-gold" />
+                  <span>Đôi lời gửi gắm riêng đến {guestName}:</span>
+                </div>
+                <p className="font-serif italic text-base sm:text-lg text-emerald-deep leading-relaxed">
+                  &ldquo;{customMessage}&rdquo;
+                </p>
+              </motion.div>
+            )}
           </div>
 
           {/* Calligraphic Signature with Gold Glow */}
