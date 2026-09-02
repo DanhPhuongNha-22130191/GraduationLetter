@@ -226,7 +226,7 @@ export const EnvelopeOverlay: React.FC = () => {
               {hasCustomGuest ? (
                 <div className="w-full my-2.5 py-2.5 px-3 rounded-2xl bg-gold/15 border border-gold/45 text-center shadow-inner">
                   <span className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold font-bold mb-0.5">
-                    ✦ THÂN MỜI ✦
+                    ✦ {getGreetingPrefix().toUpperCase()} ✦
                   </span>
                   <span className="font-serif italic text-base sm:text-lg font-bold text-ivory drop-shadow-xs line-clamp-2">
                     {guestName}

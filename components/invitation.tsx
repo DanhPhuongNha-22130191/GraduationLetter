@@ -10,7 +10,7 @@ import { AnimatedFlourishDivider, RotatingBotanicalCrest } from "@/components/an
 
 export const InvitationSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { guestName, hasCustomGuest, getGreetingPrefix } = useGuest();
+  const { guestName, hasCustomGuest, isFormal, getGreetingPrefix } = useGuest();
 
   return (
     <section id="invitation" className="relative py-16 sm:py-24 px-4 bg-ivory text-emerald-deep flex justify-center overflow-hidden">
@@ -74,7 +74,7 @@ export const InvitationSection: React.FC = () => {
               <div className="absolute top-1 left-2 text-gold/40 font-serif text-2xl select-none pointer-events-none">❧</div>
               <div className="absolute top-1 right-2 text-gold/40 font-serif text-2xl select-none pointer-events-none">☙</div>
               <span className="block text-[11px] sm:text-xs font-sans uppercase tracking-[0.25em] text-gold-dark font-bold mb-1">
-                ✦ THÂN MỜI ✦
+                ✦ {getGreetingPrefix().toUpperCase()} ✦
               </span>
               <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-emerald-deep italic drop-shadow-xs">
                 {guestName}
@@ -90,13 +90,23 @@ export const InvitationSection: React.FC = () => {
             <p>
               {hasCustomGuest ? (
                 lang === "vi" ? (
-                  <>
-                    Với tất cả niềm vui và sự biết ơn, Nhã thân mời{" "}
-                    <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
-                      {guestName}
-                    </strong>{" "}
-                    đến chung vui và cùng lưu lại những khoảnh khắc ý nghĩa nhất trong ngày đặc biệt này.
-                  </>
+                  isFormal ? (
+                    <>
+                      Với tất cả niềm vui và lòng biết ơn sâu sắc, con kính mời{" "}
+                      <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                        {guestName}
+                      </strong>{" "}
+                      đến chung vui và cùng lưu lại những khoảnh khắc ý nghĩa nhất trong ngày đặc biệt này.
+                    </>
+                  ) : (
+                    <>
+                      Với tất cả niềm vui và sự biết ơn, Nhã thân mời{" "}
+                      <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                        {guestName}
+                      </strong>{" "}
+                      đến chung vui và cùng lưu lại những khoảnh khắc ý nghĩa nhất trong ngày đặc biệt này.
+                    </>
+                  )
                 ) : lang === "en" ? (
                   <>
                     With immense joy and gratitude, Nha warmly invites{" "}
