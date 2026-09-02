@@ -110,7 +110,15 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const getGreetingPrefix = (): string => {
-    return pronounMode === "elder" ? "Kính mời" : "Thân mời";
+    switch (pronounMode) {
+      case "elder":
+        return "Kính mời";
+      case "senior":
+        return "Mời";
+      case "friend":
+      default:
+        return "Thân mời";
+    }
   };
 
   const getSelfPronoun = (): string => {

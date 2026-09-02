@@ -100,7 +100,7 @@ export const InvitationSection: React.FC = () => {
                     </>
                   ) : pronounMode === "senior" ? (
                     <>
-                      Với tất cả niềm vui và sự biết ơn, em thân mời{" "}
+                      Với tất cả niềm vui và sự biết ơn, em mời{" "}
                       <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
                         {guestName}
                       </strong>{" "}
