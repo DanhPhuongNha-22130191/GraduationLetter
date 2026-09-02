@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1F5A46"/>
+      <stop offset="100%" stop-color="#123C32"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bgGrad3)"/>
+  <rect x="30" y="30" width="740" height="940" rx="16" fill="none" stroke="#C9A96E" stroke-width="2" opacity="0.6"/>
+  <!-- Code Brackets & Graduation Badge -->
+  <g transform="translate(400, 420)" text-anchor="middle">
+    <text x="0" y="-40" fill="#C9A96E" font-family="monospace" font-size="70" font-weight="bold">&lt; / &gt;</text>
+    <circle cx="0" cy="40" r="50" fill="none" stroke="#F8F5EC" stroke-width="3"/>
+    <polygon points="0,10 10,30 30,30 15,45 20,65 0,50 -20,65 -15,45 -30,30 -10,30" fill="#C9A96E"/>
+  </g>
+  <text x="400" y="620" text-anchor="middle" fill="#F8F5EC" font-family="serif" font-size="34">KHOẢNH KHẮC CÙNG BẠN BÈ</text>
+  <text x="400" y="670" text-anchor="middle" fill="#C9A96E" font-family="sans-serif" font-size="18" letter-spacing="4">INFORMATION TECHNOLOGY</text>
+  <text x="400" y="720" text-anchor="middle" fill="#6F8F7A" font-family="sans-serif" font-size="15" font-style="italic">Tri thức &amp; Tình bạn vững bền</text>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <rect width="100" height="100" rx="20" fill="#123C32"/>
+  <rect x="5" y="5" width="90" height="90" rx="16" fill="none" stroke="#C9A96E" stroke-width="2"/>
+  <!-- Graduation Cap -->
+  <path d="M 50,22 L 80,35 L 50,48 L 20,35 Z" fill="#C9A96E"/>
+  <path d="M 32,43 V 58 C 32,65 68,65 68,58 V 43" fill="none" stroke="#C9A96E" stroke-width="3"/>
+  <!-- Chữ N -->
+  <text x="50" y="82" text-anchor="middle" fill="#F8F5EC" font-family="serif" font-size="26" font-weight="bold">N</text>
+</svg>

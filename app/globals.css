@@ -1,0 +1,78 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@layer base {
+  :root {
+    --color-emerald-deep: #123C32;
+    --color-emerald-main: #1F5A46;
+    --color-soft-green: #6F8F7A;
+    --color-gold: #C9A96E;
+    --color-gold-light: #F4E7CE;
+    --color-ivory: #F8F5EC;
+    --color-white: #FFFFFF;
+    --color-charcoal: #202522;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-ivory);
+    color: var(--color-charcoal);
+    font-family: var(--font-sans), 'Be Vietnam Pro', sans-serif;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Custom Utilities for High-end Invitation Look */
+.gold-border {
+  border: 1px solid rgba(201, 169, 110, 0.4);
+}
+
+.gold-border-dashed {
+  border: 1px dashed rgba(201, 169, 110, 0.6);
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #C9A96E 0%, #F4E7CE 50%, #9E7B3B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-gradient-bg {
+  background: linear-gradient(135deg, #C9A96E 0%, #E5C78B 50%, #9E7B3B 100%);
+}
+
+.emerald-gradient-bg {
+  background: linear-gradient(180deg, #123C32 0%, #1F5A46 100%);
+}
+
+.card-ivory {
+  background-color: #FAF8F2;
+  border: 1px solid rgba(201, 169, 110, 0.3);
+  box-shadow: 0 10px 30px -10px rgba(18, 60, 50, 0.06);
+}
+
+/* Subtle paper texture overlay */
+.paper-texture {
+  background-image: radial-gradient(rgba(201, 169, 110, 0.08) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* Animation overrides for prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
