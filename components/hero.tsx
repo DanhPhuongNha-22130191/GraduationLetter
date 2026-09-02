@@ -7,6 +7,7 @@ import { ChevronDown, Sparkles, GraduationCap, MailOpen } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { playBackgroundMusic } from "@/components/music-toggle";
+import { RotatingBotanicalCrest, AnimatedFlourishDivider } from "@/components/animated-motifs";
 
 export const HeroSection: React.FC = () => {
   const { t } = useLanguage();
@@ -21,23 +22,16 @@ export const HeroSection: React.FC = () => {
 
   return (
     <section id="hero" className="relative min-h-[92vh] sm:min-h-screen flex flex-col justify-between items-center px-4 py-8 sm:py-12 bg-ivory text-emerald-deep overflow-hidden">
-      {/* Background Decorative Paper Grid & Subtle Gold Radial Spotlight */}
+      {/* Background Decorative Paper Grid & Gold Radial Spotlight */}
       <div className="absolute inset-0 paper-texture opacity-70 pointer-events-none" />
       <div className="absolute inset-0 gold-radial-glow opacity-30 pointer-events-none" />
       
-      {/* Corner Botanical SVG Ornaments */}
-      <div className="absolute top-3 left-3 w-20 h-20 sm:w-28 sm:h-28 pointer-events-none opacity-40 text-gold">
-        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M 0,20 C 30,20 30,0 50,0 M 0,40 C 40,40 40,0 70,0 M 0,60 C 50,60 50,0 90,0" />
-          <circle cx="20" cy="20" r="2.5" fill="currentColor" />
-          <circle cx="40" cy="40" r="2.5" fill="currentColor" />
-        </svg>
+      {/* Corner Rotating Botanical Ornaments */}
+      <div className="absolute top-2 left-2 sm:top-4 sm:left-4 pointer-events-none z-0">
+        <RotatingBotanicalCrest className="w-20 h-20 sm:w-28 sm:h-28 text-gold" />
       </div>
-      <div className="absolute top-3 right-3 w-20 h-20 sm:w-28 sm:h-28 pointer-events-none opacity-40 text-gold transform rotate-90">
-        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M 0,20 C 30,20 30,0 50,0 M 0,40 C 40,40 40,0 70,0 M 0,60 C 50,60 50,0 90,0" />
-          <circle cx="20" cy="20" r="2.5" fill="currentColor" />
-        </svg>
+      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 pointer-events-none z-0 transform rotate-90">
+        <RotatingBotanicalCrest className="w-20 h-20 sm:w-28 sm:h-28 text-gold" />
       </div>
 
       {/* Top Header Badge */}
@@ -47,7 +41,7 @@ export const HeroSection: React.FC = () => {
         transition={{ duration: 0.8 }}
         className="z-10 text-center mt-6 sm:mt-2"
       >
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold/40 bg-gold/10 text-xs sm:text-sm font-sans tracking-widest text-emerald-deep font-semibold uppercase shadow-sm backdrop-blur-sm">
+        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-gold/40 bg-gold/10 text-xs sm:text-sm font-sans tracking-widest text-emerald-deep font-semibold uppercase shadow-gold-glow backdrop-blur-md">
           <Sparkles className="w-3.5 h-3.5 text-gold animate-pulse" />
           <span>{t.hero.invitationCard}</span>
           <Sparkles className="w-3.5 h-3.5 text-gold animate-pulse" />
@@ -59,24 +53,24 @@ export const HeroSection: React.FC = () => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.9, delay: 0.2 }}
-        className="z-10 my-auto w-full max-w-sm sm:max-w-md bg-ivory-card border-2 border-gold/40 rounded-3xl p-6 sm:p-9 shadow-invitation relative flex flex-col items-center text-center backdrop-blur-md"
+        className="z-10 my-auto w-full max-w-sm sm:max-w-md glass-gold-card rounded-3xl p-6 sm:p-9 shadow-2xl relative flex flex-col items-center text-center backdrop-blur-md border-2 border-gold/40"
       >
         {/* Dual Gold Foil Inner Borders */}
         <div className="absolute inset-3 rounded-2xl border border-gold/30 pointer-events-none" />
         <div className="absolute inset-5 rounded-xl border border-gold/50 border-dashed pointer-events-none opacity-50" />
 
         {/* Four Corner Dots inside Card */}
-        <div className="absolute top-4 left-4 w-2 h-2 rounded-full bg-gold/70" />
-        <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-gold/70" />
-        <div className="absolute bottom-4 left-4 w-2 h-2 rounded-full bg-gold/70" />
-        <div className="absolute bottom-4 right-4 w-2 h-2 rounded-full bg-gold/70" />
+        <div className="absolute top-4 left-4 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
+        <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
+        <div className="absolute bottom-4 left-4 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
+        <div className="absolute bottom-4 right-4 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
 
-        {/* Graduate Avatar Portrait Frame with Gold Glow */}
+        {/* Graduate Avatar Portrait Frame with Gold Pulsing Glow */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1.5 border-2 border-gold shadow-[0_0_25px_rgba(201,169,110,0.35)] mb-4 sm:mb-5 bg-gold-gradient transform hover:scale-105 transition-transform"
+          className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1.5 border-2 border-gold shadow-gold-glow mb-4 sm:mb-5 bg-gold-gradient transform hover:scale-105 transition-transform"
         >
           <div className="relative w-full h-full rounded-full overflow-hidden border border-ivory/80">
             <Image
@@ -88,7 +82,7 @@ export const HeroSection: React.FC = () => {
             />
           </div>
           {/* Gold Crest Icon Badge Overlay */}
-          <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gold-gradient text-emerald-deep flex items-center justify-center shadow-md border-2 border-ivory">
+          <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gold-gradient text-emerald-deep flex items-center justify-center shadow-md border-2 border-ivory animate-float-slow">
             <GraduationCap className="w-4 h-4 stroke-[2]" />
           </div>
         </motion.div>
@@ -110,17 +104,13 @@ export const HeroSection: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5 }}
-          className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-emerald-deep tracking-tight mb-2 leading-tight drop-shadow-sm"
+          className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-emerald-deep tracking-tight mb-1 leading-tight drop-shadow-sm"
         >
           {graduationConfig.name}
         </motion.h1>
 
-        {/* Gold Flourish Divider */}
-        <div className="flex items-center gap-2 my-2 w-full max-w-[200px] justify-center">
-          <div className="h-[1px] bg-gold-gradient flex-1" />
-          <div className="w-2 h-2 rotate-45 border border-gold bg-gold/30" />
-          <div className="h-[1px] bg-gold-gradient flex-1" />
-        </div>
+        {/* Animated Flourish Divider */}
+        <AnimatedFlourishDivider className="my-2" />
 
         {/* Major & Year Pill Badge */}
         <motion.div
@@ -142,7 +132,7 @@ export const HeroSection: React.FC = () => {
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
           onClick={scrollToNext}
-          className="w-full sm:w-auto px-10 py-3.5 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-sm tracking-widest uppercase shadow-gold-glow flex items-center justify-center gap-2.5 border border-ivory/60 hover:brightness-110 transition-all active:scale-95 touch-manipulation cursor-pointer"
+          className="w-full sm:w-auto px-10 py-3.5 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-sm tracking-widest uppercase shadow-gold-glow flex items-center justify-center gap-2.5 border border-ivory/60 hover:brightness-110 transition-all active:scale-95 touch-manipulation cursor-pointer shimmer-gold"
         >
           <MailOpen className="w-4 h-4 stroke-[2]" />
           <span>{t.hero.openBtn}</span>

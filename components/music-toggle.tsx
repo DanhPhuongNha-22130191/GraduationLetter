@@ -17,7 +17,6 @@ export const MusicToggle: React.FC = () => {
   const isManuallyPausedRef = useRef(false);
 
   const startPlayback = (force = false) => {
-    // If the user manually paused the music, don't auto-start unless forced by explicit button click
     if (isManuallyPausedRef.current && !force) return;
 
     if (audioRef.current) {
@@ -34,16 +33,13 @@ export const MusicToggle: React.FC = () => {
   };
 
   useEffect(() => {
-    // 1. Try immediate autoplay
     startPlayback();
 
-    // 2. Listen to custom signal from "MỞ THIỆP" button
     const handleCustomPlaySignal = () => {
       isManuallyPausedRef.current = false;
       startPlayback(true);
     };
 
-    // 3. Listen to FIRST user gesture once to unlock audio
     const handleFirstGesture = () => {
       startPlayback();
     };
@@ -62,13 +58,13 @@ export const MusicToggle: React.FC = () => {
   }, []);
 
   const toggleMusic = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Stop event propagation so parent gesture listeners don't re-trigger
+    e.stopPropagation();
     if (isPlaying) {
       if (audioRef.current) {
         audioRef.current.pause();
       }
       setIsPlaying(false);
-      isManuallyPausedRef.current = true; // Mark as manually turned off by user
+      isManuallyPausedRef.current = true;
     } else {
       isManuallyPausedRef.current = false;
       startPlayback(true);
@@ -76,21 +72,42 @@ export const MusicToggle: React.FC = () => {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-40">
+    <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
       <audio ref={audioRef} src={graduationConfig.audioUrl} loop preload="auto" />
+      
+      {/* Equalizer Frequency Bar Animation */}
+      {isPlaying && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-deep border border-gold/50 shadow-md"
+        >
+          <div className="w-1 h-3 bg-gold rounded-full animate-bounce" style={{ animationDuration: '0.6s' }} />
+          <div className="w-1 h-4 bg-gold-shimmer rounded-full animate-bounce" style={{ animationDuration: '0.4s' }} />
+          <div className="w-1 h-2 bg-gold rounded-full animate-bounce" style={{ animationDuration: '0.8s' }} />
+          <span className="text-[10px] font-sans font-bold text-gold uppercase tracking-wider ml-1">PLAYING</span>
+        </motion.div>
+      )}
+
       <motion.button
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.92 }}
         onClick={toggleMusic}
         aria-label={isPlaying ? "Tắt nhạc nền" : "Bật nhạc nền"}
-        className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg border transition-all duration-300 active:scale-95 touch-manipulation ${
+        className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg border transition-all duration-300 active:scale-95 touch-manipulation cursor-pointer ${
           isPlaying
-            ? "bg-gold text-emerald-deep border-gold shadow-gold-glow animate-pulse"
-            : "bg-emerald-deep/80 text-gold border-gold/40 backdrop-blur-md"
+            ? "bg-gold text-emerald-deep border-gold shadow-md"
+            : "bg-emerald-deep text-gold border-gold/50 hover:border-gold"
         }`}
       >
         {isPlaying ? (
-          <Music className="w-5 h-5 animate-spin-slow stroke-[2]" />
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+          >
+            <Music className="w-5 h-5 stroke-[2]" />
+          </motion.div>
         ) : (
           <VolumeX className="w-5 h-5 stroke-[2]" />
         )}

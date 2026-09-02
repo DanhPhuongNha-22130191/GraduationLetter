@@ -60,13 +60,129 @@
 
 /* Subtle paper texture overlay */
 .paper-texture {
-  background-image: radial-gradient(rgba(201, 169, 110, 0.08) 1px, transparent 0);
+  background-image: radial-gradient(rgba(201, 169, 110, 0.12) 1px, transparent 0);
   background-size: 24px 24px;
+}
+
+/* Clean background accents */
+.gold-radial-glow {
+  background: transparent;
+}
+
+/* Crisp Clean Luxury Cards without Blur */
+.glass-gold-card {
+  background: #FAF8F2;
+  border: 1px solid rgba(201, 169, 110, 0.5);
+  box-shadow: 0 10px 30px rgba(18, 60, 50, 0.08);
+}
+
+.glass-emerald-card {
+  background: #123C32;
+  border: 1px solid rgba(201, 169, 110, 0.5);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Wax Seal 3D Button Effect */
+.wax-seal {
+  background: radial-gradient(circle at 35% 35%, #d4af37 0%, #c9a96e 40%, #9e7b3b 85%, #664d1a 100%);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -3px 6px rgba(0, 0, 0, 0.5);
+}
+
+.wax-seal:hover {
+  transform: scale(1.06) rotate(3deg);
+  box-shadow: 0 14px 30px rgba(201, 169, 110, 0.5), inset 0 2px 5px rgba(255, 255, 255, 0.6);
+}
+
+/* Gold Foil Shimmer Animation */
+.shimmer-gold {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-gold::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 70%
+  );
+  transform: rotate(30deg);
+  animation: shine 4s infinite ease-in-out;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) rotate(30deg); }
+  25% { transform: translateX(100%) rotate(30deg); }
+  100% { transform: translateX(100%) rotate(30deg); }
+}
+
+/* Custom Luxury Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #F8F5EC;
+}
+::-webkit-scrollbar-thumb {
+  background: #C9A96E;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9E7B3B;
+}
+
+/* Animation Keyframes for Dynamic Motifs */
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes waveShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 25s linear infinite;
+}
+
+.animate-float-slow {
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+.wave-divider {
+  background: linear-gradient(90deg, transparent 0%, #C9A96E 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: waveShimmer 3s infinite linear;
+}
+
+/* Perspective 3D utility */
+.perspective-1000 {
+  perspective: 1000px;
 }
 
 /* Animation overrides for prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-
   *,
   ::before,
   ::after {

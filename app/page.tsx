@@ -2,6 +2,7 @@
 
 import React from "react";
 import { LanguageProvider } from "@/context/language-context";
+import { ParticleCanvas } from "@/components/particle-canvas";
 import { HeroSection } from "@/components/hero";
 import { InvitationSection } from "@/components/invitation";
 import { GraduationInfoSection } from "@/components/graduation-info";
@@ -20,6 +21,9 @@ export default function Home() {
   return (
     <LanguageProvider>
       <main className="relative min-h-screen w-full overflow-hidden bg-ivory">
+        {/* Background Ambient Gold Sparkle Particle System */}
+        <ParticleCanvas />
+
         {/* Envelope Opening Screen Modal */}
         <EnvelopeOverlay />
 
@@ -38,9 +42,10 @@ export default function Home() {
         <RsvpSection />
         <ClosingSection />
 
-        {/* Mobile Floating Thumb Navigation */}
+        {/* Mobile Floating Navigation */}
         <MobileNav />
       </main>
     </LanguageProvider>
   );
 }
+

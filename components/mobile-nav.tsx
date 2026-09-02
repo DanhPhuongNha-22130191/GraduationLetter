@@ -19,7 +19,7 @@ export const MobileNav: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPos = window.scrollY + 200;
+      const scrollPos = window.scrollY + 220;
       for (const item of navItems) {
         const el = document.getElementById(item.id);
         if (el) {
@@ -44,12 +44,12 @@ export const MobileNav: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-sm">
+    <div className="fixed bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-xs sm:max-w-sm pb-[env(safe-area-inset-bottom)]">
       <motion.nav
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.8 }}
-        className="bg-emerald-deep/90 backdrop-blur-md border border-gold/40 rounded-full px-3 py-2 shadow-2xl flex items-center justify-around"
+        className="glass-emerald-card border border-gold/40 rounded-full px-2 sm:px-3 py-2 shadow-2xl flex items-center justify-around"
       >
         {navItems.map((item) => {
           const IconComp = item.icon;
@@ -59,12 +59,12 @@ export const MobileNav: React.FC = () => {
             <button
               key={item.id}
               onClick={() => scrollTo(item.id)}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-full transition-all duration-300 active:scale-95 touch-manipulation relative ${
-                isActive ? "text-gold font-semibold" : "text-ivory/70 hover:text-ivory"
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-full transition-all duration-300 active:scale-90 touch-manipulation cursor-pointer relative ${
+                isActive ? "text-gold font-bold" : "text-ivory/70 hover:text-ivory"
               }`}
             >
-              <IconComp className={`w-4 h-4 transition-transform ${isActive ? "scale-110" : ""}`} />
-              <span className="text-[10px] font-sans mt-0.5 tracking-tight font-medium">
+              <IconComp className={`w-4 h-4 transition-transform ${isActive ? "scale-110 text-gold drop-shadow-md" : ""}`} />
+              <span className="text-[9px] sm:text-[10px] font-sans mt-0.5 tracking-tight font-medium">
                 {item.label}
               </span>
               {isActive && (
