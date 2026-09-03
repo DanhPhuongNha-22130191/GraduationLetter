@@ -195,9 +195,6 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             foundCustomDate = profile.customDate;
             isRegistered = true;
             isAllowedUpload = profile.canUpload !== false;
-          } else {
-            rawName = slugParam;
-            detectedMode = autoDetectModeFromName(slugParam);
           }
         } else if (conParam) {
           hasParams = true;

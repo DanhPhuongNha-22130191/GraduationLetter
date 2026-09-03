@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { Timer } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
+import { useGuest } from "@/context/guest-context";
+import { formatLocalizedDate, formatLocalizedTime } from "@/config/i18n";
 
 interface TimeLeft {
   days: number;
@@ -13,8 +15,64 @@ interface TimeLeft {
   seconds: number;
 }
 
+/**
+ * Phân tích ngày giờ tùy chỉnh (customDate + customTime) thành đối tượng Date mục tiêu
+ */
+function parseCustomTargetDate(customDate?: string, customTime?: string): Date {
+  const defaultTarget = new Date(graduationConfig.graduationDate); // Mặc định 2026-10-21T08:00:00
+  let year = defaultTarget.getFullYear();
+  let month = defaultTarget.getMonth();
+  let day = defaultTarget.getDate();
+  let hours = defaultTarget.getHours();
+  let minutes = defaultTarget.getMinutes();
+
+  // 1. Phân tích customDate (hỗ trợ DD/MM/YYYY, YYYY-MM-DD, DD-MM-YYYY)
+  if (customDate && customDate.trim()) {
+    const trimmedDate = customDate.trim();
+    const matchDMY = trimmedDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    const matchYMD = trimmedDate.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    const matchDM = trimmedDate.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+
+    if (matchDMY) {
+      day = parseInt(matchDMY[1], 10);
+      month = parseInt(matchDMY[2], 10) - 1;
+      year = parseInt(matchDMY[3], 10);
+    } else if (matchYMD) {
+      year = parseInt(matchYMD[1], 10);
+      month = parseInt(matchYMD[2], 10) - 1;
+      day = parseInt(matchYMD[3], 10);
+    } else if (matchDM) {
+      day = parseInt(matchDM[1], 10);
+      month = parseInt(matchDM[2], 10) - 1;
+    }
+  }
+
+  // 2. Phân tích customTime (hỗ trợ "09:30 - 11:30 sáng", "14:00 chiều", "10:00 AM"...)
+  if (customTime && customTime.trim()) {
+    const trimmedTime = customTime.trim();
+    const timeMatch = trimmedTime.match(/(\d{1,2})[:h](\d{2})/i) || trimmedTime.match(/(\d{1,2})[:h]/i);
+    if (timeMatch) {
+      let h = parseInt(timeMatch[1], 10);
+      const m = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+      const isPM = /pm|chiều|chieu|tối|toi|afternoon|evening|រសៀល|យប់/i.test(trimmedTime);
+      const isAM = /am|sáng|sang|morning|ព្រឹក/i.test(trimmedTime);
+
+      if (isPM && h < 12) {
+        h += 12;
+      } else if (isAM && h === 12) {
+        h = 0;
+      }
+      hours = h;
+      minutes = m;
+    }
+  }
+
+  return new Date(year, month, day, hours, minutes, 0);
+}
+
 export const CountdownSection: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const { customDate, customTime } = useGuest();
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({
     days: 0,
     hours: 0,
@@ -28,7 +86,8 @@ export const CountdownSection: React.FC = () => {
     setHasMounted(true);
 
     const calculateTimeLeft = (): TimeLeft => {
-      const target = new Date(graduationConfig.graduationDate).getTime();
+      const targetDate = parseCustomTargetDate(customDate, customTime);
+      const target = targetDate.getTime();
       const now = new Date().getTime();
       const difference = target - now;
 
@@ -51,7 +110,7 @@ export const CountdownSection: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [customDate, customTime]);
 
   const timeUnits = [
     { label: t.countdown.days, value: timeLeft.days },
@@ -59,6 +118,10 @@ export const CountdownSection: React.FC = () => {
     { label: t.countdown.minutes, value: timeLeft.minutes },
     { label: t.countdown.seconds, value: timeLeft.seconds },
   ];
+
+  // Hiển thị ngày giờ động theo từng khách
+  const displayDateStr = customDate ? formatLocalizedDate(customDate, lang) : t.details.dateVal;
+  const displayTimeStr = customTime ? formatLocalizedTime(customTime, lang) : t.details.timeVal;
 
   return (
     <section id="countdown" className="py-14 sm:py-24 px-3 sm:px-4 bg-ivory text-emerald-deep relative overflow-hidden">
@@ -79,7 +142,7 @@ export const CountdownSection: React.FC = () => {
             {t.countdown.title}
           </h2>
           <p className="font-sans text-[11px] sm:text-sm text-charcoal/70 mt-2 font-medium">
-            21/10/2026 — 08:00 AM @ Đại Học Nông Lâm TP.HCM
+            {displayDateStr} — {displayTimeStr}
           </p>
         </motion.div>
 

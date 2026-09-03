@@ -63,15 +63,37 @@ export function normalizePronounMode(modeStr?: string): GuestPronounMode {
 }
 
 /**
+ * Tìm kiếm nhanh khách mời từ bộ nhớ đệm đồng bộ (LocalStorage / SessionStorage)
+ */
+export function getCachedGuestSync(slug: string): GuestProfile | null {
+  if (typeof window === "undefined" || !slug) return null;
+  const cleanSlug = slug.trim().toLowerCase().replace(/[-_]/g, "");
+  try {
+    const raw =
+      localStorage.getItem("cached_guest_registry") ||
+      sessionStorage.getItem("cached_guest_registry");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && parsed[cleanSlug]) {
+        return parsed[cleanSlug];
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/**
  * Tải danh sách khách mời từ Google Sheet (Sheet 3 / KhachMoi)
  */
 export async function fetchGuestsFromSheet(): Promise<Record<string, GuestProfile>> {
   const cacheKey = "cached_guest_registry";
 
-  // 1. Kiểm tra cache SessionStorage trước để tải trang siêu tốc
+  // 1. Kiểm tra cache LocalStorage / SessionStorage trước để tải trang siêu tốc 0ms
   if (typeof window !== "undefined") {
     try {
-      const cached = sessionStorage.getItem(cacheKey);
+      const cached = localStorage.getItem(cacheKey) || sessionStorage.getItem(cacheKey);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
@@ -192,6 +214,7 @@ export async function fetchGuestsFromSheet(): Promise<Record<string, GuestProfil
           if (Object.keys(registry).length > 0) {
             if (typeof window !== "undefined") {
               try {
+                localStorage.setItem(cacheKey, JSON.stringify(registry));
                 sessionStorage.setItem(cacheKey, JSON.stringify(registry));
               } catch {
                 // ignore
@@ -217,14 +240,24 @@ export function findGuestBySlug(
   customRegistry?: Record<string, GuestProfile>
 ): GuestProfile | null {
   if (!slug) return null;
-  const normalized = slug.trim().toLowerCase().replace(/[-_]/g, "");
-  const targetRegistry = customRegistry || defaultGuestRegistry;
+  const cleanSlug = slug.trim().toLowerCase().replace(/[-_]/g, "");
 
-  for (const [key, profile] of Object.entries(targetRegistry)) {
-    if (key.toLowerCase().replace(/[-_]/g, "") === normalized) {
-      return profile;
-    }
+  // 1. Kiểm tra trong registry truyền vào
+  if (customRegistry && customRegistry[cleanSlug]) {
+    return customRegistry[cleanSlug];
   }
+
+  // 2. Kiểm tra trong cache đồng bộ (LocalStorage / SessionStorage)
+  const cachedProfile = getCachedGuestSync(cleanSlug);
+  if (cachedProfile) {
+    return cachedProfile;
+  }
+
+  // 3. Kiểm tra trong registry mặc định
+  if (defaultGuestRegistry[cleanSlug]) {
+    return defaultGuestRegistry[cleanSlug];
+  }
+
   return null;
 }
 
