@@ -366,6 +366,7 @@ export async function fetchPhotosFromSheet(): Promise<import("@/config/graduatio
   const cacheKey = "cached_cloud_photos";
   const seenUrls = new Set<string>();
   const freshPhotos: import("@/config/graduation").GalleryItem[] = [];
+  let fetchSucceeded = false;
 
   // 1. Tải từ Google Apps Script (Sheet AnhKyNiem)
   try {
@@ -376,6 +377,7 @@ export async function fetchPhotosFromSheet(): Promise<import("@/config/graduatio
       });
 
       if (res.ok) {
+        fetchSucceeded = true;
         const rawList = await res.json();
         if (Array.isArray(rawList)) {
           rawList.forEach((item: Record<string, unknown>, idx: number) => {
@@ -447,8 +449,8 @@ export async function fetchPhotosFromSheet(): Promise<import("@/config/graduatio
     // ignore
   }
 
-  // 3. Cập nhật lại cache nếu có ảnh từ Google Sheets
-  if (freshPhotos.length > 0 && typeof window !== "undefined") {
+  // 3. Cập nhật lại cache đồng bộ khi fetch thành công (kể cả khi rỗng sau khi xóa hết)
+  if (fetchSucceeded && typeof window !== "undefined") {
     try {
       localStorage.setItem(cacheKey, JSON.stringify(freshPhotos));
       sessionStorage.setItem(cacheKey, JSON.stringify(freshPhotos));

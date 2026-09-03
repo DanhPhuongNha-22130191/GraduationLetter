@@ -28,14 +28,14 @@ import { graduationConfig, GalleryItem } from "@/config/graduation";
 import { fetchPhotosFromSheet } from "@/config/guests";
 import { Lock, ShieldCheck } from "lucide-react";
 
-function getOptimizedImageUrl(src: string, width = 800): string {
+function getOptimizedImageUrl(src: string, width = 1200): string {
   if (!src || typeof src !== "string") return "";
   const clean = src.trim();
   if (clean.includes("res.cloudinary.com") && clean.includes("/image/upload/")) {
-    if (!clean.includes("/image/upload/f_auto") && !clean.includes("/image/upload/w_")) {
+    if (!clean.includes("/image/upload/f_auto") && !clean.includes("/image/upload/w_") && !clean.includes("/image/upload/q_")) {
       return clean.replace(
         "/image/upload/",
-        `/image/upload/f_auto,q_auto:good,w_${width},c_limit/`
+        `/image/upload/f_auto,q_auto:best,dpr_auto,w_${width},c_limit/`
       );
     }
   }
@@ -132,7 +132,7 @@ export const GallerySection: React.FC = () => {
 
     // 3. Tự động đồng bộ ngầm dữ liệu mới nhất từ Google Sheets
     fetchPhotosFromSheet().then((remotePhotos) => {
-      if (Array.isArray(remotePhotos) && remotePhotos.length > 0) {
+      if (Array.isArray(remotePhotos)) {
         const cleanedRemote = remotePhotos
           .map((p) => {
             if (!p || !p.src) return null;
@@ -145,11 +145,60 @@ export const GallerySection: React.FC = () => {
           .filter((p): p is GalleryItem => p !== null);
 
         setCloudPhotos(cleanedRemote);
+
+        // Tự động dọn dẹp cache ảnh cũ trên máy nếu Cloud đã xóa toàn bộ hoặc đã cập nhật mới
+        if (cleanedRemote.length === 0) {
+          try {
+            localStorage.setItem("cached_cloud_photos", JSON.stringify([]));
+            sessionStorage.setItem("cached_cloud_photos", JSON.stringify([]));
+            // Dọn dẹp cả userPhotos nếu các ảnh upload này là link Cloud đã bị xóa
+            setUserPhotos((prev) => {
+              const kept = prev.filter((p) => !p.src.includes("res.cloudinary.com"));
+              try {
+                localStorage.setItem("graduation_user_photos", JSON.stringify(kept));
+              } catch {}
+              return kept;
+            });
+          } catch {}
+        }
       }
     }).catch(() => {
       // ignore
     });
   }, []);
+
+  // Tự động dọn dẹp ảnh lỗi (404 hoặc bị xóa khỏi Cloud) ngay lập tức
+  const handleImageError = (failedSrc: string) => {
+    if (!failedSrc) return;
+    setFailedPhotoUrls((prev) => {
+      const updated = new Set(prev);
+      updated.add(failedSrc);
+      return updated;
+    });
+
+    // Prune from userPhotos state and localStorage
+    setUserPhotos((prev) => {
+      const updated = prev.filter((p) => p.src !== failedSrc);
+      try {
+        localStorage.setItem("graduation_user_photos", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+
+    // Prune from cloudPhotos state and localStorage/sessionStorage
+    setCloudPhotos((prev) => {
+      const updated = prev.filter((p) => p.src !== failedSrc);
+      try {
+        localStorage.setItem("cached_cloud_photos", JSON.stringify(updated));
+        sessionStorage.setItem("cached_cloud_photos", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  };
 
   // Pre-fill uploader name when guestName is detected
   useEffect(() => {
@@ -538,14 +587,16 @@ export const GallerySection: React.FC = () => {
                 >
                   {/* Crystal Clear High-Resolution Image */}
                   <Image
-                    src={getOptimizedImageUrl(photo.src, 800)}
+                    src={getOptimizedImageUrl(photo.src, 1200)}
                     alt={photo.alt}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    quality={95}
+                    quality={100}
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                     loading={idx < 4 ? "eager" : "lazy"}
                     priority={idx < 2}
+                    onError={() => handleImageError(photo.src)}
+                    unoptimized
                   />
 
                   {/* Shimmer Gold Hover Border */}
@@ -1069,11 +1120,15 @@ export const GallerySection: React.FC = () => {
               {/* Main Image Frame with Prev/Next Controls */}
               <div className="relative aspect-[4/5] sm:aspect-[16/11] w-full bg-black flex items-center justify-center overflow-hidden">
                 <Image
-                  src={currentPhoto.src}
+                  src={getOptimizedImageUrl(currentPhoto.src, 2400)}
                   alt={currentPhoto.alt}
                   fill
+                  sizes="100vw"
+                  quality={100}
                   className="object-contain"
                   priority
+                  onError={() => handleImageError(currentPhoto.src)}
+                  unoptimized
                 />
 
                 {/* Left/Right Arrow Navigation */}

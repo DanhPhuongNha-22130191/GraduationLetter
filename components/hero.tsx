@@ -80,7 +80,10 @@ export const HeroSection: React.FC = () => {
               alt={graduationConfig.name}
               fill
               priority
+              sizes="(max-width: 640px) 150px, 200px"
+              quality={100}
               className="object-cover"
+              unoptimized
             />
           </div>
           {/* Gold Crest Icon Badge Overlay */}
