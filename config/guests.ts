@@ -63,6 +63,103 @@ export function normalizePronounMode(modeStr?: string): GuestPronounMode {
 }
 
 /**
+ * Chuyển đổi chuỗi ngày giờ tùy chỉnh thành timestamp milliseconds để so sánh
+ */
+export function parseDateTimeToTimestamp(dateStr?: string, timeStr?: string): number | null {
+  if (!dateStr && !timeStr) return null;
+
+  const defaultTarget = new Date(graduationConfig.graduationDate);
+  let year = defaultTarget.getFullYear();
+  let month = defaultTarget.getMonth();
+  let day = defaultTarget.getDate();
+  let hours = defaultTarget.getHours();
+  let minutes = defaultTarget.getMinutes();
+
+  if (dateStr && dateStr.trim()) {
+    const trimmed = dateStr.trim();
+    const matchDMY = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    const matchYMD = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    const matchDM = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+
+    if (matchDMY) {
+      day = parseInt(matchDMY[1], 10);
+      month = parseInt(matchDMY[2], 10) - 1;
+      year = parseInt(matchDMY[3], 10);
+    } else if (matchYMD) {
+      year = parseInt(matchYMD[1], 10);
+      month = parseInt(matchYMD[2], 10) - 1;
+      day = parseInt(matchYMD[3], 10);
+    } else if (matchDM) {
+      day = parseInt(matchDM[1], 10);
+      month = parseInt(matchDM[2], 10) - 1;
+    }
+  }
+
+  if (timeStr && timeStr.trim()) {
+    const trimmedTime = timeStr.trim();
+    const timeMatch = trimmedTime.match(/(\d{1,2})[:h](\d{2})/i) || trimmedTime.match(/(\d{1,2})[:h]/i);
+    if (timeMatch) {
+      let h = parseInt(timeMatch[1], 10);
+      const m = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+      const isPM = /pm|chiều|chieu|tối|toi|afternoon|evening|រសៀល|យប់/i.test(trimmedTime);
+      const isAM = /am|sáng|sang|morning|ព្រឹក/i.test(trimmedTime);
+
+      if (isPM && h < 12) {
+        h += 12;
+      } else if (isAM && h === 12) {
+        h = 0;
+      }
+      hours = h;
+      minutes = m;
+    }
+  }
+
+  return new Date(year, month, day, hours, minutes, 0).getTime();
+}
+
+/**
+ * Tìm ngày giờ tốt nghiệp sớm nhất trong toàn bộ danh sách Khách Mời từ Google Sheet
+ */
+export function getEarliestGraduationDateTime(
+  registry?: Record<string, GuestProfile>
+): { earliestDate?: string; earliestTime?: string } {
+  let targetRegistry = registry;
+  if (!targetRegistry && typeof window !== "undefined") {
+    try {
+      const cached =
+        localStorage.getItem("cached_guest_registry") ||
+        sessionStorage.getItem("cached_guest_registry");
+      if (cached) {
+        targetRegistry = JSON.parse(cached);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  if (!targetRegistry) {
+    targetRegistry = defaultGuestRegistry;
+  }
+
+  let minTimestamp = Infinity;
+  let result: { earliestDate?: string; earliestTime?: string } = {};
+
+  for (const profile of Object.values(targetRegistry)) {
+    if (profile.customDate || profile.customTime) {
+      const ts = parseDateTimeToTimestamp(profile.customDate, profile.customTime);
+      if (ts !== null && ts < minTimestamp) {
+        minTimestamp = ts;
+        result = {
+          earliestDate: profile.customDate,
+          earliestTime: profile.customTime,
+        };
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
  * Tìm kiếm nhanh khách mời từ bộ nhớ đệm đồng bộ (LocalStorage / SessionStorage)
  */
 export function getCachedGuestSync(slug: string): GuestProfile | null {

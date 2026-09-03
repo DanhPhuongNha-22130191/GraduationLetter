@@ -1,7 +1,12 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
-import { findGuestBySlug, fetchGuestsFromSheet, GuestProfile } from "@/config/guests";
+import {
+  findGuestBySlug,
+  fetchGuestsFromSheet,
+  GuestProfile,
+  getEarliestGraduationDateTime,
+} from "@/config/guests";
 import { graduationConfig } from "@/config/graduation";
 import { Language, translations } from "@/config/i18n";
 
@@ -16,6 +21,10 @@ interface GuestContextType {
   customMessage?: string;
   customTime?: string;
   customDate?: string;
+  effectiveTime?: string;
+  effectiveDate?: string;
+  hasCustomDate: boolean;
+  hasCustomTime: boolean;
   isFormal: boolean;
   isSenior: boolean;
   isJunior: boolean;
@@ -34,6 +43,10 @@ const GuestContext = createContext<GuestContextType>({
   customMessage: undefined,
   customTime: undefined,
   customDate: undefined,
+  effectiveTime: undefined,
+  effectiveDate: undefined,
+  hasCustomDate: false,
+  hasCustomTime: false,
   isFormal: false,
   isSenior: false,
   isJunior: false,
@@ -156,9 +169,16 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [customMessage, setCustomMessageState] = useState<string | undefined>(undefined);
   const [customTime, setCustomTimeState] = useState<string | undefined>(undefined);
   const [customDate, setCustomDateState] = useState<string | undefined>(undefined);
+  const [defaultEarliestDate, setDefaultEarliestDate] = useState<string | undefined>(undefined);
+  const [defaultEarliestTime, setDefaultEarliestTime] = useState<string | undefined>(undefined);
   const isInitialized = useRef(false);
 
   useEffect(() => {
+    // 0. Khởi tạo ngày giờ sớm nhất từ bộ nhớ đệm
+    const initialEarliest = getEarliestGraduationDateTime();
+    if (initialEarliest.earliestDate) setDefaultEarliestDate(initialEarliest.earliestDate);
+    if (initialEarliest.earliestTime) setDefaultEarliestTime(initialEarliest.earliestTime);
+
     if (isInitialized.current) return;
     isInitialized.current = true;
 
@@ -267,6 +287,11 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // TỰ ĐỘNG CẬP NHẬT TỪ GOOGLE SHEET (Nạp ngầm danh sách mới nhất)
         const targetSlug = slugParam;
         fetchGuestsFromSheet().then((dynamicRegistry) => {
+          // Cập nhật ngày giờ sớm nhất từ danh sách Sheet
+          const dynamicEarliest = getEarliestGraduationDateTime(dynamicRegistry);
+          if (dynamicEarliest.earliestDate) setDefaultEarliestDate(dynamicEarliest.earliestDate);
+          if (dynamicEarliest.earliestTime) setDefaultEarliestTime(dynamicEarliest.earliestTime);
+
           if (targetSlug) {
             const dynamicProfile = findGuestBySlug(targetSlug, dynamicRegistry);
             if (dynamicProfile) {
@@ -371,6 +396,9 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return `${origin}?${paramKey}=${encodeURIComponent(clean)}`;
   };
 
+  const effectiveDate = customDate || defaultEarliestDate;
+  const effectiveTime = customTime || defaultEarliestTime;
+
   return (
     <GuestContext.Provider
       value={{
@@ -382,6 +410,10 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         customMessage,
         customTime,
         customDate,
+        effectiveDate,
+        effectiveTime,
+        hasCustomDate: Boolean(customDate),
+        hasCustomTime: Boolean(customTime),
         isFormal: pronounMode === "elder",
         isSenior: pronounMode === "senior",
         isJunior: pronounMode === "junior",

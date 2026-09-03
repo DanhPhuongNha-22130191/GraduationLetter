@@ -10,7 +10,7 @@ import { formatLocalizedTime, formatLocalizedDate } from "@/config/i18n";
 
 export const GraduationInfoSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { customTime, customDate } = useGuest();
+  const { effectiveDate, effectiveTime, hasCustomDate, hasCustomTime } = useGuest();
   const [copied, setCopied] = useState(false);
 
   const handleCopyAddress = () => {
@@ -35,14 +35,14 @@ export const GraduationInfoSection: React.FC = () => {
     {
       icon: CalendarIcon,
       label: t.details.date,
-      value: customDate ? formatLocalizedDate(customDate, lang) : t.details.dateVal,
-      highlight: Boolean(customDate),
+      value: effectiveDate ? formatLocalizedDate(effectiveDate, lang) : t.details.dateVal,
+      highlight: hasCustomDate,
     },
     {
       icon: Clock,
       label: t.details.time,
-      value: customTime ? formatLocalizedTime(customTime, lang) : t.details.timeVal,
-      highlight: Boolean(customTime),
+      value: effectiveTime ? formatLocalizedTime(effectiveTime, lang) : t.details.timeVal,
+      highlight: hasCustomTime,
     },
     {
       icon: MapPin,

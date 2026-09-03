@@ -72,7 +72,7 @@ function parseCustomTargetDate(customDate?: string, customTime?: string): Date {
 
 export const CountdownSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { customDate, customTime } = useGuest();
+  const { effectiveDate, effectiveTime } = useGuest();
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({
     days: 0,
     hours: 0,
@@ -86,7 +86,7 @@ export const CountdownSection: React.FC = () => {
     setHasMounted(true);
 
     const calculateTimeLeft = (): TimeLeft => {
-      const targetDate = parseCustomTargetDate(customDate, customTime);
+      const targetDate = parseCustomTargetDate(effectiveDate, effectiveTime);
       const target = targetDate.getTime();
       const now = new Date().getTime();
       const difference = target - now;
@@ -110,7 +110,7 @@ export const CountdownSection: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [customDate, customTime]);
+  }, [effectiveDate, effectiveTime]);
 
   const timeUnits = [
     { label: t.countdown.days, value: timeLeft.days },
@@ -119,9 +119,9 @@ export const CountdownSection: React.FC = () => {
     { label: t.countdown.seconds, value: timeLeft.seconds },
   ];
 
-  // Hiển thị ngày giờ động theo từng khách
-  const displayDateStr = customDate ? formatLocalizedDate(customDate, lang) : t.details.dateVal;
-  const displayTimeStr = customTime ? formatLocalizedTime(customTime, lang) : t.details.timeVal;
+  // Hiển thị ngày giờ động theo từng khách hoặc ngày sớm nhất trong Sheet nếu là khách vãng lai
+  const displayDateStr = effectiveDate ? formatLocalizedDate(effectiveDate, lang) : t.details.dateVal;
+  const displayTimeStr = effectiveTime ? formatLocalizedTime(effectiveTime, lang) : t.details.timeVal;
 
   return (
     <section id="countdown" className="py-14 sm:py-24 px-3 sm:px-4 bg-ivory text-emerald-deep relative overflow-hidden">
