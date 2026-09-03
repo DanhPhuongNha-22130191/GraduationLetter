@@ -362,13 +362,41 @@ export function findGuestBySlug(
  * Tải toàn bộ ảnh kỷ niệm đã được mọi người đóng góp từ Google Sheet / Cloud
  * Tự động đồng bộ với Google Sheets và lưu bộ nhớ đệm
  */
-export async function fetchPhotosFromSheet(): Promise<import("@/config/graduation").GalleryItem[]> {
-  const cacheKey = "cached_cloud_photos";
+export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import("@/config/graduation").GalleryItem[]> {
+  const cacheKey = "cached_cloud_photos_v2";
+
+  // 1. Ưu tiên fetch từ /api/photos (server-side verification đã lọc sạch 404 và ảnh đã xóa)
+  if (typeof window !== "undefined") {
+    try {
+      const apiUrl = `/api/photos${forceRefresh ? "?refresh=1" : ""}`;
+      const res = await fetch(apiUrl, {
+        cache: forceRefresh ? "no-store" : "default",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(data));
+            sessionStorage.setItem(cacheKey, JSON.stringify(data));
+            // Dọn sạch key cache cũ v1
+            localStorage.removeItem("cached_cloud_photos");
+            sessionStorage.removeItem("cached_cloud_photos");
+          } catch {
+            // ignore
+          }
+          return data;
+        }
+      }
+    } catch {
+      // Fallback xuống Google Script trực tiếp nếu lỗi route nội bộ
+    }
+  }
+
+  // 2. Fallback trực tiếp: Google Apps Script (Sheet AnhKyNiem)
   const seenUrls = new Set<string>();
   const freshPhotos: import("@/config/graduation").GalleryItem[] = [];
   let fetchSucceeded = false;
 
-  // 1. Tải từ Google Apps Script (Sheet AnhKyNiem)
   try {
     if (graduationConfig.googleScriptUrl) {
       const res = await fetch(`${graduationConfig.googleScriptUrl}?action=getPhotos&sheet=AnhKyNiem`, {
@@ -406,11 +434,10 @@ export async function fetchPhotosFromSheet(): Promise<import("@/config/graduatio
                   seenUrls.add(cleanUrl);
                   const rawCaption = String(item.caption || item.Caption || item["Lời Nhắn / Kỷ Niệm"] || item["Lời Nhắn"] || item["Kỷ Niệm"] || item.title || item.Title || item.loiChuc || "").trim();
                   const category = String(item.category || item.Category || item["Chủ Đề"] || item["Chủ đề"] || item.chuDe || item.ChuDe || "Kỷ Niệm").trim();
-                  // Chỉ hiển thị lời nhắn / mô tả ảnh thuần túy
                   const title = rawCaption || category || "Ảnh kỷ niệm";
 
                   freshPhotos.push({
-                    id: `cloud-${item.id || item.timestamp || item["Thời gian"] || idx}-${Date.now()}`,
+                    id: `cloud-${item.id || item.timestamp || item["Thời gian"] || idx}`,
                     title,
                     category: category || "Kỷ Niệm",
                     src: cleanUrl,
@@ -427,7 +454,7 @@ export async function fetchPhotosFromSheet(): Promise<import("@/config/graduatio
     console.warn("Could not fetch cloud photos:", err);
   }
 
-  // 2. Quét thêm ảnh riêng từ danh sách khách mời (specialPhoto)
+  // 3. Quét thêm ảnh riêng từ danh sách khách mời (specialPhoto)
   try {
     const dynamicRegistry = await fetchGuestsFromSheet();
     Object.values(dynamicRegistry).forEach((guest, idx) => {
@@ -449,7 +476,7 @@ export async function fetchPhotosFromSheet(): Promise<import("@/config/graduatio
     // ignore
   }
 
-  // 3. Cập nhật lại cache đồng bộ khi fetch thành công (kể cả khi rỗng sau khi xóa hết)
+  // 4. Cập nhật lại cache đồng bộ khi fetch thành công
   if (fetchSucceeded && typeof window !== "undefined") {
     try {
       localStorage.setItem(cacheKey, JSON.stringify(freshPhotos));

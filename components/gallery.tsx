@@ -21,6 +21,7 @@ import {
   Globe,
   FileImage,
   Images,
+  RotateCw,
 } from "lucide-react";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
@@ -54,6 +55,9 @@ export const GallerySection: React.FC = () => {
   const [userPhotos, setUserPhotos] = useState<GalleryItem[]>([]);
   // Community-uploaded photos state (synced from Google Sheet & Cloud)
   const [cloudPhotos, setCloudPhotos] = useState<GalleryItem[]>([]);
+  // Loading & syncing states
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState<boolean>(true);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
   // Failed / 404 photo URLs tracker for automatic self-cleaning
   const [failedPhotoUrls, setFailedPhotoUrls] = useState<Set<string>>(new Set());
 
@@ -80,7 +84,48 @@ export const GallerySection: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load saved contributed photos from localStorage & fetch all community photos from Google Sheets
+  const syncPhotos = async (force = false) => {
+    setIsSyncing(true);
+    try {
+      const remotePhotos = await fetchPhotosFromSheet(force);
+      if (Array.isArray(remotePhotos)) {
+        const cleanedRemote = remotePhotos
+          .map((p) => {
+            if (!p || !p.src) return null;
+            let cat = (p.category || "Kỷ Niệm").trim();
+            if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
+              cat = "Kỷ Niệm";
+            }
+            return { ...p, category: cat };
+          })
+          .filter((p): p is GalleryItem => p !== null);
+
+        setCloudPhotos(cleanedRemote);
+        setFailedPhotoUrls(new Set());
+
+        if (cleanedRemote.length === 0) {
+          try {
+            localStorage.setItem("cached_cloud_photos_v2", JSON.stringify([]));
+            sessionStorage.setItem("cached_cloud_photos_v2", JSON.stringify([]));
+            setUserPhotos((prev) => {
+              const kept = prev.filter((p) => !p.src.includes("res.cloudinary.com"));
+              try {
+                localStorage.setItem("graduation_user_photos", JSON.stringify(kept));
+              } catch {}
+              return kept;
+            });
+          } catch {}
+        }
+      }
+    } catch (err) {
+      console.warn("Could not sync photos:", err);
+    } finally {
+      setIsLoadingPhotos(false);
+      setIsSyncing(false);
+    }
+  };
+
+  // Load saved contributed photos from localStorage & fetch all community photos
   useEffect(() => {
     // 1. Khôi phục ngay tức thì các ảnh đã lưu từ máy này
     try {
@@ -106,9 +151,9 @@ export const GallerySection: React.FC = () => {
       // ignore
     }
 
-    // 2. Khôi phục ngay tức thì ảnh Cloud từ bộ nhớ đệm (Hiển thị 0ms cho mọi lần mở lại thiệp)
+    // 2. Khôi phục ngay tức thì ảnh Cloud từ bộ nhớ đệm v2 (0ms)
     try {
-      const cloudSaved = localStorage.getItem("cached_cloud_photos") || sessionStorage.getItem("cached_cloud_photos");
+      const cloudSaved = localStorage.getItem("cached_cloud_photos_v2") || sessionStorage.getItem("cached_cloud_photos_v2");
       if (cloudSaved) {
         const parsed = JSON.parse(cloudSaved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -124,47 +169,15 @@ export const GallerySection: React.FC = () => {
             .filter((p): p is GalleryItem => p !== null);
 
           setCloudPhotos(cleaned);
+          setIsLoadingPhotos(false);
         }
       }
     } catch {
       // ignore
     }
 
-    // 3. Tự động đồng bộ ngầm dữ liệu mới nhất từ Google Sheets
-    fetchPhotosFromSheet().then((remotePhotos) => {
-      if (Array.isArray(remotePhotos)) {
-        const cleanedRemote = remotePhotos
-          .map((p) => {
-            if (!p || !p.src) return null;
-            let cat = (p.category || "Kỷ Niệm").trim();
-            if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
-              cat = "Kỷ Niệm";
-            }
-            return { ...p, category: cat };
-          })
-          .filter((p): p is GalleryItem => p !== null);
-
-        setCloudPhotos(cleanedRemote);
-
-        // Tự động dọn dẹp cache ảnh cũ trên máy nếu Cloud đã xóa toàn bộ hoặc đã cập nhật mới
-        if (cleanedRemote.length === 0) {
-          try {
-            localStorage.setItem("cached_cloud_photos", JSON.stringify([]));
-            sessionStorage.setItem("cached_cloud_photos", JSON.stringify([]));
-            // Dọn dẹp cả userPhotos nếu các ảnh upload này là link Cloud đã bị xóa
-            setUserPhotos((prev) => {
-              const kept = prev.filter((p) => !p.src.includes("res.cloudinary.com"));
-              try {
-                localStorage.setItem("graduation_user_photos", JSON.stringify(kept));
-              } catch {}
-              return kept;
-            });
-          } catch {}
-        }
-      }
-    }).catch(() => {
-      // ignore
-    });
+    // 3. Tự động đồng bộ ngầm dữ liệu mới nhất (từ /api/photos và Google Sheet)
+    syncPhotos(false);
   }, []);
 
   // Tự động dọn dẹp ảnh lỗi (404 hoặc bị xóa khỏi Cloud) ngay lập tức
@@ -191,8 +204,8 @@ export const GallerySection: React.FC = () => {
     setCloudPhotos((prev) => {
       const updated = prev.filter((p) => p.src !== failedSrc);
       try {
-        localStorage.setItem("cached_cloud_photos", JSON.stringify(updated));
-        sessionStorage.setItem("cached_cloud_photos", JSON.stringify(updated));
+        localStorage.setItem("cached_cloud_photos_v2", JSON.stringify(updated));
+        sessionStorage.setItem("cached_cloud_photos_v2", JSON.stringify(updated));
       } catch {
         // ignore
       }
@@ -473,6 +486,7 @@ export const GallerySection: React.FC = () => {
       setTimeout(() => {
         setIsUploadOpen(false);
         handleResetUploadForm();
+        syncPhotos(true);
       }, 2500);
     } catch (err) {
       console.error(err);
@@ -505,12 +519,12 @@ export const GallerySection: React.FC = () => {
           <div className="w-16 h-0.5 bg-gold-gradient mx-auto mt-3 rounded-full" />
         </motion.div>
 
-        {/* Action Button: Upload Memory Photo with Nhã */}
+        {/* Action Buttons: Upload Memory Photo & Sync */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="flex justify-center mb-8"
+          className="flex items-center justify-center gap-3 mb-8"
         >
           <button
             onClick={() => {
@@ -521,6 +535,16 @@ export const GallerySection: React.FC = () => {
           >
             <Camera className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-12 group-hover:scale-110" />
             <span className="text-center">{t.gallery.uploadBtn}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => syncPhotos(true)}
+            disabled={isSyncing}
+            title="Đồng bộ lại kho ảnh"
+            className="p-3 sm:p-3.5 rounded-full bg-white/80 hover:bg-gold/20 text-emerald-deep border border-gold/40 shadow-xs hover:border-gold transition-all cursor-pointer active:scale-95 touch-manipulation disabled:opacity-50 flex items-center justify-center"
+          >
+            <RotateCw className={`w-4 h-4 sm:w-4.5 sm:h-4.5 text-gold-dark ${isSyncing ? "animate-spin" : ""}`} />
           </button>
         </motion.div>
 
@@ -547,8 +571,20 @@ export const GallerySection: React.FC = () => {
           </div>
         )}
 
-        {/* Gallery Grid or Empty State */}
-        {filteredItems.length === 0 ? (
+        {/* Gallery Grid, Skeleton Loading or Empty State */}
+        {isLoadingPhotos && items.length === 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <div
+                key={n}
+                className="aspect-[4/5] rounded-2xl bg-emerald-deep/10 border border-gold/25 animate-pulse relative overflow-hidden flex flex-col justify-end p-3.5"
+              >
+                <div className="w-16 h-3 bg-gold/25 rounded-full mb-2" />
+                <div className="w-28 h-4 bg-gold/35 rounded-full" />
+              </div>
+            ))}
+          </div>
+        ) : filteredItems.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
