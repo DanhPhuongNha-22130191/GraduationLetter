@@ -105,13 +105,26 @@ export const GallerySection: React.FC = () => {
 
   // Load saved contributed photos from localStorage & fetch all community photos from Google Sheets
   useEffect(() => {
-    // 1. Khôi phục ảnh đã up từ máy này
+    // 1. Khôi phục & TỰ ĐỘNG DỌN DẸP BỘ NHỚ ĐỆM (xóa các chủ đề link rác / ảnh lỗi cũ trên máy khách)
     try {
       const saved = localStorage.getItem("graduation_user_photos");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          setUserPhotos(parsed);
+          const cleaned = parsed
+            .map((p: GalleryItem) => {
+              if (!p || !p.src) return null;
+              let cat = (p.category || "Kỷ Niệm").trim();
+              // Nếu chủ đề trước đây bị nhập nhầm thành link URL -> tự động sửa lại thành "Kỷ Niệm"
+              if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
+                cat = "Kỷ Niệm";
+              }
+              return { ...p, category: cat };
+            })
+            .filter((p): p is GalleryItem => p !== null);
+
+          localStorage.setItem("graduation_user_photos", JSON.stringify(cleaned));
+          setUserPhotos(cleaned);
         }
       }
     } catch {
@@ -121,7 +134,18 @@ export const GallerySection: React.FC = () => {
     // 2. Nạp toàn bộ ảnh từ Google Sheet / Cloud do mọi người đã up (tự động đồng bộ và xóa ảnh không còn trên sheet)
     fetchPhotosFromSheet().then((remotePhotos) => {
       if (Array.isArray(remotePhotos)) {
-        setCloudPhotos(remotePhotos);
+        const cleanedRemote = remotePhotos
+          .map((p) => {
+            if (!p || !p.src) return null;
+            let cat = (p.category || "Kỷ Niệm").trim();
+            if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
+              cat = "Kỷ Niệm";
+            }
+            return { ...p, category: cat };
+          })
+          .filter((p): p is GalleryItem => p !== null);
+
+        setCloudPhotos(cleanedRemote);
       }
     }).catch(() => {
       // ignore
@@ -140,10 +164,24 @@ export const GallerySection: React.FC = () => {
   const allPhotos = [...userPhotos, ...cloudPhotos, ...defaultItems];
   // Khử trùng lặp ảnh theo đường dẫn src & loại bỏ các ảnh không hợp lệ hoặc đã bị xóa
   const items = Array.from(new Map(allPhotos.map((p) => [p.src, p])).values())
-    .filter((p) => Boolean(p.src && p.src.trim() && !failedPhotoUrls.has(p.src)));
+    .filter((p) => Boolean(p.src && p.src.trim() && !failedPhotoUrls.has(p.src)))
+    .map((p) => {
+      let cat = (p.category || "Kỷ Niệm").trim();
+      if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
+        cat = "Kỷ Niệm";
+      }
+      return { ...p, category: cat };
+    });
 
-  // Tự động tính toán lại danh sách chủ đề DUY NHẤT từ các ảnh ĐANG CÒN TỒN TẠI
-  const categories = ["all", ...Array.from(new Set(items.map((item) => item.category)))];
+  // Tự động tính toán lại danh sách chủ đề DUY NHẤT (Chỉ chấp nhận chữ thuần túy, tuyệt đối không cho URL xuất hiện thành nút)
+  const cleanCategories = Array.from(
+    new Set(
+      items
+        .map((item) => item.category?.trim())
+        .filter((cat) => Boolean(cat && !cat.startsWith("http://") && !cat.startsWith("https://") && !cat.includes("://") && cat.length <= 35))
+    )
+  );
+  const categories = ["all", ...cleanCategories];
 
   // Tự động chuyển về tab "Tất cả" nếu chủ đề đang chọn không còn bức ảnh nào
   useEffect(() => {
@@ -438,8 +476,8 @@ export const GallerySection: React.FC = () => {
           </button>
         </motion.div>
 
-        {/* Filter Category Tabs (Only when there are categories) */}
-        {categories.length > 2 && (
+        {/* Filter Category Tabs (Chỉ hiển thị khi có ảnh và có từ 2 chủ đề trở lên) */}
+        {items.length > 0 && categories.length > 2 && (
           <div className="flex flex-wrap items-center justify-center gap-2 mb-8 sm:mb-10">
             {categories.map((cat) => {
               const label = cat === "all" ? t.gallery.allTab : cat;
