@@ -24,7 +24,7 @@ const AnimatedBackground: React.FC = () => (
       style={{
         width: 480, height: 320,
         top: "-10%", left: "-15%",
-        background: "radial-gradient(ellipse, rgba(31,90,70,0.22) 0%, transparent 70%)",
+        background: "radial-gradient(ellipse, rgba(30,58,138,0.35) 0%, transparent 70%)",
         filter: "blur(40px)",
       }}
       animate={{ x: [0, 30, 0], y: [0, 20, 0], opacity: [0.6, 1, 0.6] }}
@@ -35,7 +35,7 @@ const AnimatedBackground: React.FC = () => (
       style={{
         width: 400, height: 280,
         bottom: "-8%", right: "-12%",
-        background: "radial-gradient(ellipse, rgba(201,169,110,0.12) 0%, transparent 70%)",
+        background: "radial-gradient(ellipse, rgba(201,169,110,0.22) 0%, transparent 70%)",
         filter: "blur(50px)",
       }}
       animate={{ x: [0, -25, 0], y: [0, -18, 0], opacity: [0.5, 0.9, 0.5] }}
@@ -46,7 +46,7 @@ const AnimatedBackground: React.FC = () => (
       style={{
         width: 300, height: 300,
         top: "30%", left: "40%",
-        background: "radial-gradient(ellipse, rgba(15,50,38,0.18) 0%, transparent 70%)",
+        background: "radial-gradient(ellipse, rgba(15,23,42,0.5) 0%, transparent 70%)",
         filter: "blur(60px)",
       }}
       animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.7, 0.4] }}
@@ -117,7 +117,11 @@ const AnimatedBackground: React.FC = () => (
   </div>
 );
 
-export const EnvelopeOverlay: React.FC = () => {
+interface EnvelopeOverlayProps {
+  onOpen?: () => void;
+}
+
+export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({ onOpen }) => {
   const { t, lang } = useLanguage();
   const { guestName, hasCustomGuest, pronounMode, getGreetingPrefix } = useGuest();
   const [isOpening, setIsOpening] = useState(false);
@@ -139,6 +143,7 @@ export const EnvelopeOverlay: React.FC = () => {
 
     setTimeout(() => {
       setIsOpen(true);
+      onOpen?.();
       const el = document.getElementById("invitation");
       if (el) {
         el.scrollIntoView({ behavior: "smooth" });

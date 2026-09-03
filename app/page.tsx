@@ -19,15 +19,17 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { EnvelopeOverlay } from "@/components/envelope-overlay";
 
 export default function Home() {
+  const [isEnvelopeOpen, setIsEnvelopeOpen] = React.useState(false);
+
   return (
     <LanguageProvider>
       <GuestProvider>
         <main className="relative min-h-screen w-full overflow-hidden bg-ivory">
-          {/* Background Ambient Gold Sparkle Particle System */}
-          <ParticleCanvas />
+          {/* Background Ambient Gold Sparkle Particle System — Graduation Caps only on Envelope screen */}
+          <ParticleCanvas showGradCaps={!isEnvelopeOpen} showButterflies={!isEnvelopeOpen} />
 
           {/* Envelope Opening Screen Modal */}
-          <EnvelopeOverlay />
+          <EnvelopeOverlay onOpen={() => setIsEnvelopeOpen(true)} />
 
           {/* Floating Controls */}
           <LanguageToggle />
