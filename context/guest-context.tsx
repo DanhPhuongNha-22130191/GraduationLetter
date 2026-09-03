@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
-import { findGuestBySlug, GuestProfile } from "@/config/guests";
+import { findGuestBySlug, fetchGuestsFromSheet, GuestProfile } from "@/config/guests";
 import { graduationConfig } from "@/config/graduation";
 import { Language, translations } from "@/config/i18n";
 
@@ -155,23 +155,14 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const params = new URLSearchParams(window.location.search);
         let hasParams = false;
 
-        // 1. Kiểm tra mã Slug / Mã khách mời ngắn: ?u=giabao hoặc ?id=thayhoang
-        const slugParam = params.get("u") || params.get("id") || params.get("user") || params.get("slug");
+        // 1. CÁCH 1: Lấy từ Google Sheet qua Slug (?u=giabao hoặc ?slug=giabao hoặc ?id=giabao)
+        const slugParam = params.get("u") || params.get("slug") || params.get("id");
         
-        // 2. Kiểm tra các tham số danh xưng trực tiếp:
-        const juniorParam = params.get("anh") || params.get("t4o") || params.get("toooo") || params.get("junior");
-        const seniorParam = params.get("em") || params.get("t3o") || params.get("tooo") || params.get("senior");
-        const elderParam = params.get("con") || params.get("too") || params.get("kinh") || params.get("elder");
-        const friendParamExplicit = params.get("ban") || params.get("friend");
-        const generalParam =
-          params.get("to") ||
-          params.get("gui") ||
-          params.get("ten") ||
-          params.get("guest") ||
-          params.get("name") ||
-          params.get("recipient") ||
-          params.get("khach") ||
-          params.get("n");
+        // 2. CÁCH 2: Truyền theo 4 tiền tố danh xưng trực tiếp
+        const conParam = params.get("con"); // Bậc tiền bối, Thầy Cô, Người lớn -> xưng con (Kính mời)
+        const emParam = params.get("em");   // Anh / Chị -> xưng em (Thân ái mời)
+        const anhParam = params.get("anh"); // Em / Bé -> xưng anh (Mời)
+        const banParam = params.get("ban"); // Bạn bè thân thiết -> xưng Nhã (Thân mời)
 
         let detectedMode: GuestPronounMode = "friend";
         let rawName = "";
@@ -188,35 +179,22 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             rawName = slugParam;
             detectedMode = autoDetectModeFromName(slugParam);
           }
-        } else if (juniorParam) {
-          hasParams = true;
-          detectedMode = "junior";
-          rawName = juniorParam;
-        } else if (seniorParam) {
-          hasParams = true;
-          detectedMode = "senior";
-          rawName = seniorParam;
-        } else if (elderParam) {
+        } else if (conParam) {
           hasParams = true;
           detectedMode = "elder";
-          rawName = elderParam;
-        } else if (friendParamExplicit) {
+          rawName = conParam;
+        } else if (emParam) {
+          hasParams = true;
+          detectedMode = "senior";
+          rawName = emParam;
+        } else if (anhParam) {
+          hasParams = true;
+          detectedMode = "junior";
+          rawName = anhParam;
+        } else if (banParam) {
           hasParams = true;
           detectedMode = "friend";
-          rawName = friendParamExplicit;
-        } else if (generalParam) {
-          hasParams = true;
-          // Kiểm tra xem generalParam có phải là 1 slug trong registry không (VD: ?to=giabao)
-          const profile = findGuestBySlug(generalParam);
-          if (profile) {
-            rawName = profile.name;
-            detectedMode = profile.mode;
-            foundCustomMsg = profile.customMessage;
-          } else {
-            rawName = generalParam;
-            const decoded = decodeURIComponent(rawName.replace(/\+/g, " ")).trim();
-            detectedMode = autoDetectModeFromName(decoded);
-          }
+          rawName = banParam;
         }
 
         if (rawName && rawName.trim()) {
@@ -248,6 +226,31 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setCustomMessageState(savedMsg);
           }
         }
+
+        // TỰ ĐỘNG CẬP NHẬT TỪ GOOGLE SHEET (Nạp ngầm danh sách mới nhất)
+        const targetSlug = slugParam;
+        fetchGuestsFromSheet().then((dynamicRegistry) => {
+          if (targetSlug) {
+            const dynamicProfile = findGuestBySlug(targetSlug, dynamicRegistry);
+            if (dynamicProfile) {
+              setGuestNameState(dynamicProfile.name);
+              setPronounModeState(dynamicProfile.mode);
+              setCustomMessageState(dynamicProfile.customMessage);
+
+              try {
+                sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
+                sessionStorage.setItem("invitation_guest_mode", dynamicProfile.mode);
+                if (dynamicProfile.customMessage) {
+                  sessionStorage.setItem("invitation_guest_msg", dynamicProfile.customMessage);
+                }
+              } catch {
+                // ignore
+              }
+            }
+          }
+        }).catch(() => {
+          // ignore
+        });
 
         // TỰ ĐỘNG XÓA SẠCH URL TRÊN THANH ĐỊA CHỈ (Clean URL & chống sửa tên)
         if (hasParams && window.history && window.history.replaceState) {
@@ -305,7 +308,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!clean) return origin;
 
     const finalMode = mode !== undefined ? mode : autoDetectModeFromName(clean);
-    let paramKey = "to";
+    let paramKey = "ban";
     if (finalMode === "elder") paramKey = "con";
     else if (finalMode === "senior") paramKey = "em";
     else if (finalMode === "junior") paramKey = "anh";
