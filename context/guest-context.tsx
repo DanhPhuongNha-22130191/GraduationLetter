@@ -10,9 +10,12 @@ export type GuestPronounMode = "friend" | "elder" | "senior" | "junior";
 interface GuestContextType {
   guestName: string;
   hasCustomGuest: boolean;
+  isRegisteredGuest: boolean;
+  canUpload: boolean;
   pronounMode: GuestPronounMode;
   customMessage?: string;
   customTime?: string;
+  customDate?: string;
   isFormal: boolean;
   isSenior: boolean;
   isJunior: boolean;
@@ -25,9 +28,12 @@ interface GuestContextType {
 const GuestContext = createContext<GuestContextType>({
   guestName: "",
   hasCustomGuest: false,
+  isRegisteredGuest: false,
+  canUpload: false,
   pronounMode: "friend",
   customMessage: undefined,
   customTime: undefined,
+  customDate: undefined,
   isFormal: false,
   isSenior: false,
   isJunior: false,
@@ -144,9 +150,12 @@ export function trackOpenInvitation(guestName?: string, mode?: string) {
 
 export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [guestName, setGuestNameState] = useState<string>("");
+  const [isRegisteredGuest, setIsRegisteredGuest] = useState<boolean>(false);
+  const [canUpload, setCanUploadState] = useState<boolean>(false);
   const [pronounMode, setPronounModeState] = useState<GuestPronounMode>("friend");
   const [customMessage, setCustomMessageState] = useState<string | undefined>(undefined);
   const [customTime, setCustomTimeState] = useState<string | undefined>(undefined);
+  const [customDate, setCustomDateState] = useState<string | undefined>(undefined);
   const isInitialized = useRef(false);
 
   useEffect(() => {
@@ -171,6 +180,9 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         let rawName = "";
         let foundCustomMsg: string | undefined = undefined;
         let foundCustomTime: string | undefined = undefined;
+        let foundCustomDate: string | undefined = undefined;
+        let isRegistered = false;
+        let isAllowedUpload = false;
 
         if (slugParam) {
           hasParams = true;
@@ -180,6 +192,9 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             detectedMode = profile.mode;
             foundCustomMsg = profile.customMessage;
             foundCustomTime = profile.customTime;
+            foundCustomDate = profile.customDate;
+            isRegistered = true;
+            isAllowedUpload = profile.canUpload !== false;
           } else {
             rawName = slugParam;
             detectedMode = autoDetectModeFromName(slugParam);
@@ -205,18 +220,26 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (rawName && rawName.trim()) {
           const decoded = decodeURIComponent(rawName.replace(/\+/g, " ")).trim();
           setGuestNameState(decoded);
+          setIsRegisteredGuest(isRegistered);
+          setCanUploadState(isAllowedUpload);
           setPronounModeState(detectedMode);
           setCustomMessageState(foundCustomMsg);
           setCustomTimeState(foundCustomTime);
+          setCustomDateState(foundCustomDate);
 
           try {
             sessionStorage.setItem("invitation_guest_name", decoded);
+            sessionStorage.setItem("invitation_guest_is_registered", isRegistered ? "true" : "false");
+            sessionStorage.setItem("invitation_guest_can_upload", isAllowedUpload ? "true" : "false");
             sessionStorage.setItem("invitation_guest_mode", detectedMode);
             if (foundCustomMsg) {
               sessionStorage.setItem("invitation_guest_msg", foundCustomMsg);
             }
             if (foundCustomTime) {
               sessionStorage.setItem("invitation_guest_time", foundCustomTime);
+            }
+            if (foundCustomDate) {
+              sessionStorage.setItem("invitation_guest_date", foundCustomDate);
             }
           } catch {
             // ignore
@@ -227,14 +250,20 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } else {
           // Khôi phục từ sessionStorage nếu reload
           const saved = sessionStorage.getItem("invitation_guest_name");
+          const savedIsRegistered = sessionStorage.getItem("invitation_guest_is_registered") === "true";
+          const savedCanUpload = sessionStorage.getItem("invitation_guest_can_upload") === "true";
           const savedMode = (sessionStorage.getItem("invitation_guest_mode") as GuestPronounMode) || "friend";
           const savedMsg = sessionStorage.getItem("invitation_guest_msg") || undefined;
           const savedTime = sessionStorage.getItem("invitation_guest_time") || undefined;
+          const savedDate = sessionStorage.getItem("invitation_guest_date") || undefined;
           if (saved) {
             setGuestNameState(saved);
+            setIsRegisteredGuest(savedIsRegistered);
+            setCanUploadState(savedCanUpload);
             setPronounModeState(savedMode);
             setCustomMessageState(savedMsg);
             setCustomTimeState(savedTime);
+            setCustomDateState(savedDate);
           }
         }
 
@@ -244,19 +273,28 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (targetSlug) {
             const dynamicProfile = findGuestBySlug(targetSlug, dynamicRegistry);
             if (dynamicProfile) {
+              const allowUpload = dynamicProfile.canUpload !== false;
               setGuestNameState(dynamicProfile.name);
+              setIsRegisteredGuest(true);
+              setCanUploadState(allowUpload);
               setPronounModeState(dynamicProfile.mode);
               setCustomMessageState(dynamicProfile.customMessage);
               setCustomTimeState(dynamicProfile.customTime);
+              setCustomDateState(dynamicProfile.customDate);
 
               try {
                 sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
+                sessionStorage.setItem("invitation_guest_is_registered", "true");
+                sessionStorage.setItem("invitation_guest_can_upload", allowUpload ? "true" : "false");
                 sessionStorage.setItem("invitation_guest_mode", dynamicProfile.mode);
                 if (dynamicProfile.customMessage) {
                   sessionStorage.setItem("invitation_guest_msg", dynamicProfile.customMessage);
                 }
                 if (dynamicProfile.customTime) {
                   sessionStorage.setItem("invitation_guest_time", dynamicProfile.customTime);
+                }
+                if (dynamicProfile.customDate) {
+                  sessionStorage.setItem("invitation_guest_date", dynamicProfile.customDate);
                 }
               } catch {
                 // ignore
@@ -289,9 +327,12 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         sessionStorage.setItem("invitation_guest_mode", finalMode);
       } else {
         sessionStorage.removeItem("invitation_guest_name");
+        sessionStorage.removeItem("invitation_guest_is_registered");
+        sessionStorage.removeItem("invitation_guest_can_upload");
         sessionStorage.removeItem("invitation_guest_mode");
         sessionStorage.removeItem("invitation_guest_msg");
         sessionStorage.removeItem("invitation_guest_time");
+        sessionStorage.removeItem("invitation_guest_date");
       }
     } catch {
       // ignore
@@ -338,9 +379,12 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value={{
         guestName,
         hasCustomGuest: Boolean(guestName.trim()),
+        isRegisteredGuest,
+        canUpload,
         pronounMode,
         customMessage,
         customTime,
+        customDate,
         isFormal: pronounMode === "elder",
         isSenior: pronounMode === "senior",
         isJunior: pronounMode === "junior",

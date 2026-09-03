@@ -47,6 +47,82 @@ export function formatLocalizedTime(timeStr?: string, lang: Language = "vi"): st
   return trimmed;
 }
 
+const KM_DIGITS = ["០", "១", "២", "៣", "៤", "៥", "៦", "៧", "៨", "៩"];
+const toKhmerNumber = (num: number | string): string =>
+  String(num).split("").map((c) => (c >= "0" && c <= "9" ? KM_DIGITS[Number(c)] : c)).join("");
+
+const DAYS_OF_WEEK = {
+  vi: ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"],
+  en: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+  km: ["ថ្ងៃអាទិត្យ", "ថ្ងៃច័ន្ទ", "ថ្ងៃអង្គារ", "ថ្ងៃពុធ", "ថ្ងៃព្រហស្បតិ៍", "ថ្ងៃសុក្រ", "ថ្ងៃសៅរ៍"],
+};
+
+const EN_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+const KM_MONTHS = [
+  "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+  "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
+];
+
+/**
+ * Tự động chuyển đổi ngày tháng năm linh hoạt đa ngôn ngữ (VI, EN, KM)
+ * Hỗ trợ các định dạng: 21/10/2026, 2026-10-21, 21-10-2026
+ */
+export function formatLocalizedDate(dateStr?: string, lang: Language = "vi"): string {
+  if (!dateStr) return "";
+  const trimmed = dateStr.trim();
+
+  let d = 0, m = 0, y = 0;
+
+  // Format DD/MM/YYYY or DD-MM-YYYY
+  const matchDMY = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  // Format YYYY-MM-DD
+  const matchYMD = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  // Format DD/MM
+  const matchDM = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+
+  if (matchDMY) {
+    d = parseInt(matchDMY[1], 10);
+    m = parseInt(matchDMY[2], 10);
+    y = parseInt(matchDMY[3], 10);
+  } else if (matchYMD) {
+    y = parseInt(matchYMD[1], 10);
+    m = parseInt(matchYMD[2], 10);
+    d = parseInt(matchYMD[3], 10);
+  } else if (matchDM) {
+    d = parseInt(matchDM[1], 10);
+    m = parseInt(matchDM[2], 10);
+    y = 2026;
+  }
+
+  if (d > 0 && m >= 1 && m <= 12 && y > 0) {
+    const dateObj = new Date(y, m - 1, d);
+    const dayOfWeekIdx = dateObj.getDay();
+
+    if (lang === "vi") {
+      const dayName = DAYS_OF_WEEK.vi[dayOfWeekIdx];
+      return `${dayName}, Ngày ${d} Tháng ${m} Năm ${y}`;
+    }
+
+    if (lang === "en") {
+      const dayName = DAYS_OF_WEEK.en[dayOfWeekIdx];
+      const monthName = EN_MONTHS[m - 1];
+      return `${dayName}, ${monthName} ${d}, ${y}`;
+    }
+
+    if (lang === "km") {
+      const dayName = DAYS_OF_WEEK.km[dayOfWeekIdx];
+      const monthName = KM_MONTHS[m - 1];
+      return `${dayName} ទី${toKhmerNumber(d)} ខែ${monthName} ឆ្នាំ${toKhmerNumber(y)}`;
+    }
+  }
+
+  return trimmed;
+}
+
 export interface TranslationSchema {
   nav: {
     home: string;
@@ -116,6 +192,21 @@ export interface TranslationSchema {
     eyebrow: string;
     title: string;
     allTab: string;
+    uploadBtn: string;
+    uploadModalTitle: string;
+    uploadModalDesc: string;
+    uploadNameLabel: string;
+    uploadCaptionLabel: string;
+    uploadCaptionPlaceholder: string;
+    uploadCategoryLabel: string;
+    uploadSelectFile: string;
+    uploadChangeFile: string;
+    uploadSubmitBtn: string;
+    uploadingBtn: string;
+    uploadSuccessTitle: string;
+    uploadSuccessDesc: string;
+    uploadRestrictedTitle: string;
+    uploadRestrictedDesc: string;
     items: Array<{
       id: string;
       title: string;
@@ -253,6 +344,21 @@ export const translations: Record<Language, TranslationSchema> = {
       eyebrow: "BỘ SƯU TẬP KỶ NIỆM",
       title: "KHOẢNH KHẮC ĐÁNG NHỚ",
       allTab: "Tất cả khoảnh khắc",
+      uploadBtn: "Hãy tải ảnh bạn và Nhã đã chụp chung lên để kho kỷ niệm thêm nhiều ảnh 📸",
+      uploadModalTitle: "Đóng Góp Ảnh Kỷ Niệm",
+      uploadModalDesc: "Gửi tặng những bức ảnh kỷ niệm tuyệt đẹp giữa bạn và Nhã để lưu giữ mãi khoảnh khắc đáng nhớ này.",
+      uploadNameLabel: "Tên của bạn",
+      uploadCaptionLabel: "Lời nhắn / Kỷ niệm gắn liền với bức ảnh",
+      uploadCaptionPlaceholder: "Kỷ niệm chuyến đi chơi, đồ án môn học, kỷ niệm sinh nhật...",
+      uploadCategoryLabel: "Chủ đề ảnh",
+      uploadSelectFile: "Bấm hoặc kéo thả ảnh vào đây để tải lên",
+      uploadChangeFile: "Đổi ảnh khác",
+      uploadSubmitBtn: "Tải Ảnh Lên Kho Kỷ Niệm",
+      uploadingBtn: "Đang tải ảnh lên Cloud...",
+      uploadSuccessTitle: "Tải Ảnh Thành Công! 🎉",
+      uploadSuccessDesc: "Cảm ơn bạn rất nhiều! Bức ảnh kỷ niệm của bạn đã được thêm vào bộ sưu tập của Nhã.",
+      uploadRestrictedTitle: "Dành Riêng Cho Khách Mời",
+      uploadRestrictedDesc: "Tính năng đóng góp ảnh kỷ niệm chỉ mở cho khách mời có tên trong danh sách của Nhã. Vui lòng mở thiệp bằng liên kết riêng mà Nhã đã gửi cho bạn nhé! 💌",
       items: [
         {
           id: "g1",
@@ -446,6 +552,21 @@ export const translations: Record<Language, TranslationSchema> = {
       eyebrow: "MEMORIES",
       title: "MEMORABLE MOMENTS",
       allTab: "All Moments",
+      uploadBtn: "Upload photos of you and Nhã to enrich our memory album 📸",
+      uploadModalTitle: "Contribute Memory Photos",
+      uploadModalDesc: "Share your cherished photos with Nhã to preserve these unforgettable moments forever.",
+      uploadNameLabel: "Your Name",
+      uploadCaptionLabel: "Caption / Memory story",
+      uploadCaptionPlaceholder: "Trip to the beach, year 3 project together...",
+      uploadCategoryLabel: "Photo Category",
+      uploadSelectFile: "Click or drag & drop a photo here to upload",
+      uploadChangeFile: "Change Photo",
+      uploadSubmitBtn: "Upload Photo to Album",
+      uploadingBtn: "Uploading to Cloud...",
+      uploadSuccessTitle: "Uploaded Successfully! 🎉",
+      uploadSuccessDesc: "Thank you so much! Your memory photo has been added to Nhã's collection.",
+      uploadRestrictedTitle: "Exclusive For Invited Guests",
+      uploadRestrictedDesc: "Photo contribution is reserved for guests on Nhã's guest list. Please access the invitation using the personal link sent to you! 💌",
       items: [
         {
           id: "g1",
@@ -639,6 +760,21 @@ export const translations: Record<Language, TranslationSchema> = {
       eyebrow: "កម្រងរូបភាព",
       title: "រូបភាពអនុស្សាវរីយ៍",
       allTab: "អនុស្សាវរីយ៍ទាំងអស់",
+      uploadBtn: "សូមបង្ហោះរូបថតអ្នកនិង Nhã ដើម្បីឱ្យអាល់ប៊ុមអនុស្សាវរីយ៍កាន់តែមានតម្លៃ 📸",
+      uploadModalTitle: "ចែករំលែករូបថតអនុស្សាវរីយ៍",
+      uploadModalDesc: "ផ្ញើរូបថតដ៏ស្រស់ស្អាតរវាងអ្នក និង Nhã ដើម្បីរក្សាពេលវេលាដែលមិនអាចបំភ្លេចបាននេះ។",
+      uploadNameLabel: "ឈ្មោះរបស់អ្នក",
+      uploadCaptionLabel: "ចំណងជើង / រឿងរ៉ាវអនុស្សាវរីយ៍",
+      uploadCaptionPlaceholder: "ដំណើរកម្សាន្ត, គម្រោងឆ្នាំទី៣...",
+      uploadCategoryLabel: "ប្រភេទរូបថត",
+      uploadSelectFile: "ចុច ឬទម្លាក់រូបថតនៅទីនេះដើម្បីបង្ហោះ",
+      uploadChangeFile: "ប្តូររូបថតផ្សេង",
+      uploadSubmitBtn: "បង្ហោះរូបថតទៅកាន់អាល់ប៊ុម",
+      uploadingBtn: "កំពុងបង្ហោះទៅ Cloud...",
+      uploadSuccessTitle: "បង្ហោះដោយជោគជ័យ! 🎉",
+      uploadSuccessDesc: "អរគុណច្រើន! រូបថតអនុស្សាវរីយ៍របស់អ្នកត្រូវបានបញ្ចូលទៅក្នុងអាល់ប៊ុមរបស់ Nhã។",
+      uploadRestrictedTitle: "ផ្តាច់មុខសម្រាប់ភ្ញៀវកិត្តិយស",
+      uploadRestrictedDesc: "ការចែករំលែករូបថតគឺសម្រាប់តែភ្ញៀវដែលមានឈ្មោះក្នុងបញ្ជីអញ្ជើញរបស់ Nhã ប៉ុណ្ណោះ។ សូមបើកលិខិតអញ្ជើញតាមរយៈតំណភ្ជាប់ផ្ទាល់ខ្លួនរបស់អ្នក! 💌",
       items: [
         {
           id: "g1",

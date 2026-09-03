@@ -1,25 +1,81 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ZoomIn, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import {
+  X,
+  ZoomIn,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Camera,
+  UploadCloud,
+  CheckCircle2,
+  Loader2,
+  Heart,
+  ImageIcon,
+} from "lucide-react";
 import { useLanguage } from "@/context/language-context";
-import { GalleryItem } from "@/config/graduation";
+import { useGuest } from "@/context/guest-context";
+import { graduationConfig, GalleryItem } from "@/config/graduation";
+import { Lock, ShieldCheck } from "lucide-react";
 
 export const GallerySection: React.FC = () => {
   const { t } = useLanguage();
+  const { guestName, isRegisteredGuest, canUpload } = useGuest();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  const items = t.gallery.items as GalleryItem[];
+  // User-uploaded photos state
+  const [userPhotos, setUserPhotos] = useState<GalleryItem[]>([]);
+
+  // Upload modal state
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploaderName, setUploaderName] = useState("");
+  const [caption, setCaption] = useState("");
+  const [selectedUploadCat, setSelectedUploadCat] = useState("Kỷ Niệm");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load saved contributed photos from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("graduation_user_photos");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setUserPhotos(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Pre-fill uploader name when guestName is detected
+  useEffect(() => {
+    if (guestName) {
+      setUploaderName(guestName);
+    }
+  }, [guestName]);
+
+  const defaultItems = (t.gallery.items || []) as GalleryItem[];
+  // Combine default photos with guest-contributed photos
+  const items = [...userPhotos, ...defaultItems];
 
   // Get unique categories
   const categories = ["all", ...Array.from(new Set(items.map((item) => item.category)))];
 
-  const filteredItems = selectedCategory === "all"
-    ? items
-    : items.filter((item) => item.category === selectedCategory);
+  const filteredItems =
+    selectedCategory === "all"
+      ? items
+      : items.filter((item) => item.category === selectedCategory);
 
   const handleOpenLightbox = (index: number) => {
     setSelectedIndex(index);
@@ -41,11 +97,133 @@ export const GallerySection: React.FC = () => {
     setSelectedIndex((prev) => (prev === filteredItems.length - 1 ? 0 : (prev ?? 0) + 1));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        setUploadError("Vui lòng chọn tệp hình ảnh hợp lệ (PNG, JPG, JPEG, WEBP)");
+        return;
+      }
+      setSelectedFile(file);
+      setUploadError(null);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleResetUploadForm = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setCaption("");
+    setIsUploading(false);
+    setUploadSuccess(false);
+    setUploadError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleUploadPhoto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isRegisteredGuest || !canUpload) {
+      setUploadError("Bạn không có quyền tải ảnh lên kho kỷ niệm.");
+      return;
+    }
+    if (!selectedFile) {
+      setUploadError("Vui lòng chọn 1 bức ảnh để tải lên");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      // 1. Tải trực tiếp lên Cloudinary Unsigned Upload
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("upload_preset", graduationConfig.cloudinaryUploadPreset);
+      formData.append("folder", "graduation_memories");
+
+      const cloudRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${graduationConfig.cloudinaryCloudName}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!cloudRes.ok) {
+        throw new Error("Tải ảnh lên Cloudinary không thành công");
+      }
+
+      const cloudData = await cloudRes.json();
+      const photoUrl = cloudData.secure_url || cloudData.url;
+
+      if (!photoUrl) {
+        throw new Error("Không nhận được đường dẫn ảnh từ Cloud");
+      }
+
+      // 2. Tạo đối tượng ảnh mới đưa ngay vào Gallery
+      const newPhoto: GalleryItem = {
+        id: `user-${Date.now()}`,
+        title: caption.trim()
+          ? `${caption.trim()} — (${guestName || uploaderName || "Khách mời"})`
+          : `Khoảnh khắc từ ${guestName || uploaderName || "Khách mời"}`,
+        category: selectedUploadCat || "Kỷ Niệm",
+        src: photoUrl,
+        alt: `Ảnh kỷ niệm đóng góp bởi ${guestName || uploaderName || "Khách mời"}`,
+      };
+
+      const updatedUserPhotos = [newPhoto, ...userPhotos];
+      setUserPhotos(updatedUserPhotos);
+
+      try {
+        localStorage.setItem("graduation_user_photos", JSON.stringify(updatedUserPhotos));
+      } catch {
+        // ignore
+      }
+
+      // 3. Ghi log lên Google Sheet ngầm
+      try {
+        if (graduationConfig.googleScriptUrl) {
+          fetch(graduationConfig.googleScriptUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              type: "PHOTO_UPLOAD",
+              action: "PHOTO_UPLOAD",
+              sheet: "AnhKyNiem",
+              name: guestName || uploaderName || "Khách mời",
+              caption: caption.trim() || "Ảnh kỷ niệm cùng Nhã",
+              category: selectedUploadCat,
+              photoUrl: photoUrl,
+              timestamp: new Date().toLocaleString("vi-VN"),
+            }),
+          }).catch(() => {});
+        }
+      } catch {
+        // ignore
+      }
+
+      setUploadSuccess(true);
+      setTimeout(() => {
+        setIsUploadOpen(false);
+        handleResetUploadForm();
+      }, 2500);
+    } catch (err) {
+      console.error(err);
+      setUploadError("Có lỗi xảy ra khi tải ảnh. Vui lòng thử lại!");
+      setIsUploading(false);
+    }
+  };
+
   const currentPhoto = selectedIndex !== null ? filteredItems[selectedIndex] : null;
 
   return (
     <section id="gallery" className="py-16 sm:py-24 px-4 bg-ivory text-emerald-deep relative overflow-hidden">
       <div className="w-full max-w-5xl mx-auto relative z-10">
+        {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -62,6 +240,25 @@ export const GallerySection: React.FC = () => {
             {t.gallery.title}
           </h2>
           <div className="w-16 h-0.5 bg-gold-gradient mx-auto mt-3 rounded-full" />
+        </motion.div>
+
+        {/* Action Button: Upload Memory Photo with Nhã */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="flex justify-center mb-8"
+        >
+          <button
+            onClick={() => {
+              handleResetUploadForm();
+              setIsUploadOpen(true);
+            }}
+            className="group relative px-6 py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-gold-dark via-gold to-gold-light text-emerald-deep font-sans font-bold text-xs sm:text-sm tracking-wide shadow-gold-glow hover:shadow-2xl hover:brightness-105 active:scale-98 transition-all flex items-center gap-2.5 cursor-pointer border border-gold/40 touch-manipulation"
+          >
+            <Camera className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-12 group-hover:scale-110" />
+            <span className="text-center">{t.gallery.uploadBtn}</span>
+          </button>
         </motion.div>
 
         {/* Filter Category Tabs */}
@@ -86,10 +283,7 @@ export const GallerySection: React.FC = () => {
         </div>
 
         {/* Gallery Grid */}
-        <motion.div
-          layout
-          className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6"
-        >
+        <motion.div layout className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
           <AnimatePresence>
             {filteredItems.map((photo, idx) => (
               <motion.div
@@ -98,7 +292,7 @@ export const GallerySection: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.4, delay: idx * 0.05 }}
+                transition={{ duration: 0.4, delay: idx * 0.04 }}
                 onClick={() => handleOpenLightbox(idx)}
                 className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer border border-gold/30 shadow-card-glow bg-emerald-deep/5 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl active:scale-95 touch-manipulation"
               >
@@ -111,7 +305,7 @@ export const GallerySection: React.FC = () => {
                   loading="lazy"
                 />
 
-                {/* Shimmer Gold Hover Line */}
+                {/* Shimmer Gold Hover Border */}
                 <div className="absolute inset-0 border-2 border-gold/0 group-hover:border-gold/60 rounded-2xl transition-colors pointer-events-none z-10" />
 
                 <div className="absolute inset-0 bg-gradient-to-t from-emerald-deep/90 via-emerald-deep/20 to-transparent opacity-85 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 text-ivory">
@@ -130,6 +324,229 @@ export const GallerySection: React.FC = () => {
           </AnimatePresence>
         </motion.div>
       </div>
+
+      {/* Upload Memory Photo Modal */}
+      <AnimatePresence>
+        {isUploadOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-emerald-deep text-ivory rounded-3xl p-6 sm:p-8 border-2 border-gold/50 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+            >
+              {/* Gold Ambient Glow */}
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-gold/15 rounded-full blur-3xl pointer-events-none" />
+
+              {/* Close Button */}
+              <button
+                onClick={() => setIsUploadOpen(false)}
+                className="absolute top-4 right-4 p-2 rounded-full text-gold/70 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {uploadSuccess ? (
+                /* Success Screen */
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-8 space-y-4"
+                >
+                  <div className="w-16 h-16 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center mx-auto text-gold shadow-gold-glow">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                  <h3 className="font-serif text-2xl font-bold text-gold-shimmer">
+                    {t.gallery.uploadSuccessTitle}
+                  </h3>
+                  <p className="font-sans text-sm text-ivory/80 max-w-xs mx-auto">
+                    {t.gallery.uploadSuccessDesc}
+                  </p>
+                </motion.div>
+              ) : !isRegisteredGuest || !canUpload ? (
+                /* Restricted Screen for guests without permission */
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-6 sm:py-8 space-y-4"
+                >
+                  <div className="w-16 h-16 rounded-full bg-gold/15 border-2 border-gold/60 flex items-center justify-center mx-auto text-gold shadow-gold-glow">
+                    <Lock className="w-7 h-7 stroke-[2]" />
+                  </div>
+                  <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gold/20 text-gold text-[10px] font-sans font-bold uppercase tracking-widest border border-gold/40">
+                    <span>QUYỀN TRUY CẬP KHÁCH MỜI</span>
+                  </div>
+                  <h3 className="font-serif text-2xl font-bold text-gold-shimmer">
+                    {t.gallery.uploadRestrictedTitle}
+                  </h3>
+                  <p className="font-sans text-xs sm:text-sm text-ivory/80 max-w-sm mx-auto leading-relaxed">
+                    {!isRegisteredGuest
+                      ? t.gallery.uploadRestrictedDesc
+                      : "Khách mời hiện chưa được cấp quyền đóng góp ảnh cho kho kỷ niệm. Vui lòng liên hệ Nhã để mở quyền nhé! 💌"}
+                  </p>
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsUploadOpen(false)}
+                      className="px-6 py-2.5 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all shadow-gold-glow cursor-pointer"
+                    >
+                      Đã hiểu
+                    </button>
+                  </div>
+                </motion.div>
+              ) : (
+                /* Upload Form */
+                <div>
+                  <div className="text-center mb-6">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/20 text-gold text-[11px] font-sans font-bold uppercase tracking-widest border border-gold/40 mb-2">
+                      <Heart className="w-3 h-3 text-gold fill-gold" />
+                      <span>{t.gallery.uploadModalTitle}</span>
+                    </div>
+                    <h3 className="font-serif text-2xl sm:text-3xl font-bold text-gold-shimmer">
+                      Chia Sẻ Khoảnh Khắc
+                    </h3>
+                    <p className="font-sans text-xs text-ivory/70 mt-1 max-w-sm mx-auto">
+                      {t.gallery.uploadModalDesc}
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleUploadPhoto} className="space-y-4">
+                    {/* Image Selector & Preview */}
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+
+                      {previewUrl ? (
+                        <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border-2 border-gold/50 shadow-inner group">
+                          <Image
+                            src={previewUrl}
+                            alt="Preview"
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="px-3 py-1.5 rounded-full bg-gold text-emerald-deep text-xs font-sans font-bold shadow-md hover:brightness-110 cursor-pointer"
+                            >
+                              {t.gallery.uploadChangeFile}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl border-2 border-dashed border-gold/40 hover:border-gold hover:bg-gold/5 bg-white/5 transition-all flex flex-col items-center justify-center p-4 text-center cursor-pointer group"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-gold/15 text-gold flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
+                            <UploadCloud className="w-6 h-6" />
+                          </div>
+                          <span className="font-sans text-xs font-semibold text-gold-light block">
+                            {t.gallery.uploadSelectFile}
+                          </span>
+                          <span className="font-sans text-[11px] text-ivory/50 mt-1">
+                            PNG, JPG, JPEG, WEBP (Tối đa 15MB)
+                          </span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Uploader Name */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold">
+                          {t.gallery.uploadNameLabel}:
+                        </label>
+                        <span className="inline-flex items-center gap-1 text-[10px] text-gold font-sans font-semibold">
+                          <ShieldCheck className="w-3 h-3 text-gold" /> Khách mời đã xác thực
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={guestName || uploaderName}
+                        readOnly
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-gold/15 border border-gold/60 text-gold-light font-sans text-xs font-bold focus:outline-hidden cursor-not-allowed"
+                        required
+                      />
+                    </div>
+
+                    {/* Category Selection */}
+                    <div>
+                      <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold mb-1">
+                        {t.gallery.uploadCategoryLabel}:
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {["Kỷ Niệm", "Tình Bạn", "Kỷ Ức", "Chân Dung", "Vinh Danh"].map(
+                          (cat) => (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => setSelectedUploadCat(cat)}
+                              className={`text-[11px] px-3 py-1 rounded-full font-sans font-semibold transition-colors cursor-pointer border ${
+                                selectedUploadCat === cat
+                                  ? "bg-gold text-emerald-deep border-gold"
+                                  : "bg-white/5 text-ivory/70 border-white/20 hover:border-gold/50"
+                              }`}
+                            >
+                              {cat}
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Caption / Story */}
+                    <div>
+                      <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold mb-1">
+                        {t.gallery.uploadCaptionLabel}:
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={caption}
+                        onChange={(e) => setCaption(e.target.value)}
+                        placeholder={t.gallery.uploadCaptionPlaceholder}
+                        className="w-full px-3.5 py-2 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all resize-none"
+                      />
+                    </div>
+
+                    {uploadError && (
+                      <p className="text-red-400 text-xs font-sans bg-red-950/40 p-2.5 rounded-xl border border-red-500/40">
+                        {uploadError}
+                      </p>
+                    )}
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={isUploading || !selectedFile}
+                      className="w-full py-3 rounded-xl bg-gold-gradient text-emerald-deep font-sans font-bold text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 hover:brightness-110 active:scale-98 transition-all cursor-pointer shadow-gold-glow disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>{t.gallery.uploadingBtn}</span>
+                        </>
+                      ) : (
+                        <>
+                          <UploadCloud className="w-4 h-4" />
+                          <span>{t.gallery.uploadSubmitBtn}</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Lightbox Slider Modal */}
       <AnimatePresence>

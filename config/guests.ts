@@ -7,6 +7,8 @@ export interface GuestProfile {
   mode: GuestPronounMode;
   customMessage?: string;
   customTime?: string;
+  customDate?: string;
+  canUpload?: boolean;
   specialPhoto?: string;
 }
 
@@ -134,6 +136,41 @@ export async function fetchGuestsFromSheet(): Promise<Record<string, GuestProfil
                 item.gio ||
                 item.Gio ||
                 undefined) as string | undefined;
+              const customDate = (item.customDate ||
+                item.CustomDate ||
+                item.ngay ||
+                item.Ngay ||
+                item.ngayMoi ||
+                item.NgayMoi ||
+                item.date ||
+                item.Date ||
+                undefined) as string | undefined;
+
+              const rawCanUpload =
+                item.canUpload !== undefined
+                  ? item.canUpload
+                  : item.CanUpload !== undefined
+                  ? item.CanUpload
+                  : item.quyenUpAnh !== undefined
+                  ? item.quyenUpAnh
+                  : item.QuyenUpAnh !== undefined
+                  ? item.QuyenUpAnh
+                  : item.allowUpload !== undefined
+                  ? item.allowUpload
+                  : item.upAnh !== undefined
+                  ? item.upAnh
+                  : item.upload;
+
+              let canUpload = true;
+              if (rawCanUpload !== undefined && rawCanUpload !== null && String(rawCanUpload).trim() !== "") {
+                const s = String(rawCanUpload).trim().toLowerCase();
+                if (s === "false" || s === "0" || s === "khong" || s === "không" || s === "no" || s === "cấm" || s === "cam" || s === "tat" || s === "tắt") {
+                  canUpload = false;
+                } else {
+                  canUpload = true;
+                }
+              }
+
               const specialPhoto = (item.specialPhoto ||
                 item.SpecialPhoto ||
                 item.photo ||
@@ -145,6 +182,8 @@ export async function fetchGuestsFromSheet(): Promise<Record<string, GuestProfil
                 mode,
                 customMessage: customMessage ? String(customMessage).trim() : undefined,
                 customTime: customTime ? String(customTime).trim() : undefined,
+                customDate: customDate ? String(customDate).trim() : undefined,
+                canUpload,
                 specialPhoto: specialPhoto ? String(specialPhoto).trim() : undefined,
               };
             }

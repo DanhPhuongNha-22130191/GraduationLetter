@@ -36,6 +36,10 @@ export const graduationConfig = {
   // Endpoint Google Sheets gửi dữ liệu RSVP, Lượt xem & Danh sách khách mời
   googleScriptUrl: "https://script.google.com/macros/s/AKfycbznAA6w_5KWjYSYuTmTaM9q6LkPzau6B6xQiniq_EjJQizok6jJ0dTd0ezJfPdSNXUxzQ/exec",
 
+  // Cấu hình Cloudinary tải ảnh kỷ niệm trực tiếp từ khách
+  cloudinaryCloudName: "ddrqfuaji",
+  cloudinaryUploadPreset: "graduation_guest",
+
   // Thông tin ngày lễ
   date: "Thứ Tư, Ngày 21 Tháng 10 Năm 2026",
   time: "08:00 - 11:30 AM",

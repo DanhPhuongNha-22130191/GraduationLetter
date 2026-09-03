@@ -6,11 +6,11 @@ import { User, BookOpen, Calendar as CalendarIcon, Clock, MapPin, Copy, Check } 
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
-import { formatLocalizedTime } from "@/config/i18n";
+import { formatLocalizedTime, formatLocalizedDate } from "@/config/i18n";
 
 export const GraduationInfoSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { customTime } = useGuest();
+  const { customTime, customDate } = useGuest();
   const [copied, setCopied] = useState(false);
 
   const handleCopyAddress = () => {
@@ -35,7 +35,8 @@ export const GraduationInfoSection: React.FC = () => {
     {
       icon: CalendarIcon,
       label: t.details.date,
-      value: t.details.dateVal,
+      value: customDate ? formatLocalizedDate(customDate, lang) : t.details.dateVal,
+      highlight: Boolean(customDate),
     },
     {
       icon: Clock,
