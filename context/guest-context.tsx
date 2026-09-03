@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { findGuestBySlug, GuestProfile } from "@/config/guests";
 import { graduationConfig } from "@/config/graduation";
+import { Language, translations } from "@/config/i18n";
 
 export type GuestPronounMode = "friend" | "elder" | "senior" | "junior";
 
@@ -15,7 +16,7 @@ interface GuestContextType {
   isSenior: boolean;
   isJunior: boolean;
   setGuestName: (name: string, mode?: GuestPronounMode) => void;
-  getGreetingPrefix: () => string;
+  getGreetingPrefix: (lang?: Language) => string;
   getSelfPronoun: () => string;
   generateGuestUrl: (name: string, mode?: GuestPronounMode) => string;
 }
@@ -29,7 +30,7 @@ const GuestContext = createContext<GuestContextType>({
   isSenior: false,
   isJunior: false,
   setGuestName: () => {},
-  getGreetingPrefix: () => "Thân mời",
+  getGreetingPrefix: (_lang?: Language) => "Thân mời",
   getSelfPronoun: () => "Nhã",
   generateGuestUrl: () => "",
 });
@@ -278,18 +279,9 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const getGreetingPrefix = (): string => {
-    switch (pronounMode) {
-      case "junior":
-        return "Mời";
-      case "elder":
-        return "Kính mời";
-      case "senior":
-        return "Thân ái mời";
-      case "friend":
-      default:
-        return "Thân mời";
-    }
+  const getGreetingPrefix = (lang: Language = "vi"): string => {
+    const langDict = translations[lang] || translations.vi;
+    return langDict.greetings?.[pronounMode] || translations.vi.greetings[pronounMode] || "Thân mời";
   };
 
   const getSelfPronoun = (): string => {

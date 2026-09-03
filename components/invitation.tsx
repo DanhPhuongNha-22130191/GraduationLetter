@@ -74,7 +74,7 @@ export const InvitationSection: React.FC = () => {
               <div className="absolute top-1 left-2 text-gold/40 font-serif text-2xl select-none pointer-events-none">❧</div>
               <div className="absolute top-1 right-2 text-gold/40 font-serif text-2xl select-none pointer-events-none">☙</div>
               <span className="block text-[11px] sm:text-xs font-sans uppercase tracking-[0.25em] text-gold-dark font-bold mb-1">
-                ✦ {getGreetingPrefix().toUpperCase()} ✦
+                ✦ {getGreetingPrefix(lang).toUpperCase()} ✦
               </span>
               <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-emerald-deep italic drop-shadow-xs">
                 {guestName}
@@ -140,21 +140,57 @@ export const InvitationSection: React.FC = () => {
                     </>
                   )
                 ) : lang === "en" ? (
-                  <>
-                    With immense joy and gratitude, Nha warmly invites{" "}
-                    <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
-                      {guestName}
-                    </strong>{" "}
-                    to join and celebrate this momentous milestone together.
-                  </>
+                  pronounMode === "elder" ? (
+                    <>
+                      With profound joy and heartfelt respect, Nha respectfully invites{" "}
+                      <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                        {guestName}
+                      </strong>{" "}
+                      to join and celebrate this momentous milestone together.
+                    </>
+                  ) : pronounMode === "senior" ? (
+                    <>
+                      With great joy and warm regards, Nha cordially invites{" "}
+                      <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                        {guestName}
+                      </strong>{" "}
+                      to join and celebrate this momentous milestone together.
+                    </>
+                  ) : (
+                    <>
+                      With immense joy and gratitude, Nha warmly invites{" "}
+                      <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                        {guestName}
+                      </strong>{" "}
+                      to join and celebrate this momentous milestone together.
+                    </>
+                  )
                 ) : (
-                  <>
-                    ដោយក្តីរីករាយ និងការដឹងគុណ ខ្ញុំបាទសូមគោរពអញ្ជើញ{" "}
-                    <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
-                      {guestName}
-                    </strong>{" "}
-                    មកចូលរួមអបអរសាទរក្នុងថ្ងៃដ៏ពិសេសនេះ។
-                  </>
+                  pronounMode === "elder" ? (
+                    <>
+                      ដោយក្តីរីករាយ និងការដឹងគុណយ៉ាងជ្រាលជ្រៅ ខ្ញុំបាទសូមគោរពអញ្ជើញ{" "}
+                      <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                        {guestName}
+                      </strong>{" "}
+                      មកចូលរួមអបអរសាទរក្នុងថ្ងៃដ៏ពិសេសនេះ។
+                    </>
+                  ) : pronounMode === "senior" ? (
+                    <>
+                      ដោយក្តីរីករាយ និងការដឹងគុណ ខ្ញុំបាទសូមអញ្ជើញដោយរាប់អាន{" "}
+                      <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                        {guestName}
+                      </strong>{" "}
+                      មកចូលរួមអបអរសាទរក្នុងថ្ងៃដ៏ពិសេសនេះ។
+                    </>
+                  ) : (
+                    <>
+                      ដោយក្តីរីករាយ និងការដឹងគុណ ខ្ញុំបាទសូមគោរពអញ្ជើញ{" "}
+                      <strong className="text-gold-dark font-bold not-italic underline decoration-gold/60 underline-offset-4">
+                        {guestName}
+                      </strong>{" "}
+                      មកចូលរួមអបអរសាទរក្នុងថ្ងៃដ៏ពិសេសនេះ។
+                    </>
+                  )
                 )
               ) : (
                 t.invitation.para2

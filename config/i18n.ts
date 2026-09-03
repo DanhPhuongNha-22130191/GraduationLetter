@@ -59,9 +59,16 @@ export interface TranslationSchema {
       iconName: string;
     }>;
   };
+  greetings: {
+    elder: string;
+    senior: string;
+    junior: string;
+    friend: string;
+  };
   gallery: {
     eyebrow: string;
     title: string;
+    allTab: string;
     items: Array<{
       id: string;
       title: string;
@@ -189,9 +196,16 @@ export const translations: Record<Language, TranslationSchema> = {
         },
       ],
     },
+    greetings: {
+      elder: "Kính mời",
+      senior: "Thân ái mời",
+      junior: "Mời",
+      friend: "Thân mời",
+    },
     gallery: {
       eyebrow: "BỘ SƯU TẬP KỶ NIỆM",
       title: "KHOẢNH KHẮC ĐÁNG NHỚ",
+      allTab: "Tất cả khoảnh khắc",
       items: [
         {
           id: "g1",
@@ -244,7 +258,7 @@ export const translations: Record<Language, TranslationSchema> = {
         },
         {
           id: "g8",
-          title: "Khoảnh Khắc Đáng NhỚ",
+          title: "Khoảnh Khắc Đáng Nhớ",
           category: "Chân Dung",
           src: "/images/graduation/photo8.jpg",
           alt: "Chân dung tân kỹ sư IT",
@@ -375,9 +389,16 @@ export const translations: Record<Language, TranslationSchema> = {
         },
       ],
     },
+    greetings: {
+      elder: "Respectfully Invited",
+      senior: "Cordially Invited",
+      junior: "Invited",
+      friend: "Warmly Invited",
+    },
     gallery: {
       eyebrow: "MEMORIES",
       title: "MEMORABLE MOMENTS",
+      allTab: "All Moments",
       items: [
         {
           id: "g1",
@@ -561,9 +582,16 @@ export const translations: Record<Language, TranslationSchema> = {
         },
       ],
     },
+    greetings: {
+      elder: "សូមគោរពអញ្ជើញ",
+      senior: "សូមអញ្ជើញដោយរាប់អាន",
+      junior: "សូមអញ្ជើញ",
+      friend: "សូមអញ្ជើញ",
+    },
     gallery: {
       eyebrow: "កម្រងរូបភាព",
       title: "រូបភាពអនុស្សាវរីយ៍",
+      allTab: "អនុស្សាវរីយ៍ទាំងអស់",
       items: [
         {
           id: "g1",

@@ -118,7 +118,7 @@ const AnimatedBackground: React.FC = () => (
 );
 
 export const EnvelopeOverlay: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { guestName, hasCustomGuest, pronounMode, getGreetingPrefix } = useGuest();
   const [isOpening, setIsOpening] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -229,7 +229,7 @@ export const EnvelopeOverlay: React.FC = () => {
               {hasCustomGuest ? (
                 <div className="w-full my-2.5 py-2.5 px-3 rounded-2xl bg-gold/15 border border-gold/45 text-center shadow-inner">
                   <span className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold font-bold mb-0.5">
-                    ✦ {getGreetingPrefix().toUpperCase()} ✦
+                    ✦ {getGreetingPrefix(lang).toUpperCase()} ✦
                   </span>
                   <span className="font-serif italic text-base sm:text-lg font-bold text-ivory drop-shadow-xs line-clamp-2">
                     {guestName}
@@ -238,7 +238,7 @@ export const EnvelopeOverlay: React.FC = () => {
               ) : (
                 <div className="my-2 px-4 py-1.5 rounded-full bg-gold/15 border border-gold/30 text-center">
                   <span className="text-xs font-sans uppercase tracking-[0.25em] text-gold font-semibold">
-                    ✦ THÂN MỜI ✦
+                    ✦ {t.invitation.guestEyebrow.toUpperCase()} ✦
                   </span>
                 </div>
               )}

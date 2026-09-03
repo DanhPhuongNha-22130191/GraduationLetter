@@ -67,7 +67,7 @@ export const GallerySection: React.FC = () => {
         {/* Filter Category Tabs */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-8 sm:mb-10">
           {categories.map((cat) => {
-            const label = cat === "all" ? "Tất cả Khoảnh Khắc" : cat;
+            const label = cat === "all" ? t.gallery.allTab : cat;
             const isActive = selectedCategory === cat;
             return (
               <button

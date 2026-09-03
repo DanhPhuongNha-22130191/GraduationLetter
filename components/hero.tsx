@@ -11,7 +11,7 @@ import { playBackgroundMusic } from "@/components/music-toggle";
 import { RotatingBotanicalCrest, AnimatedFlourishDivider } from "@/components/animated-motifs";
 
 export const HeroSection: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { guestName, hasCustomGuest, getGreetingPrefix } = useGuest();
 
   const scrollToNext = () => {
@@ -138,7 +138,7 @@ export const HeroSection: React.FC = () => {
             className="w-full my-2.5 py-2 px-3 rounded-2xl bg-gold/15 border border-gold/40 shadow-xs"
           >
             <span className="block text-[10px] font-sans uppercase tracking-[0.2em] text-gold-dark font-bold mb-0.5">
-              ✦ {getGreetingPrefix().toUpperCase()} ✦
+              ✦ {getGreetingPrefix(lang).toUpperCase()} ✦
             </span>
             <span className="font-serif italic text-base sm:text-lg font-bold text-emerald-deep line-clamp-1">
               {guestName}
