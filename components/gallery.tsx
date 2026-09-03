@@ -383,30 +383,36 @@ export const GallerySection: React.FC = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.4, delay: idx * 0.04 }}
                   onClick={() => handleOpenLightbox(idx)}
-                  className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer border border-gold/30 shadow-card-glow bg-emerald-deep/5 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl active:scale-95 touch-manipulation"
+                  className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer border border-gold/30 shadow-card-glow bg-emerald-deep/10 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl active:scale-98 touch-manipulation transform-gpu"
                 >
+                  {/* Crystal Clear High-Resolution Image */}
                   <Image
                     src={photo.src}
                     alt={photo.alt}
                     fill
-                    sizes="(max-width: 768px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    loading="lazy"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    quality={95}
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading={idx < 4 ? "eager" : "lazy"}
+                    priority={idx < 2}
                   />
 
                   {/* Shimmer Gold Hover Border */}
                   <div className="absolute inset-0 border-2 border-gold/0 group-hover:border-gold/60 rounded-2xl transition-colors pointer-events-none z-10" />
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-deep/90 via-emerald-deep/20 to-transparent opacity-85 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 text-ivory">
-                    <span className="text-[10px] font-sans uppercase tracking-widest text-gold font-bold mb-0.5 line-clamp-1">
+                  {/* Bottom-Only Caption Gradient (Does NOT fog or darken the photo) */}
+                  <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-emerald-deep/95 via-emerald-deep/50 to-transparent flex flex-col justify-end p-3 sm:p-4 text-ivory pointer-events-none z-10">
+                    <span className="text-[10px] font-sans uppercase tracking-widest text-gold font-bold mb-0.5 line-clamp-1 drop-shadow-sm">
                       {photo.category}
                     </span>
-                    <p className="font-serif text-xs sm:text-sm font-semibold line-clamp-1">
+                    <p className="font-serif text-xs sm:text-sm font-semibold line-clamp-1 drop-shadow-sm">
                       {photo.title}
                     </p>
-                    <div className="absolute top-3 right-3 p-2 rounded-full bg-black/50 text-gold backdrop-blur-md opacity-80 sm:opacity-0 group-hover:opacity-100 transition-all border border-gold/30">
-                      <ZoomIn className="w-4 h-4" />
-                    </div>
+                  </div>
+
+                  {/* Zoom Indicator Icon */}
+                  <div className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-black/50 text-gold backdrop-blur-md opacity-80 sm:opacity-0 group-hover:opacity-100 transition-all border border-gold/30 z-20">
+                    <ZoomIn className="w-3.5 h-3.5" />
                   </div>
                 </motion.div>
               ))}

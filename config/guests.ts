@@ -402,6 +402,10 @@ export async function fetchPhotosFromSheet(): Promise<import("@/config/graduatio
             const rawUrl =
               item.photoUrl ||
               item.PhotoUrl ||
+              item["Link Ảnh Cloudinary"] ||
+              item["Link Ảnh"] ||
+              item["Link"] ||
+              item["Ảnh"] ||
               item.photo ||
               item.Photo ||
               item.src ||
@@ -418,14 +422,14 @@ export async function fetchPhotosFromSheet(): Promise<import("@/config/graduatio
               if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://") || cleanUrl.startsWith("/")) {
                 if (!seenUrls.has(cleanUrl)) {
                   seenUrls.add(cleanUrl);
-                  const name = String(item.name || item.Name || item.guestName || item.hoTen || "Khách mời").trim();
-                  const rawCaption = String(item.caption || item.Caption || item.title || item.Title || item.loiChuc || "").trim();
-                  const category = String(item.category || item.Category || item.chuDe || item.ChuDe || "Kỷ Niệm").trim();
+                  const name = String(item.name || item.Name || item["Người Gửi"] || item["Họ và Tên"] || item["Tên"] || item.guestName || item.hoTen || "Khách mời").trim();
+                  const rawCaption = String(item.caption || item.Caption || item["Lời Nhắn / Kỷ Niệm"] || item["Lời Nhắn"] || item["Kỷ Niệm"] || item.title || item.Title || item.loiChuc || "").trim();
+                  const category = String(item.category || item.Category || item["Chủ Đề"] || item["Chủ đề"] || item.chuDe || item.ChuDe || "Kỷ Niệm").trim();
                   const caption = rawCaption || `Khoảnh khắc từ ${name}`;
                   const title = caption.includes(name) ? caption : `${caption} — (${name})`;
 
                   photos.push({
-                    id: `cloud-${item.id || item.timestamp || idx}-${Date.now()}`,
+                    id: `cloud-${item.id || item.timestamp || item["Thời gian"] || idx}-${Date.now()}`,
                     title,
                     category: category || "Kỷ Niệm",
                     src: cleanUrl,
