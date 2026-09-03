@@ -80,56 +80,18 @@ export const GallerySection: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Helper tự động dọn dẹp các ảnh bị xóa trên Cloud (404/lỗi tải) khỏi bộ nhớ đệm
-  const handleImageError = (failedSrc: string) => {
-    if (!failedSrc) return;
-    setFailedPhotoUrls((prev) => {
-      const updated = new Set(prev);
-      updated.add(failedSrc);
-      return updated;
-    });
-
-    if (typeof window !== "undefined") {
-      try {
-        // Dọn dẹp graduation_user_photos
-        const saved = localStorage.getItem("graduation_user_photos");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            const cleaned = parsed.filter((p: GalleryItem) => p.src !== failedSrc);
-            localStorage.setItem("graduation_user_photos", JSON.stringify(cleaned));
-            setUserPhotos(cleaned);
-          }
-        }
-        // Dọn dẹp cached_cloud_photos
-        const cloudSaved = localStorage.getItem("cached_cloud_photos");
-        if (cloudSaved) {
-          const parsed = JSON.parse(cloudSaved);
-          if (Array.isArray(parsed)) {
-            const cleaned = parsed.filter((p: GalleryItem) => p.src !== failedSrc);
-            localStorage.setItem("cached_cloud_photos", JSON.stringify(cleaned));
-            setCloudPhotos(cleaned);
-          }
-        }
-      } catch {
-        // ignore
-      }
-    }
-  };
-
   // Load saved contributed photos from localStorage & fetch all community photos from Google Sheets
   useEffect(() => {
-    // 1. Khôi phục & TỰ ĐỘNG DỌN DẸP BỘ NHỚ ĐỆM (xóa các chủ đề link rác / ảnh lỗi cũ trên máy khách)
+    // 1. Khôi phục ngay tức thì các ảnh đã lưu từ máy này
     try {
       const saved = localStorage.getItem("graduation_user_photos");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           const cleaned = parsed
             .map((p: GalleryItem) => {
               if (!p || !p.src) return null;
               let cat = (p.category || "Kỷ Niệm").trim();
-              // Nếu chủ đề trước đây bị nhập nhầm thành link URL -> tự động sửa lại thành "Kỷ Niệm"
               if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
                 cat = "Kỷ Niệm";
               }
@@ -137,7 +99,6 @@ export const GallerySection: React.FC = () => {
             })
             .filter((p): p is GalleryItem => p !== null);
 
-          localStorage.setItem("graduation_user_photos", JSON.stringify(cleaned));
           setUserPhotos(cleaned);
         }
       }
@@ -145,9 +106,33 @@ export const GallerySection: React.FC = () => {
       // ignore
     }
 
-    // 2. Nạp toàn bộ ảnh từ Google Sheet / Cloud do mọi người đã up (tự động đồng bộ và xóa ảnh không còn trên sheet)
+    // 2. Khôi phục ngay tức thì ảnh Cloud từ bộ nhớ đệm (Hiển thị 0ms cho mọi lần mở lại thiệp)
+    try {
+      const cloudSaved = localStorage.getItem("cached_cloud_photos") || sessionStorage.getItem("cached_cloud_photos");
+      if (cloudSaved) {
+        const parsed = JSON.parse(cloudSaved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const cleaned = parsed
+            .map((p: GalleryItem) => {
+              if (!p || !p.src) return null;
+              let cat = (p.category || "Kỷ Niệm").trim();
+              if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
+                cat = "Kỷ Niệm";
+              }
+              return { ...p, category: cat };
+            })
+            .filter((p): p is GalleryItem => p !== null);
+
+          setCloudPhotos(cleaned);
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    // 3. Tự động đồng bộ ngầm dữ liệu mới nhất từ Google Sheets
     fetchPhotosFromSheet().then((remotePhotos) => {
-      if (Array.isArray(remotePhotos)) {
+      if (Array.isArray(remotePhotos) && remotePhotos.length > 0) {
         const cleanedRemote = remotePhotos
           .map((p) => {
             if (!p || !p.src) return null;
@@ -561,7 +546,6 @@ export const GallerySection: React.FC = () => {
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                     loading={idx < 4 ? "eager" : "lazy"}
                     priority={idx < 2}
-                    onError={() => handleImageError(photo.src)}
                   />
 
                   {/* Shimmer Gold Hover Border */}
@@ -1089,7 +1073,7 @@ export const GallerySection: React.FC = () => {
                   alt={currentPhoto.alt}
                   fill
                   className="object-contain"
-                  onError={() => handleImageError(currentPhoto.src)}
+                  priority
                 />
 
                 {/* Left/Right Arrow Navigation */}

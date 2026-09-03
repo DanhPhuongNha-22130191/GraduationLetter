@@ -360,7 +360,7 @@ export function findGuestBySlug(
 
 /**
  * Tải toàn bộ ảnh kỷ niệm đã được mọi người đóng góp từ Google Sheet / Cloud
- * Tự động đồng bộ và dọn dẹp các ảnh/chủ đề đã bị xóa trên Sheet/Cloud
+ * Tự động đồng bộ với Google Sheets và lưu bộ nhớ đệm
  */
 export async function fetchPhotosFromSheet(): Promise<import("@/config/graduation").GalleryItem[]> {
   const cacheKey = "cached_cloud_photos";
@@ -404,7 +404,7 @@ export async function fetchPhotosFromSheet(): Promise<import("@/config/graduatio
                   seenUrls.add(cleanUrl);
                   const rawCaption = String(item.caption || item.Caption || item["Lời Nhắn / Kỷ Niệm"] || item["Lời Nhắn"] || item["Kỷ Niệm"] || item.title || item.Title || item.loiChuc || "").trim();
                   const category = String(item.category || item.Category || item["Chủ Đề"] || item["Chủ đề"] || item.chuDe || item.ChuDe || "Kỷ Niệm").trim();
-                  // Chỉ hiển thị lời nhắn / mô tả ảnh thuần túy (không đính kèm tên người gửi trên UI)
+                  // Chỉ hiển thị lời nhắn / mô tả ảnh thuần túy
                   const title = rawCaption || category || "Ảnh kỷ niệm";
 
                   freshPhotos.push({
@@ -447,8 +447,8 @@ export async function fetchPhotosFromSheet(): Promise<import("@/config/graduatio
     // ignore
   }
 
-  // 3. Cập nhật đè lại cache bằng danh sách ảnh thực tế mới nhất (xóa sạch ảnh cũ đã bị xóa khỏi Sheet)
-  if (typeof window !== "undefined") {
+  // 3. Cập nhật lại cache nếu có ảnh từ Google Sheets
+  if (freshPhotos.length > 0 && typeof window !== "undefined") {
     try {
       localStorage.setItem(cacheKey, JSON.stringify(freshPhotos));
       sessionStorage.setItem(cacheKey, JSON.stringify(freshPhotos));
