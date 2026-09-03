@@ -53,11 +53,14 @@ async function writeSinglePhotoToSheet(photo: PhotoPayload, retries = 3): Promis
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const photos: PhotoPayload[] = Array.isArray(body.photos)
+    const rawPhotos: PhotoPayload[] = Array.isArray(body.photos)
       ? body.photos
       : body.photoUrl
       ? [body]
       : [];
+
+    // Giới hạn tối đa 12 ảnh mỗi lần gửi để đảm bảo chất lượng và tốc độ
+    const photos = rawPhotos.slice(0, 12);
 
     if (photos.length === 0) {
       return NextResponse.json({ success: false, error: "Không có dữ liệu ảnh" }, { status: 400 });

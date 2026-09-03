@@ -118,6 +118,7 @@ async function compressImageFile(file: File, maxWidth = 1920, quality = 0.84): P
 
 const PRESET_CATEGORIES = ["Kỷ Niệm", "Tình Bạn", "Kỷ Ức", "Chân Dung", "Vinh Danh"];
 const ITEMS_PER_PAGE = 4;
+const MAX_UPLOAD_PHOTOS = 12;
 
 function getPaginationRange(current: number, total: number): (number | string)[] {
   if (total <= 7) {
@@ -438,11 +439,25 @@ export const GallerySection: React.FC = () => {
         setUploadError("Vui lòng chọn các tệp hình ảnh hợp lệ (PNG, JPG, JPEG, WEBP)");
         return;
       }
-      
-      const combinedFiles = [...selectedFiles, ...validFiles];
+
+      if (selectedFiles.length >= MAX_UPLOAD_PHOTOS) {
+        setUploadError(`Mỗi lần gửi tối đa ${MAX_UPLOAD_PHOTOS} ảnh để đảm bảo chất lượng và tốc độ cao nhất.`);
+        return;
+      }
+
+      const availableSlots = MAX_UPLOAD_PHOTOS - selectedFiles.length;
+      let filesToAdd = validFiles;
+      let limitNotice: string | null = null;
+
+      if (validFiles.length > availableSlots) {
+        filesToAdd = validFiles.slice(0, availableSlots);
+        limitNotice = `Hệ thống đã chọn ${filesToAdd.length} ảnh đầu tiên (giới hạn tối đa ${MAX_UPLOAD_PHOTOS} ảnh mỗi lần gửi để đảm bảo tốc độ và chất lượng tốt nhất).`;
+      }
+
+      const combinedFiles = [...selectedFiles, ...filesToAdd];
       setSelectedFiles(combinedFiles);
       setFilePreviews(combinedFiles.map((f) => URL.createObjectURL(f)));
-      setUploadError(null);
+      setUploadError(limitNotice);
 
       // Reset file input value để có thể chọn tiếp cùng tệp hoặc tệp khác
       if (fileInputRef.current) {
@@ -455,6 +470,9 @@ export const GallerySection: React.FC = () => {
     const updatedFiles = selectedFiles.filter((_, idx) => idx !== indexToRemove);
     setSelectedFiles(updatedFiles);
     setFilePreviews(updatedFiles.map((f) => URL.createObjectURL(f)));
+    if (updatedFiles.length < MAX_UPLOAD_PHOTOS) {
+      setUploadError(null);
+    }
   };
 
   const handleAddUrl = () => {
@@ -462,6 +480,10 @@ export const GallerySection: React.FC = () => {
     if (!trimmed) return;
     if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://") && !trimmed.startsWith("/")) {
       setUploadError("Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://");
+      return;
+    }
+    if (urlList.length >= MAX_UPLOAD_PHOTOS) {
+      setUploadError(`Mỗi lần gửi tối đa ${MAX_UPLOAD_PHOTOS} ảnh để đảm bảo chất lượng và tốc độ cao nhất.`);
       return;
     }
     if (!urlList.includes(trimmed)) {
@@ -512,6 +534,10 @@ export const GallerySection: React.FC = () => {
     if (uploadSourceMode === "file") {
       if (selectedFiles.length === 0) {
         setUploadError("Vui lòng chọn ít nhất 1 bức ảnh từ thiết bị để tải lên");
+        return;
+      }
+      if (selectedFiles.length > MAX_UPLOAD_PHOTOS) {
+        setUploadError(`Mỗi lần gửi tối đa ${MAX_UPLOAD_PHOTOS} ảnh để đảm bảo chất lượng và tốc độ.`);
         return;
       }
 
@@ -598,6 +624,10 @@ export const GallerySection: React.FC = () => {
 
       if (combinedUrls.length === 0) {
         setUploadError("Vui lòng nhập ít nhất 1 đường dẫn (link) ảnh hợp lệ");
+        return;
+      }
+      if (combinedUrls.length > MAX_UPLOAD_PHOTOS) {
+        setUploadError(`Mỗi lần gửi tối đa ${MAX_UPLOAD_PHOTOS} ảnh để đảm bảo chất lượng và tốc độ.`);
         return;
       }
 
@@ -1082,17 +1112,19 @@ export const GallerySection: React.FC = () => {
                               <div className="flex items-center justify-between px-1 text-xs">
                                 <span className="font-sans font-semibold text-gold-light flex items-center gap-1">
                                   <Images className="w-3.5 h-3.5 text-gold" />
-                                  Đã chọn <strong className="text-gold font-bold">{filePreviews.length}</strong> bức ảnh
+                                  Đã chọn <strong className="text-gold font-bold">{filePreviews.length}/{MAX_UPLOAD_PHOTOS}</strong> bức ảnh
                                 </span>
                                 <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="inline-flex items-center gap-1 text-[11px] text-gold hover:text-gold-light font-sans font-semibold px-2 py-0.5 rounded-full bg-gold/15 border border-gold/40 hover:bg-gold/25 transition-all cursor-pointer"
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                    <span>Thêm ảnh khác</span>
-                                  </button>
+                                  {filePreviews.length < MAX_UPLOAD_PHOTOS && (
+                                    <button
+                                      type="button"
+                                      onClick={() => fileInputRef.current?.click()}
+                                      className="inline-flex items-center gap-1 text-[11px] text-gold hover:text-gold-light font-sans font-semibold px-2 py-0.5 rounded-full bg-gold/15 border border-gold/40 hover:bg-gold/25 transition-all cursor-pointer"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                      <span>Thêm ảnh</span>
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -1135,17 +1167,19 @@ export const GallerySection: React.FC = () => {
                                   </div>
                                 ))}
 
-                                {/* Add More Tile in Grid */}
-                                <button
-                                  type="button"
-                                  onClick={() => fileInputRef.current?.click()}
-                                  className="aspect-square rounded-xl border-2 border-dashed border-gold/40 hover:border-gold hover:bg-gold/10 bg-white/5 transition-all flex flex-col items-center justify-center p-1 text-center cursor-pointer group"
-                                >
-                                  <Plus className="w-5 h-5 text-gold group-hover:scale-110 transition-transform" />
-                                  <span className="text-[9px] text-gold-light font-sans font-semibold mt-0.5">
-                                    Thêm ảnh
-                                  </span>
-                                </button>
+                                {/* Add More Tile in Grid (chỉ hiện khi chưa đủ 12 ảnh) */}
+                                {filePreviews.length < MAX_UPLOAD_PHOTOS && (
+                                  <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="aspect-square rounded-xl border-2 border-dashed border-gold/40 hover:border-gold hover:bg-gold/10 bg-white/5 transition-all flex flex-col items-center justify-center p-1 text-center cursor-pointer group"
+                                  >
+                                    <Plus className="w-5 h-5 text-gold group-hover:scale-110 transition-transform" />
+                                    <span className="text-[9px] text-gold-light font-sans font-semibold mt-0.5">
+                                      Thêm ảnh ({filePreviews.length}/{MAX_UPLOAD_PHOTOS})
+                                    </span>
+                                  </button>
+                                )}
                               </div>
                             </div>
                           ) : (
@@ -1161,7 +1195,7 @@ export const GallerySection: React.FC = () => {
                                 {t.gallery.uploadSelectFile}
                               </span>
                               <span className="font-sans text-[11px] text-ivory/50 mt-1">
-                                Hỗ trợ chọn nhiều ảnh cùng lúc (PNG, JPG, JPEG, WEBP)
+                                Hỗ trợ chọn tối đa 12 ảnh mỗi lần (PNG, JPG, JPEG, WEBP) giúp tải nhanh & bảo toàn chất lượng
                               </span>
                             </button>
                           )}
@@ -1192,7 +1226,8 @@ export const GallerySection: React.FC = () => {
                             <button
                               type="button"
                               onClick={handleAddUrl}
-                              className="px-3 py-2.5 rounded-xl bg-gold text-emerald-deep font-sans font-bold text-xs hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+                              disabled={urlList.length >= MAX_UPLOAD_PHOTOS || !imageUrlInput.trim()}
+                              className="px-3 py-2.5 rounded-xl bg-gold text-emerald-deep font-sans font-bold text-xs hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               + Thêm link
                             </button>
@@ -1202,7 +1237,7 @@ export const GallerySection: React.FC = () => {
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between text-xs px-1">
                                 <span className="font-sans text-gold-light font-semibold">
-                                  Đã nhập <strong className="text-gold">{urlList.length}</strong> liên kết ảnh
+                                  Đã nhập <strong className="text-gold">{urlList.length}/{MAX_UPLOAD_PHOTOS}</strong> liên kết ảnh
                                 </span>
                                 <button
                                   type="button"
