@@ -20,6 +20,7 @@ import {
   Plus,
   Globe,
   FileImage,
+  Images,
 } from "lucide-react";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
@@ -39,23 +40,68 @@ export const GallerySection: React.FC = () => {
   const [userPhotos, setUserPhotos] = useState<GalleryItem[]>([]);
   // Community-uploaded photos state (synced from Google Sheet & Cloud)
   const [cloudPhotos, setCloudPhotos] = useState<GalleryItem[]>([]);
+  // Failed / 404 photo URLs tracker for automatic self-cleaning
+  const [failedPhotoUrls, setFailedPhotoUrls] = useState<Set<string>>(new Set());
 
   // Upload modal state
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadSourceMode, setUploadSourceMode] = useState<"file" | "url">("file");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // Multi-file selection state
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
+  // Multi-URL selection state
   const [imageUrlInput, setImageUrlInput] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [urlList, setUrlList] = useState<string[]>([]);
+  
   const [uploaderName, setUploaderName] = useState("");
   const [caption, setCaption] = useState("");
   const [selectedUploadCat, setSelectedUploadCat] = useState("Kỷ Niệm");
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadSuccessCount, setUploadSuccessCount] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper tự động dọn dẹp các ảnh bị xóa trên Cloud (404/lỗi tải) khỏi bộ nhớ đệm
+  const handleImageError = (failedSrc: string) => {
+    if (!failedSrc) return;
+    setFailedPhotoUrls((prev) => {
+      const updated = new Set(prev);
+      updated.add(failedSrc);
+      return updated;
+    });
+
+    if (typeof window !== "undefined") {
+      try {
+        // Dọn dẹp graduation_user_photos
+        const saved = localStorage.getItem("graduation_user_photos");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            const cleaned = parsed.filter((p: GalleryItem) => p.src !== failedSrc);
+            localStorage.setItem("graduation_user_photos", JSON.stringify(cleaned));
+            setUserPhotos(cleaned);
+          }
+        }
+        // Dọn dẹp cached_cloud_photos
+        const cloudSaved = localStorage.getItem("cached_cloud_photos");
+        if (cloudSaved) {
+          const parsed = JSON.parse(cloudSaved);
+          if (Array.isArray(parsed)) {
+            const cleaned = parsed.filter((p: GalleryItem) => p.src !== failedSrc);
+            localStorage.setItem("cached_cloud_photos", JSON.stringify(cleaned));
+            setCloudPhotos(cleaned);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   // Load saved contributed photos from localStorage & fetch all community photos from Google Sheets
   useEffect(() => {
@@ -72,9 +118,9 @@ export const GallerySection: React.FC = () => {
       // ignore
     }
 
-    // 2. Nạp toàn bộ ảnh từ Google Sheet / Cloud do mọi người đã up
+    // 2. Nạp toàn bộ ảnh từ Google Sheet / Cloud do mọi người đã up (tự động đồng bộ và xóa ảnh không còn trên sheet)
     fetchPhotosFromSheet().then((remotePhotos) => {
-      if (Array.isArray(remotePhotos) && remotePhotos.length > 0) {
+      if (Array.isArray(remotePhotos)) {
         setCloudPhotos(remotePhotos);
       }
     }).catch(() => {
@@ -92,11 +138,19 @@ export const GallerySection: React.FC = () => {
   const defaultItems = (t.gallery.items || []) as GalleryItem[];
   // Kết hợp ảnh vừa upload trên máy + toàn bộ ảnh từ Cloud của mọi người + ảnh mặc định (nếu có)
   const allPhotos = [...userPhotos, ...cloudPhotos, ...defaultItems];
-  // Khử trùng lặp ảnh theo đường dẫn src
-  const items = Array.from(new Map(allPhotos.map((p) => [p.src, p])).values());
+  // Khử trùng lặp ảnh theo đường dẫn src & loại bỏ các ảnh không hợp lệ hoặc đã bị xóa
+  const items = Array.from(new Map(allPhotos.map((p) => [p.src, p])).values())
+    .filter((p) => Boolean(p.src && p.src.trim() && !failedPhotoUrls.has(p.src)));
 
-  // Get unique categories
+  // Tự động tính toán lại danh sách chủ đề DUY NHẤT từ các ảnh ĐANG CÒN TỒN TẠI
   const categories = ["all", ...Array.from(new Set(items.map((item) => item.category)))];
+
+  // Tự động chuyển về tab "Tất cả" nếu chủ đề đang chọn không còn bức ảnh nào
+  useEffect(() => {
+    if (selectedCategory !== "all" && !categories.includes(selectedCategory)) {
+      setSelectedCategory("all");
+    }
+  }, [categories, selectedCategory]);
 
   const filteredItems =
     selectedCategory === "all"
@@ -124,30 +178,64 @@ export const GallerySection: React.FC = () => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith("image/")) {
-        setUploadError("Vui lòng chọn tệp hình ảnh hợp lệ (PNG, JPG, JPEG, WEBP)");
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const validFiles = files.filter((f) => f.type.startsWith("image/"));
+      if (validFiles.length === 0) {
+        setUploadError("Vui lòng chọn các tệp hình ảnh hợp lệ (PNG, JPG, JPEG, WEBP)");
         return;
       }
-      setSelectedFile(file);
+      
+      const combinedFiles = [...selectedFiles, ...validFiles];
+      setSelectedFiles(combinedFiles);
+      setFilePreviews(combinedFiles.map((f) => URL.createObjectURL(f)));
       setUploadError(null);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+
+      // Reset file input value để có thể chọn tiếp cùng tệp hoặc tệp khác
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
+  const handleRemoveFile = (indexToRemove: number) => {
+    const updatedFiles = selectedFiles.filter((_, idx) => idx !== indexToRemove);
+    setSelectedFiles(updatedFiles);
+    setFilePreviews(updatedFiles.map((f) => URL.createObjectURL(f)));
+  };
+
+  const handleAddUrl = () => {
+    const trimmed = imageUrlInput.trim();
+    if (!trimmed) return;
+    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://") && !trimmed.startsWith("/")) {
+      setUploadError("Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://");
+      return;
+    }
+    if (!urlList.includes(trimmed)) {
+      setUrlList([...urlList, trimmed]);
+      setImageUrlInput("");
+      setUploadError(null);
+    }
+  };
+
+  const handleRemoveUrl = (indexToRemove: number) => {
+    setUrlList(urlList.filter((_, idx) => idx !== indexToRemove));
+  };
+
   const handleResetUploadForm = () => {
-    setSelectedFile(null);
+    setSelectedFiles([]);
+    setFilePreviews([]);
     setImageUrlInput("");
-    setPreviewUrl(null);
+    setUrlList([]);
     setUploadSourceMode("file");
     setCaption("");
     setSelectedUploadCat("Kỷ Niệm");
     setIsCustomCategory(false);
     setCustomCategory("");
     setIsUploading(false);
+    setUploadProgressText("");
     setUploadSuccess(false);
+    setUploadSuccessCount(0);
     setUploadError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -166,11 +254,11 @@ export const GallerySection: React.FC = () => {
         ? customCategory.trim()
         : selectedUploadCat || "Kỷ Niệm";
 
-    let photoUrl = "";
+    const uploadedUrls: string[] = [];
 
     if (uploadSourceMode === "file") {
-      if (!selectedFile) {
-        setUploadError("Vui lòng chọn 1 bức ảnh từ thiết bị để tải lên");
+      if (selectedFiles.length === 0) {
+        setUploadError("Vui lòng chọn ít nhất 1 bức ảnh từ thiết bị để tải lên");
         return;
       }
 
@@ -178,65 +266,84 @@ export const GallerySection: React.FC = () => {
       setUploadError(null);
 
       try {
-        // 1. Tải trực tiếp lên Cloudinary Unsigned Upload
-        const formData = new FormData();
-        formData.append("file", selectedFile);
-        formData.append("upload_preset", graduationConfig.cloudinaryUploadPreset);
-        formData.append("folder", "graduation_memories");
+        // Tải từng ảnh lên Cloudinary
+        for (let i = 0; i < selectedFiles.length; i++) {
+          setUploadProgressText(
+            selectedFiles.length > 1
+              ? `Đang tải ảnh (${i + 1}/${selectedFiles.length}) lên Cloud...`
+              : "Đang tải ảnh lên Cloud..."
+          );
 
-        const cloudRes = await fetch(
-          `https://api.cloudinary.com/v1_1/${graduationConfig.cloudinaryCloudName}/image/upload`,
-          {
-            method: "POST",
-            body: formData,
+          const file = selectedFiles[i];
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("upload_preset", graduationConfig.cloudinaryUploadPreset);
+          formData.append("folder", "graduation_memories");
+
+          const cloudRes = await fetch(
+            `https://api.cloudinary.com/v1_1/${graduationConfig.cloudinaryCloudName}/image/upload`,
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+
+          if (!cloudRes.ok) {
+            throw new Error(`Tải ảnh thứ ${i + 1} không thành công`);
           }
-        );
 
-        if (!cloudRes.ok) {
-          throw new Error("Tải ảnh lên Cloudinary không thành công");
-        }
+          const cloudData = await cloudRes.json();
+          const photoUrl = cloudData.secure_url || cloudData.url;
 
-        const cloudData = await cloudRes.json();
-        photoUrl = cloudData.secure_url || cloudData.url;
-
-        if (!photoUrl) {
-          throw new Error("Không nhận được đường dẫn ảnh từ Cloud");
+          if (photoUrl) {
+            uploadedUrls.push(photoUrl);
+          }
         }
       } catch (err) {
         console.error(err);
-        setUploadError("Có lỗi xảy ra khi tải ảnh lên Cloud. Vui lòng thử lại!");
+        setUploadError("Có lỗi xảy ra khi tải một số ảnh lên Cloud. Vui lòng thử lại!");
         setIsUploading(false);
         return;
       }
     } else {
-      // URL Mode
-      const trimmedUrl = imageUrlInput.trim();
-      if (!trimmedUrl) {
-        setUploadError("Vui lòng nhập đường dẫn (link) ảnh hợp lệ");
+      // URL Mode: Gom các URL trong urlList và ô nhập hiện tại (nếu có)
+      const combinedUrls = [...urlList];
+      if (imageUrlInput.trim()) {
+        const trimmed = imageUrlInput.trim();
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("/")) {
+          if (!combinedUrls.includes(trimmed)) combinedUrls.push(trimmed);
+        }
+      }
+
+      if (combinedUrls.length === 0) {
+        setUploadError("Vui lòng nhập ít nhất 1 đường dẫn (link) ảnh hợp lệ");
         return;
       }
-      if (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://") && !trimmedUrl.startsWith("/")) {
-        setUploadError("Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://");
-        return;
-      }
-      photoUrl = trimmedUrl;
+
+      uploadedUrls.push(...combinedUrls);
       setIsUploading(true);
       setUploadError(null);
     }
 
+    if (uploadedUrls.length === 0) {
+      setUploadError("Không có ảnh nào để tải lên.");
+      setIsUploading(false);
+      return;
+    }
+
     try {
       // 2. Tạo đối tượng ảnh mới đưa ngay vào Gallery
-      const newPhoto: GalleryItem = {
-        id: `user-${Date.now()}`,
+      const newPhotos: GalleryItem[] = uploadedUrls.map((url, i) => ({
+        id: `user-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
         title: caption.trim()
-          ? `${caption.trim()} — (${guestName || uploaderName || "Khách mời"})`
-          : `Khoảnh khắc từ ${guestName || uploaderName || "Khách mời"}`,
+          ? `${caption.trim()} — (${guestName || uploaderName || "Khách mời"})${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`
+          : `Khoảnh khắc từ ${guestName || uploaderName || "Khách mời"}${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`,
         category: targetCategory,
-        src: photoUrl,
+        src: url,
         alt: `Ảnh kỷ niệm [${targetCategory}] đóng góp bởi ${guestName || uploaderName || "Khách mời"}`,
-      };
+      }));
 
-      const updatedUserPhotos = [newPhoto, ...userPhotos];
+      const updatedUserPhotos = [...newPhotos, ...userPhotos];
       setUserPhotos(updatedUserPhotos);
 
       try {
@@ -245,30 +352,37 @@ export const GallerySection: React.FC = () => {
         // ignore
       }
 
-      // 3. Ghi log lên Google Sheet ngầm
+      // 3. Ghi log lên Google Sheet ngầm (gửi từng ảnh)
       try {
         if (graduationConfig.googleScriptUrl) {
-          fetch(graduationConfig.googleScriptUrl, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({
-              type: "PHOTO_UPLOAD",
-              action: "PHOTO_UPLOAD",
-              sheet: "AnhKyNiem",
-              name: guestName || uploaderName || "Khách mời",
-              caption: caption.trim() || "Ảnh kỷ niệm cùng Nhã",
-              category: targetCategory,
-              photoUrl: photoUrl,
-              sourceType: uploadSourceMode,
-              timestamp: new Date().toLocaleString("vi-VN"),
-            }),
-          }).catch(() => {});
+          Promise.allSettled(
+            uploadedUrls.map((url, i) =>
+              fetch(graduationConfig.googleScriptUrl, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                  type: "PHOTO_UPLOAD",
+                  action: "PHOTO_UPLOAD",
+                  sheet: "AnhKyNiem",
+                  name: guestName || uploaderName || "Khách mời",
+                  caption: caption.trim()
+                    ? `${caption.trim()}${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`
+                    : "Ảnh kỷ niệm cùng Nhã",
+                  category: targetCategory,
+                  photoUrl: url,
+                  sourceType: uploadSourceMode,
+                  timestamp: new Date().toLocaleString("vi-VN"),
+                }),
+              })
+            )
+          ).catch(() => {});
         }
       } catch {
         // ignore
       }
 
+      setUploadSuccessCount(uploadedUrls.length);
       setUploadSuccess(true);
       setTimeout(() => {
         setIsUploadOpen(false);
@@ -395,6 +509,7 @@ export const GallerySection: React.FC = () => {
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                     loading={idx < 4 ? "eager" : "lazy"}
                     priority={idx < 2}
+                    onError={() => handleImageError(photo.src)}
                   />
 
                   {/* Shimmer Gold Hover Border */}
@@ -456,7 +571,9 @@ export const GallerySection: React.FC = () => {
                     {t.gallery.uploadSuccessTitle}
                   </h3>
                   <p className="font-sans text-sm text-ivory/80 max-w-xs mx-auto">
-                    {t.gallery.uploadSuccessDesc}
+                    {uploadSuccessCount > 1
+                      ? `Đã tải lên thành công ${uploadSuccessCount} bức ảnh kỷ niệm vào bộ sưu tập của Nhã!`
+                      : t.gallery.uploadSuccessDesc}
                   </p>
                 </motion.div>
               ) : !isRegisteredGuest || !canUpload ? (
@@ -518,7 +635,6 @@ export const GallerySection: React.FC = () => {
                             type="button"
                             onClick={() => {
                               setUploadSourceMode("file");
-                              setPreviewUrl(selectedFile ? URL.createObjectURL(selectedFile) : null);
                               setUploadError(null);
                             }}
                             className={`px-2.5 py-1 rounded-md text-[11px] font-sans font-semibold flex items-center gap-1 transition-all cursor-pointer ${
@@ -534,7 +650,6 @@ export const GallerySection: React.FC = () => {
                             type="button"
                             onClick={() => {
                               setUploadSourceMode("url");
-                              setPreviewUrl(imageUrlInput.trim() || null);
                               setUploadError(null);
                             }}
                             className={`px-2.5 py-1 rounded-md text-[11px] font-sans font-semibold flex items-center gap-1 transition-all cursor-pointer ${
@@ -550,31 +665,86 @@ export const GallerySection: React.FC = () => {
                       </div>
 
                       {uploadSourceMode === "file" ? (
-                        /* File Upload Mode */
-                        <div>
+                        /* Multi-File Upload Mode */
+                        <div className="space-y-2">
                           <input
                             ref={fileInputRef}
                             type="file"
                             accept="image/*"
+                            multiple
                             onChange={handleFileChange}
                             className="hidden"
                           />
 
-                          {previewUrl ? (
-                            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border-2 border-gold/50 shadow-inner group">
-                              <Image
-                                src={previewUrl}
-                                alt="Preview"
-                                fill
-                                className="object-cover"
-                              />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          {filePreviews.length > 0 ? (
+                            <div className="space-y-2">
+                              {/* Preview Header Bar */}
+                              <div className="flex items-center justify-between px-1 text-xs">
+                                <span className="font-sans font-semibold text-gold-light flex items-center gap-1">
+                                  <Images className="w-3.5 h-3.5 text-gold" />
+                                  Đã chọn <strong className="text-gold font-bold">{filePreviews.length}</strong> bức ảnh
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="inline-flex items-center gap-1 text-[11px] text-gold hover:text-gold-light font-sans font-semibold px-2 py-0.5 rounded-full bg-gold/15 border border-gold/40 hover:bg-gold/25 transition-all cursor-pointer"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>Thêm ảnh khác</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedFiles([]);
+                                      setFilePreviews([]);
+                                    }}
+                                    className="text-[11px] text-red-400 hover:text-red-300 font-sans cursor-pointer underline"
+                                  >
+                                    Xóa hết
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Multi-Photo Thumbnails Grid */}
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-52 overflow-y-auto p-1.5 rounded-2xl bg-black/30 border border-gold/30 scrollbar-thin">
+                                {filePreviews.map((url, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="relative aspect-square rounded-xl overflow-hidden border border-gold/40 shadow-xs group bg-emerald-deep/40"
+                                  >
+                                    <Image
+                                      src={url}
+                                      alt={`Preview ${idx + 1}`}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                    {/* Index Badge */}
+                                    <span className="absolute top-1 left-1 px-1.5 py-0.2 rounded-md bg-black/70 text-[9px] font-sans font-bold text-gold border border-gold/30">
+                                      #{idx + 1}
+                                    </span>
+                                    {/* Delete Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveFile(idx)}
+                                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-md hover:bg-red-500 transition-all cursor-pointer"
+                                      title="Xóa ảnh này"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+
+                                {/* Add More Tile in Grid */}
                                 <button
                                   type="button"
                                   onClick={() => fileInputRef.current?.click()}
-                                  className="px-3 py-1.5 rounded-full bg-gold text-emerald-deep text-xs font-sans font-bold shadow-md hover:brightness-110 cursor-pointer"
+                                  className="aspect-square rounded-xl border-2 border-dashed border-gold/40 hover:border-gold hover:bg-gold/10 bg-white/5 transition-all flex flex-col items-center justify-center p-1 text-center cursor-pointer group"
                                 >
-                                  {t.gallery.uploadChangeFile}
+                                  <Plus className="w-5 h-5 text-gold group-hover:scale-110 transition-transform" />
+                                  <span className="text-[9px] text-gold-light font-sans font-semibold mt-0.5">
+                                    Thêm ảnh
+                                  </span>
                                 </button>
                               </div>
                             </div>
@@ -591,51 +761,88 @@ export const GallerySection: React.FC = () => {
                                 {t.gallery.uploadSelectFile}
                               </span>
                               <span className="font-sans text-[11px] text-ivory/50 mt-1">
-                                PNG, JPG, JPEG, WEBP (Tối đa 15MB)
+                                Hỗ trợ chọn nhiều ảnh cùng lúc (PNG, JPG, JPEG, WEBP)
                               </span>
                             </button>
                           )}
                         </div>
                       ) : (
-                        /* URL Mode */
+                        /* Multi-URL Mode */
                         <div className="space-y-2">
-                          <div className="relative">
-                            <input
-                              type="url"
-                              value={imageUrlInput}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setImageUrlInput(val);
-                                if (val.trim()) {
-                                  setPreviewUrl(val.trim());
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <input
+                                type="url"
+                                value={imageUrlInput}
+                                onChange={(e) => {
+                                  setImageUrlInput(e.target.value);
                                   setUploadError(null);
-                                } else {
-                                  setPreviewUrl(null);
-                                }
-                              }}
-                              placeholder={t.gallery.uploadUrlPlaceholder}
-                              className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all"
-                            />
-                            <LinkIcon className="w-3.5 h-3.5 text-gold absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleAddUrl();
+                                  }
+                                }}
+                                placeholder={t.gallery.uploadUrlPlaceholder}
+                                className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all"
+                              />
+                              <LinkIcon className="w-3.5 h-3.5 text-gold absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleAddUrl}
+                              className="px-3 py-2.5 rounded-xl bg-gold text-emerald-deep font-sans font-bold text-xs hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+                            >
+                              + Thêm link
+                            </button>
                           </div>
 
-                          {previewUrl ? (
-                            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border-2 border-gold/50 shadow-inner group">
-                              <Image
-                                src={previewUrl}
-                                alt="Preview"
-                                fill
-                                className="object-cover"
-                                onError={() => {
-                                  setUploadError("Không thể tải ảnh từ link này. Vui lòng kiểm tra lại URL!");
-                                }}
-                              />
+                          {urlList.length > 0 ? (
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between text-xs px-1">
+                                <span className="font-sans text-gold-light font-semibold">
+                                  Đã nhập <strong className="text-gold">{urlList.length}</strong> liên kết ảnh
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setUrlList([])}
+                                  className="text-[11px] text-red-400 hover:text-red-300 font-sans cursor-pointer underline"
+                                >
+                                  Xóa hết
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1.5 rounded-2xl bg-black/30 border border-gold/30">
+                                {urlList.map((url, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="relative aspect-square rounded-xl overflow-hidden border border-gold/40 shadow-xs bg-emerald-deep/40"
+                                  >
+                                    <Image
+                                      src={url}
+                                      alt={`Preview URL ${idx + 1}`}
+                                      fill
+                                      className="object-cover"
+                                      onError={() => {
+                                        setUploadError(`Link ảnh #${idx + 1} không thể hiển thị. Vui lòng kiểm tra lại URL!`);
+                                      }}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveUrl(idx)}
+                                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-md hover:bg-red-500 transition-all cursor-pointer"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           ) : (
                             <div className="w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl border border-gold/20 bg-white/5 flex flex-col items-center justify-center p-4 text-center">
                               <ImageIcon className="w-8 h-8 text-gold/40 mb-1" />
                               <span className="text-[11px] text-ivory/60 font-sans">
-                                Dán liên kết ảnh trực tiếp (URL) để xem trước
+                                Dán liên kết ảnh trực tiếp (URL) và nhấn &quot;+ Thêm link&quot; để thêm nhiều ảnh
                               </span>
                             </div>
                           )}
@@ -761,19 +968,27 @@ export const GallerySection: React.FC = () => {
                       type="submit"
                       disabled={
                         isUploading ||
-                        (uploadSourceMode === "file" ? !selectedFile : !imageUrlInput.trim())
+                        (uploadSourceMode === "file"
+                          ? selectedFiles.length === 0
+                          : urlList.length === 0 && !imageUrlInput.trim())
                       }
                       className="w-full py-3 rounded-xl bg-gold-gradient text-emerald-deep font-sans font-bold text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 hover:brightness-110 active:scale-98 transition-all cursor-pointer shadow-gold-glow disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isUploading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>{t.gallery.uploadingBtn}</span>
+                          <span>{uploadProgressText || t.gallery.uploadingBtn}</span>
                         </>
                       ) : (
                         <>
                           <UploadCloud className="w-4 h-4" />
-                          <span>{t.gallery.uploadSubmitBtn}</span>
+                          <span>
+                            {uploadSourceMode === "file" && selectedFiles.length > 1
+                              ? `Tải ${selectedFiles.length} Ảnh Lên Kho Kỷ Niệm`
+                              : uploadSourceMode === "url" && urlList.length > 1
+                              ? `Tải ${urlList.length} Ảnh Lên Kho Kỷ Niệm`
+                              : t.gallery.uploadSubmitBtn}
+                          </span>
                         </>
                       )}
                     </button>
@@ -822,6 +1037,7 @@ export const GallerySection: React.FC = () => {
                   alt={currentPhoto.alt}
                   fill
                   className="object-contain"
+                  onError={() => handleImageError(currentPhoto.src)}
                 />
 
                 {/* Left/Right Arrow Navigation */}
