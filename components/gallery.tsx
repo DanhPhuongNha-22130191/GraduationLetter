@@ -15,11 +15,18 @@ import {
   Loader2,
   Heart,
   ImageIcon,
+  Link as LinkIcon,
+  Tag,
+  Plus,
+  Globe,
+  FileImage,
 } from "lucide-react";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { graduationConfig, GalleryItem } from "@/config/graduation";
 import { Lock, ShieldCheck } from "lucide-react";
+
+const PRESET_CATEGORIES = ["Kỷ Niệm", "Tình Bạn", "Kỷ Ức", "Chân Dung", "Vinh Danh"];
 
 export const GallerySection: React.FC = () => {
   const { t } = useLanguage();
@@ -32,11 +39,15 @@ export const GallerySection: React.FC = () => {
 
   // Upload modal state
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadSourceMode, setUploadSourceMode] = useState<"file" | "url">("file");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploaderName, setUploaderName] = useState("");
   const [caption, setCaption] = useState("");
   const [selectedUploadCat, setSelectedUploadCat] = useState("Kỷ Niệm");
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategory, setCustomCategory] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -113,8 +124,13 @@ export const GallerySection: React.FC = () => {
 
   const handleResetUploadForm = () => {
     setSelectedFile(null);
+    setImageUrlInput("");
     setPreviewUrl(null);
+    setUploadSourceMode("file");
     setCaption("");
+    setSelectedUploadCat("Kỷ Niệm");
+    setIsCustomCategory(false);
+    setCustomCategory("");
     setIsUploading(false);
     setUploadSuccess(false);
     setUploadError(null);
@@ -129,49 +145,80 @@ export const GallerySection: React.FC = () => {
       setUploadError("Bạn không có quyền tải ảnh lên kho kỷ niệm.");
       return;
     }
-    if (!selectedFile) {
-      setUploadError("Vui lòng chọn 1 bức ảnh để tải lên");
-      return;
+
+    const targetCategory =
+      isCustomCategory && customCategory.trim()
+        ? customCategory.trim()
+        : selectedUploadCat || "Kỷ Niệm";
+
+    let photoUrl = "";
+
+    if (uploadSourceMode === "file") {
+      if (!selectedFile) {
+        setUploadError("Vui lòng chọn 1 bức ảnh từ thiết bị để tải lên");
+        return;
+      }
+
+      setIsUploading(true);
+      setUploadError(null);
+
+      try {
+        // 1. Tải trực tiếp lên Cloudinary Unsigned Upload
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("upload_preset", graduationConfig.cloudinaryUploadPreset);
+        formData.append("folder", "graduation_memories");
+
+        const cloudRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${graduationConfig.cloudinaryCloudName}/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!cloudRes.ok) {
+          throw new Error("Tải ảnh lên Cloudinary không thành công");
+        }
+
+        const cloudData = await cloudRes.json();
+        photoUrl = cloudData.secure_url || cloudData.url;
+
+        if (!photoUrl) {
+          throw new Error("Không nhận được đường dẫn ảnh từ Cloud");
+        }
+      } catch (err) {
+        console.error(err);
+        setUploadError("Có lỗi xảy ra khi tải ảnh lên Cloud. Vui lòng thử lại!");
+        setIsUploading(false);
+        return;
+      }
+    } else {
+      // URL Mode
+      const trimmedUrl = imageUrlInput.trim();
+      if (!trimmedUrl) {
+        setUploadError("Vui lòng nhập đường dẫn (link) ảnh hợp lệ");
+        return;
+      }
+      if (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://") && !trimmedUrl.startsWith("/")) {
+        setUploadError("Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://");
+        return;
+      }
+      photoUrl = trimmedUrl;
+      setIsUploading(true);
+      setUploadError(null);
     }
 
-    setIsUploading(true);
-    setUploadError(null);
-
     try {
-      // 1. Tải trực tiếp lên Cloudinary Unsigned Upload
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("upload_preset", graduationConfig.cloudinaryUploadPreset);
-      formData.append("folder", "graduation_memories");
-
-      const cloudRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${graduationConfig.cloudinaryCloudName}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (!cloudRes.ok) {
-        throw new Error("Tải ảnh lên Cloudinary không thành công");
-      }
-
-      const cloudData = await cloudRes.json();
-      const photoUrl = cloudData.secure_url || cloudData.url;
-
-      if (!photoUrl) {
-        throw new Error("Không nhận được đường dẫn ảnh từ Cloud");
-      }
-
       // 2. Tạo đối tượng ảnh mới đưa ngay vào Gallery
       const newPhoto: GalleryItem = {
         id: `user-${Date.now()}`,
         title: caption.trim()
           ? `${caption.trim()} — (${guestName || uploaderName || "Khách mời"})`
           : `Khoảnh khắc từ ${guestName || uploaderName || "Khách mời"}`,
-        category: selectedUploadCat || "Kỷ Niệm",
+        category: targetCategory,
         src: photoUrl,
-        alt: `Ảnh kỷ niệm đóng góp bởi ${guestName || uploaderName || "Khách mời"}`,
+        alt: `Ảnh kỷ niệm [${targetCategory}] đóng góp bởi ${guestName || uploaderName || "Khách mời"}`,
       };
 
       const updatedUserPhotos = [newPhoto, ...userPhotos];
@@ -196,8 +243,9 @@ export const GallerySection: React.FC = () => {
               sheet: "AnhKyNiem",
               name: guestName || uploaderName || "Khách mời",
               caption: caption.trim() || "Ảnh kỷ niệm cùng Nhã",
-              category: selectedUploadCat,
+              category: targetCategory,
               photoUrl: photoUrl,
+              sourceType: uploadSourceMode,
               timestamp: new Date().toLocaleString("vi-VN"),
             }),
           }).catch(() => {});
@@ -213,7 +261,7 @@ export const GallerySection: React.FC = () => {
       }, 2500);
     } catch (err) {
       console.error(err);
-      setUploadError("Có lỗi xảy ra khi tải ảnh. Vui lòng thử lại!");
+      setUploadError("Có lỗi xảy ra khi lưu ảnh. Vui lòng thử lại!");
       setIsUploading(false);
     }
   };
@@ -309,7 +357,7 @@ export const GallerySection: React.FC = () => {
                 <div className="absolute inset-0 border-2 border-gold/0 group-hover:border-gold/60 rounded-2xl transition-colors pointer-events-none z-10" />
 
                 <div className="absolute inset-0 bg-gradient-to-t from-emerald-deep/90 via-emerald-deep/20 to-transparent opacity-85 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 text-ivory">
-                  <span className="text-[10px] font-sans uppercase tracking-widest text-gold font-bold mb-0.5">
+                  <span className="text-[10px] font-sans uppercase tracking-widest text-gold font-bold mb-0.5 line-clamp-1">
                     {photo.category}
                   </span>
                   <p className="font-serif text-xs sm:text-sm font-semibold line-clamp-1">
@@ -411,50 +459,139 @@ export const GallerySection: React.FC = () => {
                   </div>
 
                   <form onSubmit={handleUploadPhoto} className="space-y-4">
-                    {/* Image Selector & Preview */}
-                    <div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
+                    {/* Media Source Selector Tabs: Upload File or URL */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold">
+                          Hình ảnh kỷ niệm:
+                        </label>
+                        <div className="flex bg-white/10 p-0.5 rounded-lg border border-gold/30">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUploadSourceMode("file");
+                              setPreviewUrl(selectedFile ? URL.createObjectURL(selectedFile) : null);
+                              setUploadError(null);
+                            }}
+                            className={`px-2.5 py-1 rounded-md text-[11px] font-sans font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                              uploadSourceMode === "file"
+                                ? "bg-gold text-emerald-deep shadow-xs"
+                                : "text-ivory/70 hover:text-ivory"
+                            }`}
+                          >
+                            <FileImage className="w-3 h-3" />
+                            <span>{t.gallery.uploadSourceFileTab}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUploadSourceMode("url");
+                              setPreviewUrl(imageUrlInput.trim() || null);
+                              setUploadError(null);
+                            }}
+                            className={`px-2.5 py-1 rounded-md text-[11px] font-sans font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                              uploadSourceMode === "url"
+                                ? "bg-gold text-emerald-deep shadow-xs"
+                                : "text-ivory/70 hover:text-ivory"
+                            }`}
+                          >
+                            <LinkIcon className="w-3 h-3" />
+                            <span>{t.gallery.uploadSourceUrlTab}</span>
+                          </button>
+                        </div>
+                      </div>
 
-                      {previewUrl ? (
-                        <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border-2 border-gold/50 shadow-inner group">
-                          <Image
-                            src={previewUrl}
-                            alt="Preview"
-                            fill
-                            className="object-cover"
+                      {uploadSourceMode === "file" ? (
+                        /* File Upload Mode */
+                        <div>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="hidden"
                           />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+
+                          {previewUrl ? (
+                            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border-2 border-gold/50 shadow-inner group">
+                              <Image
+                                src={previewUrl}
+                                alt="Preview"
+                                fill
+                                className="object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className="px-3 py-1.5 rounded-full bg-gold text-emerald-deep text-xs font-sans font-bold shadow-md hover:brightness-110 cursor-pointer"
+                                >
+                                  {t.gallery.uploadChangeFile}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
                             <button
                               type="button"
                               onClick={() => fileInputRef.current?.click()}
-                              className="px-3 py-1.5 rounded-full bg-gold text-emerald-deep text-xs font-sans font-bold shadow-md hover:brightness-110 cursor-pointer"
+                              className="w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl border-2 border-dashed border-gold/40 hover:border-gold hover:bg-gold/5 bg-white/5 transition-all flex flex-col items-center justify-center p-4 text-center cursor-pointer group"
                             >
-                              {t.gallery.uploadChangeFile}
+                              <div className="w-12 h-12 rounded-full bg-gold/15 text-gold flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
+                                <UploadCloud className="w-6 h-6" />
+                              </div>
+                              <span className="font-sans text-xs font-semibold text-gold-light block">
+                                {t.gallery.uploadSelectFile}
+                              </span>
+                              <span className="font-sans text-[11px] text-ivory/50 mt-1">
+                                PNG, JPG, JPEG, WEBP (Tối đa 15MB)
+                              </span>
                             </button>
-                          </div>
+                          )}
                         </div>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl border-2 border-dashed border-gold/40 hover:border-gold hover:bg-gold/5 bg-white/5 transition-all flex flex-col items-center justify-center p-4 text-center cursor-pointer group"
-                        >
-                          <div className="w-12 h-12 rounded-full bg-gold/15 text-gold flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
-                            <UploadCloud className="w-6 h-6" />
+                        /* URL Mode */
+                        <div className="space-y-2">
+                          <div className="relative">
+                            <input
+                              type="url"
+                              value={imageUrlInput}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setImageUrlInput(val);
+                                if (val.trim()) {
+                                  setPreviewUrl(val.trim());
+                                  setUploadError(null);
+                                } else {
+                                  setPreviewUrl(null);
+                                }
+                              }}
+                              placeholder={t.gallery.uploadUrlPlaceholder}
+                              className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all"
+                            />
+                            <LinkIcon className="w-3.5 h-3.5 text-gold absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                           </div>
-                          <span className="font-sans text-xs font-semibold text-gold-light block">
-                            {t.gallery.uploadSelectFile}
-                          </span>
-                          <span className="font-sans text-[11px] text-ivory/50 mt-1">
-                            PNG, JPG, JPEG, WEBP (Tối đa 15MB)
-                          </span>
-                        </button>
+
+                          {previewUrl ? (
+                            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border-2 border-gold/50 shadow-inner group">
+                              <Image
+                                src={previewUrl}
+                                alt="Preview"
+                                fill
+                                className="object-cover"
+                                onError={() => {
+                                  setUploadError("Không thể tải ảnh từ link này. Vui lòng kiểm tra lại URL!");
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl border border-gold/20 bg-white/5 flex flex-col items-center justify-center p-4 text-center">
+                              <ImageIcon className="w-8 h-8 text-gold/40 mb-1" />
+                              <span className="text-[11px] text-ivory/60 font-sans">
+                                Dán liên kết ảnh trực tiếp (URL) để xem trước
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
 
@@ -479,27 +616,82 @@ export const GallerySection: React.FC = () => {
 
                     {/* Category Selection */}
                     <div>
-                      <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold mb-1">
-                        {t.gallery.uploadCategoryLabel}:
-                      </label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {["Kỷ Niệm", "Tình Bạn", "Kỷ Ức", "Chân Dung", "Vinh Danh"].map(
-                          (cat) => (
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold">
+                          {t.gallery.uploadCategoryLabel}:
+                        </label>
+                        {isCustomCategory && (
+                          <span className="text-[10px] font-sans text-gold bg-gold/15 px-2 py-0.5 rounded-full border border-gold/30">
+                            Chủ đề tùy chỉnh
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Preset Pills + Custom Button */}
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {PRESET_CATEGORIES.map((cat) => {
+                          const isSelected = !isCustomCategory && selectedUploadCat === cat;
+                          return (
                             <button
                               key={cat}
                               type="button"
-                              onClick={() => setSelectedUploadCat(cat)}
-                              className={`text-[11px] px-3 py-1 rounded-full font-sans font-semibold transition-colors cursor-pointer border ${
-                                selectedUploadCat === cat
-                                  ? "bg-gold text-emerald-deep border-gold"
+                              onClick={() => {
+                                setSelectedUploadCat(cat);
+                                setIsCustomCategory(false);
+                              }}
+                              className={`text-[11px] px-3 py-1 rounded-full font-sans font-semibold transition-all cursor-pointer border ${
+                                isSelected
+                                  ? "bg-gold text-emerald-deep border-gold shadow-xs"
                                   : "bg-white/5 text-ivory/70 border-white/20 hover:border-gold/50"
                               }`}
                             >
                               {cat}
                             </button>
-                          )
-                        )}
+                          );
+                        })}
+
+                        {/* + Chủ đề khác button */}
+                        <button
+                          type="button"
+                          onClick={() => setIsCustomCategory(true)}
+                          className={`text-[11px] px-3 py-1 rounded-full font-sans font-semibold transition-all cursor-pointer border flex items-center gap-1 ${
+                            isCustomCategory
+                              ? "bg-gold text-emerald-deep border-gold shadow-xs"
+                              : "bg-gold/10 text-gold-light border-gold/40 hover:bg-gold/20"
+                          }`}
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>{t.gallery.uploadOtherCategoryBtn}</span>
+                        </button>
                       </div>
+
+                      {/* Custom Category Input */}
+                      {isCustomCategory && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-2"
+                        >
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={customCategory}
+                              onChange={(e) => {
+                                setCustomCategory(e.target.value);
+                                setIsCustomCategory(true);
+                              }}
+                              placeholder={t.gallery.uploadCustomCategoryPlaceholder}
+                              className="w-full pl-8 pr-3.5 py-2 rounded-xl bg-white/10 border border-gold/60 text-ivory placeholder-ivory/40 text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all shadow-inner"
+                              autoFocus
+                            />
+                            <Tag className="w-3.5 h-3.5 text-gold absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          </div>
+                          <p className="text-[10px] text-ivory/50 mt-1 pl-1">
+                            💡 Có thể nhập tên chủ đề (text) hoặc link chủ đề (URL).
+                          </p>
+                        </motion.div>
+                      )}
                     </div>
 
                     {/* Caption / Story */}
@@ -525,7 +717,10 @@ export const GallerySection: React.FC = () => {
                     {/* Submit Button */}
                     <button
                       type="submit"
-                      disabled={isUploading || !selectedFile}
+                      disabled={
+                        isUploading ||
+                        (uploadSourceMode === "file" ? !selectedFile : !imageUrlInput.trim())
+                      }
                       className="w-full py-3 rounded-xl bg-gold-gradient text-emerald-deep font-sans font-bold text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 hover:brightness-110 active:scale-98 transition-all cursor-pointer shadow-gold-glow disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isUploading ? (

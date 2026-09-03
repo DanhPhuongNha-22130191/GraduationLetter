@@ -199,6 +199,11 @@ export interface TranslationSchema {
     uploadCaptionLabel: string;
     uploadCaptionPlaceholder: string;
     uploadCategoryLabel: string;
+    uploadCustomCategoryPlaceholder: string;
+    uploadOtherCategoryBtn: string;
+    uploadSourceFileTab: string;
+    uploadSourceUrlTab: string;
+    uploadUrlPlaceholder: string;
     uploadSelectFile: string;
     uploadChangeFile: string;
     uploadSubmitBtn: string;
@@ -351,6 +356,11 @@ export const translations: Record<Language, TranslationSchema> = {
       uploadCaptionLabel: "Lời nhắn / Kỷ niệm gắn liền với bức ảnh",
       uploadCaptionPlaceholder: "Kỷ niệm chuyến đi chơi, đồ án môn học, kỷ niệm sinh nhật...",
       uploadCategoryLabel: "Chủ đề ảnh",
+      uploadCustomCategoryPlaceholder: "Nhập tên chủ đề hoặc link chủ đề...",
+      uploadOtherCategoryBtn: "+ Khác / Tự nhập...",
+      uploadSourceFileTab: "Tải tệp ảnh",
+      uploadSourceUrlTab: "Dán link ảnh (URL)",
+      uploadUrlPlaceholder: "Dán đường dẫn ảnh (https://...)",
       uploadSelectFile: "Bấm hoặc kéo thả ảnh vào đây để tải lên",
       uploadChangeFile: "Đổi ảnh khác",
       uploadSubmitBtn: "Tải Ảnh Lên Kho Kỷ Niệm",
@@ -559,6 +569,11 @@ export const translations: Record<Language, TranslationSchema> = {
       uploadCaptionLabel: "Caption / Memory story",
       uploadCaptionPlaceholder: "Trip to the beach, year 3 project together...",
       uploadCategoryLabel: "Photo Category",
+      uploadCustomCategoryPlaceholder: "Enter topic name or link...",
+      uploadOtherCategoryBtn: "+ Other / Custom...",
+      uploadSourceFileTab: "Upload File",
+      uploadSourceUrlTab: "Paste Image URL",
+      uploadUrlPlaceholder: "Paste image link (https://...)",
       uploadSelectFile: "Click or drag & drop a photo here to upload",
       uploadChangeFile: "Change Photo",
       uploadSubmitBtn: "Upload Photo to Album",
@@ -767,6 +782,11 @@ export const translations: Record<Language, TranslationSchema> = {
       uploadCaptionLabel: "ចំណងជើង / រឿងរ៉ាវអនុស្សាវរីយ៍",
       uploadCaptionPlaceholder: "ដំណើរកម្សាន្ត, គម្រោងឆ្នាំទី៣...",
       uploadCategoryLabel: "ប្រភេទរូបថត",
+      uploadCustomCategoryPlaceholder: "បញ្ចូលឈ្មោះប្រធានបទ ឬតំណ...",
+      uploadOtherCategoryBtn: "+ ផ្សេងទៀត...",
+      uploadSourceFileTab: "បង្ហោះឯកសារ",
+      uploadSourceUrlTab: "បិទភ្ជាប់តំណ (URL)",
+      uploadUrlPlaceholder: "បិទភ្ជាប់តំណរូបភាព (https://...)",
       uploadSelectFile: "ចុច ឬទម្លាក់រូបថតនៅទីនេះដើម្បីបង្ហោះ",
       uploadChangeFile: "ប្តូររូបថតផ្សេង",
       uploadSubmitBtn: "បង្ហោះរូបថតទៅកាន់អាល់ប៊ុម",
