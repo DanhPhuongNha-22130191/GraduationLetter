@@ -358,3 +358,122 @@ export function findGuestBySlug(
   return null;
 }
 
+/**
+ * Tải toàn bộ ảnh kỷ niệm đã được mọi người đóng góp từ Google Sheet / Cloud
+ */
+export async function fetchPhotosFromSheet(): Promise<import("@/config/graduation").GalleryItem[]> {
+  const cacheKey = "cached_cloud_photos";
+  const photos: import("@/config/graduation").GalleryItem[] = [];
+  const seenUrls = new Set<string>();
+
+  // 1. Đọc từ cache trước để hiển thị ngay lập tức 0ms
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(cacheKey) || sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          parsed.forEach((p) => {
+            if (p.src && !seenUrls.has(p.src)) {
+              seenUrls.add(p.src);
+              photos.push(p);
+            }
+          });
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 2. Tải từ Google Apps Script (Sheet AnhKyNiem & KhachMoi)
+  try {
+    if (graduationConfig.googleScriptUrl) {
+      // Thử gọi endpoint lấy ảnh
+      const res = await fetch(`${graduationConfig.googleScriptUrl}?action=getPhotos&sheet=AnhKyNiem`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+
+      if (res.ok) {
+        const rawList = await res.json();
+        if (Array.isArray(rawList)) {
+          rawList.forEach((item: Record<string, unknown>, idx: number) => {
+            const rawUrl =
+              item.photoUrl ||
+              item.PhotoUrl ||
+              item.photo ||
+              item.Photo ||
+              item.src ||
+              item.Src ||
+              item.url ||
+              item.Url ||
+              item.specialPhoto ||
+              item.SpecialPhoto ||
+              item.link ||
+              item.Link;
+
+            if (rawUrl && typeof rawUrl === "string") {
+              const cleanUrl = rawUrl.trim();
+              if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://") || cleanUrl.startsWith("/")) {
+                if (!seenUrls.has(cleanUrl)) {
+                  seenUrls.add(cleanUrl);
+                  const name = String(item.name || item.Name || item.guestName || item.hoTen || "Khách mời").trim();
+                  const rawCaption = String(item.caption || item.Caption || item.title || item.Title || item.loiChuc || "").trim();
+                  const category = String(item.category || item.Category || item.chuDe || item.ChuDe || "Kỷ Niệm").trim();
+                  const caption = rawCaption || `Khoảnh khắc từ ${name}`;
+                  const title = caption.includes(name) ? caption : `${caption} — (${name})`;
+
+                  photos.push({
+                    id: `cloud-${item.id || item.timestamp || idx}-${Date.now()}`,
+                    title,
+                    category: category || "Kỷ Niệm",
+                    src: cleanUrl,
+                    alt: `Ảnh kỷ niệm [${category}] đóng góp bởi ${name}`,
+                  });
+                }
+              }
+            }
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch cloud photos:", err);
+  }
+
+  // 3. Quét thêm ảnh riêng từ danh sách khách mời (specialPhoto)
+  try {
+    const dynamicRegistry = await fetchGuestsFromSheet();
+    Object.values(dynamicRegistry).forEach((guest, idx) => {
+      if (guest.specialPhoto && typeof guest.specialPhoto === "string") {
+        const cleanUrl = guest.specialPhoto.trim();
+        if ((cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://") || cleanUrl.startsWith("/")) && !seenUrls.has(cleanUrl)) {
+          seenUrls.add(cleanUrl);
+          photos.push({
+            id: `special-${guest.slug || idx}`,
+            title: `Khoảnh khắc cùng ${guest.name}`,
+            category: "Kỷ Niệm",
+            src: cleanUrl,
+            alt: `Ảnh kỷ niệm đóng góp bởi ${guest.name}`,
+          });
+        }
+      }
+    });
+  } catch {
+    // ignore
+  }
+
+  // Cập nhật lại cache
+  if (photos.length > 0 && typeof window !== "undefined") {
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(photos));
+      sessionStorage.setItem(cacheKey, JSON.stringify(photos));
+    } catch {
+      // ignore
+    }
+  }
+
+  return photos;
+}
+

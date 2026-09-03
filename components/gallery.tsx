@@ -24,6 +24,7 @@ import {
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { graduationConfig, GalleryItem } from "@/config/graduation";
+import { fetchPhotosFromSheet } from "@/config/guests";
 import { Lock, ShieldCheck } from "lucide-react";
 
 const PRESET_CATEGORIES = ["Kỷ Niệm", "Tình Bạn", "Kỷ Ức", "Chân Dung", "Vinh Danh"];
@@ -34,8 +35,10 @@ export const GallerySection: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  // User-uploaded photos state
+  // User-uploaded photos state (locally added)
   const [userPhotos, setUserPhotos] = useState<GalleryItem[]>([]);
+  // Community-uploaded photos state (synced from Google Sheet & Cloud)
+  const [cloudPhotos, setCloudPhotos] = useState<GalleryItem[]>([]);
 
   // Upload modal state
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -54,8 +57,9 @@ export const GallerySection: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load saved contributed photos from localStorage on mount
+  // Load saved contributed photos from localStorage & fetch all community photos from Google Sheets
   useEffect(() => {
+    // 1. Khôi phục ảnh đã up từ máy này
     try {
       const saved = localStorage.getItem("graduation_user_photos");
       if (saved) {
@@ -67,6 +71,15 @@ export const GallerySection: React.FC = () => {
     } catch {
       // ignore
     }
+
+    // 2. Nạp toàn bộ ảnh từ Google Sheet / Cloud do mọi người đã up
+    fetchPhotosFromSheet().then((remotePhotos) => {
+      if (Array.isArray(remotePhotos) && remotePhotos.length > 0) {
+        setCloudPhotos(remotePhotos);
+      }
+    }).catch(() => {
+      // ignore
+    });
   }, []);
 
   // Pre-fill uploader name when guestName is detected
@@ -77,8 +90,10 @@ export const GallerySection: React.FC = () => {
   }, [guestName]);
 
   const defaultItems = (t.gallery.items || []) as GalleryItem[];
-  // Combine default photos with guest-contributed photos
-  const items = [...userPhotos, ...defaultItems];
+  // Kết hợp ảnh vừa upload trên máy + toàn bộ ảnh từ Cloud của mọi người + ảnh mặc định (nếu có)
+  const allPhotos = [...userPhotos, ...cloudPhotos, ...defaultItems];
+  // Khử trùng lặp ảnh theo đường dẫn src
+  const items = Array.from(new Map(allPhotos.map((p) => [p.src, p])).values());
 
   // Get unique categories
   const categories = ["all", ...Array.from(new Set(items.map((item) => item.category)))];
@@ -709,7 +724,7 @@ export const GallerySection: React.FC = () => {
                             <Tag className="w-3.5 h-3.5 text-gold absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                           </div>
                           <p className="text-[10px] text-ivory/50 mt-1 pl-1">
-                            💡 Có thể nhập tên chủ đề (text) hoặc link chủ đề (URL).
+                            💡 Gợi ý: Nhập tên chủ đề bạn muốn đặt (VD: Du Lịch, Hội Bạn Thân, Kỷ Niệm Cấp 3...).
                           </p>
                         </div>
                       )}
