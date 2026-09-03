@@ -1,5 +1,52 @@
 export type Language = "vi" | "en" | "km";
 
+/**
+ * Tự động chuyển đổi thời gian linh hoạt đa ngôn ngữ (VI, EN, KM)
+ * Ví dụ: "09:30 - 11:30 sáng" -> EN: "09:30 - 11:30 AM", KM: "09:30 - 11:30 ព្រឹក"
+ */
+export function formatLocalizedTime(timeStr?: string, lang: Language = "vi"): string {
+  if (!timeStr) return "";
+  const trimmed = timeStr.trim();
+
+  const isMorning = /sáng|sang|am|morning|ព្រឹក/i.test(trimmed);
+  const isAfternoon = /chiều|chieu|pm|afternoon|រសៀល/i.test(trimmed);
+  const isEvening = /tối|toi|evening|night|យប់/i.test(trimmed);
+  const isNoon = /trưa|trua|noon/i.test(trimmed);
+
+  if (!isMorning && !isAfternoon && !isEvening && !isNoon) {
+    return trimmed;
+  }
+
+  const cleaned = trimmed
+    .replace(/(sáng|sang|am|pm|chiều|chieu|tối|toi|trưa|trua|morning|afternoon|evening|ព្រឹក|រសៀល|យប់)/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (lang === "vi") {
+    if (isMorning) return `${cleaned} sáng`;
+    if (isAfternoon) return `${cleaned} chiều`;
+    if (isEvening) return `${cleaned} tối`;
+    if (isNoon) return `${cleaned} trưa`;
+    return trimmed;
+  }
+
+  if (lang === "en") {
+    if (isMorning) return `${cleaned} AM`;
+    if (isAfternoon || isEvening || isNoon) return `${cleaned} PM`;
+    return trimmed;
+  }
+
+  if (lang === "km") {
+    if (isMorning) return `${cleaned} ព្រឹក`;
+    if (isAfternoon) return `${cleaned} រសៀល`;
+    if (isEvening) return `${cleaned} យប់`;
+    if (isNoon) return `${cleaned} ថ្ងៃត្រង់`;
+    return trimmed;
+  }
+
+  return trimmed;
+}
+
 export interface TranslationSchema {
   nav: {
     home: string;

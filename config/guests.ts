@@ -6,6 +6,7 @@ export interface GuestProfile {
   name: string;
   mode: GuestPronounMode;
   customMessage?: string;
+  customTime?: string;
   specialPhoto?: string;
 }
 
@@ -122,6 +123,17 @@ export async function fetchGuestsFromSheet(): Promise<Record<string, GuestProfil
                 item.tamThu ||
                 item.TamThu ||
                 undefined) as string | undefined;
+              const customTime = (item.customTime ||
+                item.CustomTime ||
+                item.thoiGian ||
+                item.ThoiGian ||
+                item.thoiGianMoi ||
+                item.ThoiGianMoi ||
+                item.time ||
+                item.Time ||
+                item.gio ||
+                item.Gio ||
+                undefined) as string | undefined;
               const specialPhoto = (item.specialPhoto ||
                 item.SpecialPhoto ||
                 item.photo ||
@@ -132,6 +144,7 @@ export async function fetchGuestsFromSheet(): Promise<Record<string, GuestProfil
                 name: String(name).trim(),
                 mode,
                 customMessage: customMessage ? String(customMessage).trim() : undefined,
+                customTime: customTime ? String(customTime).trim() : undefined,
                 specialPhoto: specialPhoto ? String(specialPhoto).trim() : undefined,
               };
             }

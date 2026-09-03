@@ -12,6 +12,7 @@ interface GuestContextType {
   hasCustomGuest: boolean;
   pronounMode: GuestPronounMode;
   customMessage?: string;
+  customTime?: string;
   isFormal: boolean;
   isSenior: boolean;
   isJunior: boolean;
@@ -26,6 +27,7 @@ const GuestContext = createContext<GuestContextType>({
   hasCustomGuest: false,
   pronounMode: "friend",
   customMessage: undefined,
+  customTime: undefined,
   isFormal: false,
   isSenior: false,
   isJunior: false,
@@ -144,6 +146,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [guestName, setGuestNameState] = useState<string>("");
   const [pronounMode, setPronounModeState] = useState<GuestPronounMode>("friend");
   const [customMessage, setCustomMessageState] = useState<string | undefined>(undefined);
+  const [customTime, setCustomTimeState] = useState<string | undefined>(undefined);
   const isInitialized = useRef(false);
 
   useEffect(() => {
@@ -167,6 +170,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         let detectedMode: GuestPronounMode = "friend";
         let rawName = "";
         let foundCustomMsg: string | undefined = undefined;
+        let foundCustomTime: string | undefined = undefined;
 
         if (slugParam) {
           hasParams = true;
@@ -175,6 +179,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             rawName = profile.name;
             detectedMode = profile.mode;
             foundCustomMsg = profile.customMessage;
+            foundCustomTime = profile.customTime;
           } else {
             rawName = slugParam;
             detectedMode = autoDetectModeFromName(slugParam);
@@ -202,12 +207,16 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setGuestNameState(decoded);
           setPronounModeState(detectedMode);
           setCustomMessageState(foundCustomMsg);
+          setCustomTimeState(foundCustomTime);
 
           try {
             sessionStorage.setItem("invitation_guest_name", decoded);
             sessionStorage.setItem("invitation_guest_mode", detectedMode);
             if (foundCustomMsg) {
               sessionStorage.setItem("invitation_guest_msg", foundCustomMsg);
+            }
+            if (foundCustomTime) {
+              sessionStorage.setItem("invitation_guest_time", foundCustomTime);
             }
           } catch {
             // ignore
@@ -220,10 +229,12 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const saved = sessionStorage.getItem("invitation_guest_name");
           const savedMode = (sessionStorage.getItem("invitation_guest_mode") as GuestPronounMode) || "friend";
           const savedMsg = sessionStorage.getItem("invitation_guest_msg") || undefined;
+          const savedTime = sessionStorage.getItem("invitation_guest_time") || undefined;
           if (saved) {
             setGuestNameState(saved);
             setPronounModeState(savedMode);
             setCustomMessageState(savedMsg);
+            setCustomTimeState(savedTime);
           }
         }
 
@@ -236,12 +247,16 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               setGuestNameState(dynamicProfile.name);
               setPronounModeState(dynamicProfile.mode);
               setCustomMessageState(dynamicProfile.customMessage);
+              setCustomTimeState(dynamicProfile.customTime);
 
               try {
                 sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
                 sessionStorage.setItem("invitation_guest_mode", dynamicProfile.mode);
                 if (dynamicProfile.customMessage) {
                   sessionStorage.setItem("invitation_guest_msg", dynamicProfile.customMessage);
+                }
+                if (dynamicProfile.customTime) {
+                  sessionStorage.setItem("invitation_guest_time", dynamicProfile.customTime);
                 }
               } catch {
                 // ignore
@@ -276,6 +291,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         sessionStorage.removeItem("invitation_guest_name");
         sessionStorage.removeItem("invitation_guest_mode");
         sessionStorage.removeItem("invitation_guest_msg");
+        sessionStorage.removeItem("invitation_guest_time");
       }
     } catch {
       // ignore
@@ -324,6 +340,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         hasCustomGuest: Boolean(guestName.trim()),
         pronounMode,
         customMessage,
+        customTime,
         isFormal: pronounMode === "elder",
         isSenior: pronounMode === "senior",
         isJunior: pronounMode === "junior",

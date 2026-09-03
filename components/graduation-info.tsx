@@ -5,9 +5,12 @@ import { motion } from "framer-motion";
 import { User, BookOpen, Calendar as CalendarIcon, Clock, MapPin, Copy, Check } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
+import { useGuest } from "@/context/guest-context";
+import { formatLocalizedTime } from "@/config/i18n";
 
 export const GraduationInfoSection: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const { customTime } = useGuest();
   const [copied, setCopied] = useState(false);
 
   const handleCopyAddress = () => {
@@ -37,7 +40,8 @@ export const GraduationInfoSection: React.FC = () => {
     {
       icon: Clock,
       label: t.details.time,
-      value: graduationConfig.time,
+      value: customTime ? formatLocalizedTime(customTime, lang) : t.details.timeVal,
+      highlight: Boolean(customTime),
     },
     {
       icon: MapPin,
