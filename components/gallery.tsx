@@ -309,68 +309,95 @@ export const GallerySection: React.FC = () => {
           </button>
         </motion.div>
 
-        {/* Filter Category Tabs */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-8 sm:mb-10">
-          {categories.map((cat) => {
-            const label = cat === "all" ? t.gallery.allTab : cat;
-            const isActive = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full font-sans text-xs font-semibold tracking-wider transition-all duration-300 active:scale-95 touch-manipulation cursor-pointer border ${
-                  isActive
-                    ? "bg-emerald-deep text-gold border-gold shadow-md"
-                    : "bg-white/80 text-charcoal/80 border-gold/30 hover:border-gold hover:text-emerald-deep"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
+        {/* Filter Category Tabs (Only when there are categories) */}
+        {categories.length > 2 && (
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-8 sm:mb-10">
+            {categories.map((cat) => {
+              const label = cat === "all" ? t.gallery.allTab : cat;
+              const isActive = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-2 rounded-full font-sans text-xs font-semibold tracking-wider transition-all duration-300 active:scale-95 touch-manipulation cursor-pointer border ${
+                    isActive
+                      ? "bg-emerald-deep text-gold border-gold shadow-md"
+                      : "bg-white/80 text-charcoal/80 border-gold/30 hover:border-gold hover:text-emerald-deep"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
-        {/* Gallery Grid */}
-        <motion.div layout className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
-          <AnimatePresence>
-            {filteredItems.map((photo, idx) => (
-              <motion.div
-                key={photo.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.4, delay: idx * 0.04 }}
-                onClick={() => handleOpenLightbox(idx)}
-                className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer border border-gold/30 shadow-card-glow bg-emerald-deep/5 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl active:scale-95 touch-manipulation"
-              >
-                <Image
-                  src={photo.src}
-                  alt={photo.alt}
-                  fill
-                  sizes="(max-width: 768px) 50vw, 33vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  loading="lazy"
-                />
+        {/* Gallery Grid or Empty State */}
+        {filteredItems.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-md mx-auto p-8 rounded-3xl bg-emerald-deep/5 border-2 border-dashed border-gold/40 text-center space-y-4 shadow-sm"
+          >
+            <div className="w-16 h-16 rounded-full bg-gold/15 text-gold flex items-center justify-center mx-auto shadow-gold-glow">
+              <Camera className="w-8 h-8" />
+            </div>
+            <p className="font-serif text-base sm:text-lg text-emerald-deep font-semibold">
+              {t.gallery.emptyText}
+            </p>
+            <button
+              onClick={() => {
+                handleResetUploadForm();
+                setIsUploadOpen(true);
+              }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-xs uppercase tracking-wider shadow-gold-glow hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span>Đóng góp ảnh ngay</span>
+            </button>
+          </motion.div>
+        ) : (
+          <motion.div layout className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+            <AnimatePresence>
+              {filteredItems.map((photo, idx) => (
+                <motion.div
+                  key={photo.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.4, delay: idx * 0.04 }}
+                  onClick={() => handleOpenLightbox(idx)}
+                  className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer border border-gold/30 shadow-card-glow bg-emerald-deep/5 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl active:scale-95 touch-manipulation"
+                >
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    loading="lazy"
+                  />
 
-                {/* Shimmer Gold Hover Border */}
-                <div className="absolute inset-0 border-2 border-gold/0 group-hover:border-gold/60 rounded-2xl transition-colors pointer-events-none z-10" />
+                  {/* Shimmer Gold Hover Border */}
+                  <div className="absolute inset-0 border-2 border-gold/0 group-hover:border-gold/60 rounded-2xl transition-colors pointer-events-none z-10" />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-emerald-deep/90 via-emerald-deep/20 to-transparent opacity-85 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 text-ivory">
-                  <span className="text-[10px] font-sans uppercase tracking-widest text-gold font-bold mb-0.5 line-clamp-1">
-                    {photo.category}
-                  </span>
-                  <p className="font-serif text-xs sm:text-sm font-semibold line-clamp-1">
-                    {photo.title}
-                  </p>
-                  <div className="absolute top-3 right-3 p-2 rounded-full bg-black/50 text-gold backdrop-blur-md opacity-80 sm:opacity-0 group-hover:opacity-100 transition-all border border-gold/30">
-                    <ZoomIn className="w-4 h-4" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-deep/90 via-emerald-deep/20 to-transparent opacity-85 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 text-ivory">
+                    <span className="text-[10px] font-sans uppercase tracking-widest text-gold font-bold mb-0.5 line-clamp-1">
+                      {photo.category}
+                    </span>
+                    <p className="font-serif text-xs sm:text-sm font-semibold line-clamp-1">
+                      {photo.title}
+                    </p>
+                    <div className="absolute top-3 right-3 p-2 rounded-full bg-black/50 text-gold backdrop-blur-md opacity-80 sm:opacity-0 group-hover:opacity-100 transition-all border border-gold/30">
+                      <ZoomIn className="w-4 h-4" />
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
       </div>
 
       {/* Upload Memory Photo Modal */}
@@ -566,7 +593,7 @@ export const GallerySection: React.FC = () => {
                                 }
                               }}
                               placeholder={t.gallery.uploadUrlPlaceholder}
-                              className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all"
+                              className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all"
                             />
                             <LinkIcon className="w-3.5 h-3.5 text-gold absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                           </div>
@@ -609,26 +636,26 @@ export const GallerySection: React.FC = () => {
                         type="text"
                         value={guestName || uploaderName}
                         readOnly
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-gold/15 border border-gold/60 text-gold-light font-sans text-xs font-bold focus:outline-hidden cursor-not-allowed"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-gold/15 border border-gold/60 text-gold-light font-sans text-sm sm:text-xs font-bold focus:outline-hidden cursor-not-allowed"
                         required
                       />
                     </div>
 
                     {/* Category Selection */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
                         <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold">
                           {t.gallery.uploadCategoryLabel}:
                         </label>
                         {isCustomCategory && (
                           <span className="text-[10px] font-sans text-gold bg-gold/15 px-2 py-0.5 rounded-full border border-gold/30">
-                            Chủ đề tùy chỉnh
+                            Chủ đề riêng
                           </span>
                         )}
                       </div>
 
                       {/* Preset Pills + Custom Button */}
-                      <div className="flex flex-wrap gap-1.5 mb-2">
+                      <div className="flex flex-wrap gap-1.5">
                         {PRESET_CATEGORIES.map((cat) => {
                           const isSelected = !isCustomCategory && selectedUploadCat === cat;
                           return (
@@ -639,10 +666,10 @@ export const GallerySection: React.FC = () => {
                                 setSelectedUploadCat(cat);
                                 setIsCustomCategory(false);
                               }}
-                              className={`text-[11px] px-3 py-1 rounded-full font-sans font-semibold transition-all cursor-pointer border ${
+                              className={`text-[11px] sm:text-xs px-3 py-1.5 rounded-full font-sans font-semibold transition-colors duration-150 cursor-pointer border touch-manipulation active:scale-95 ${
                                 isSelected
                                   ? "bg-gold text-emerald-deep border-gold shadow-xs"
-                                  : "bg-white/5 text-ivory/70 border-white/20 hover:border-gold/50"
+                                  : "bg-white/5 text-ivory/75 border-white/20 hover:border-gold/50"
                               }`}
                             >
                               {cat}
@@ -654,7 +681,7 @@ export const GallerySection: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setIsCustomCategory(true)}
-                          className={`text-[11px] px-3 py-1 rounded-full font-sans font-semibold transition-all cursor-pointer border flex items-center gap-1 ${
+                          className={`text-[11px] sm:text-xs px-3 py-1.5 rounded-full font-sans font-semibold transition-colors duration-150 cursor-pointer border flex items-center gap-1 touch-manipulation active:scale-95 ${
                             isCustomCategory
                               ? "bg-gold text-emerald-deep border-gold shadow-xs"
                               : "bg-gold/10 text-gold-light border-gold/40 hover:bg-gold/20"
@@ -665,14 +692,9 @@ export const GallerySection: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Custom Category Input */}
+                      {/* Custom Category Input (Clean, smooth without jerky layout shifts) */}
                       {isCustomCategory && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="mt-2"
-                        >
+                        <div className="pt-1">
                           <div className="relative">
                             <input
                               type="text"
@@ -682,15 +704,14 @@ export const GallerySection: React.FC = () => {
                                 setIsCustomCategory(true);
                               }}
                               placeholder={t.gallery.uploadCustomCategoryPlaceholder}
-                              className="w-full pl-8 pr-3.5 py-2 rounded-xl bg-white/10 border border-gold/60 text-ivory placeholder-ivory/40 text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all shadow-inner"
-                              autoFocus
+                              className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/60 text-ivory placeholder-ivory/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all shadow-inner"
                             />
                             <Tag className="w-3.5 h-3.5 text-gold absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                           </div>
                           <p className="text-[10px] text-ivory/50 mt-1 pl-1">
                             💡 Có thể nhập tên chủ đề (text) hoặc link chủ đề (URL).
                           </p>
-                        </motion.div>
+                        </div>
                       )}
                     </div>
 
@@ -704,7 +725,7 @@ export const GallerySection: React.FC = () => {
                         value={caption}
                         onChange={(e) => setCaption(e.target.value)}
                         placeholder={t.gallery.uploadCaptionPlaceholder}
-                        className="w-full px-3.5 py-2 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all resize-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all resize-none"
                       />
                     </div>
 

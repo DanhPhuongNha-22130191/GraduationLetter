@@ -88,72 +88,8 @@ export const graduationConfig = {
     },
   ] as JourneyStep[],
 
-  // Bộ sưu tập khoảnh khắc (Moments Gallery)
-  gallery: [
-    {
-      id: "g1",
-      title: "Lễ Trao Bằng Kỷ Niệm",
-      category: "Kỷ Niệm",
-      src: "/images/graduation/photo1.jpg",
-      alt: "Lễ tốt nghiệp Công nghệ thông tin Danh Phương Nhã",
-    },
-    {
-      id: "g2",
-      title: "Nụ Cười Ngày Ra Trường",
-      category: "Chân Dung",
-      src: "/images/graduation/photo2.jpg",
-      alt: "Hình ảnh tốt nghiệp Danh Phương Nhã",
-    },
-    {
-      id: "g3",
-      title: "Khoảnh Khắc Cùng Bạn Bè",
-      category: "Tình Bạn",
-      src: "/images/graduation/photo3.jpg",
-      alt: "Hình ảnh bạn bè chúc mừng tốt nghiệp",
-    },
-    {
-      id: "g4",
-      title: "Góc Sân Trường Nông Lâm",
-      category: "Kỷ Ức",
-      src: "/images/graduation/photo4.jpg",
-      alt: "Trường Đại Học Nông Lâm TP.HCM",
-    },
-    {
-      id: "g5",
-      title: "Hoa & Bằng Tốt Nghiệp",
-      category: "Vinh Danh",
-      src: "/images/graduation/photo5.jpg",
-      alt: "Bằng tốt nghiệp Công nghệ thông tin",
-    },
-    {
-      id: "g6",
-      title: "Mở Ra Chặng Đường Mới",
-      category: "Tương Lai",
-      src: "/images/graduation/photo6.jpg",
-      alt: "Tốt nghiệp IT 2026",
-    },
-    {
-      id: "g7",
-      title: "Nụ Cười Rạng Rỡ",
-      category: "Kỷ Niệm",
-      src: "/images/graduation/photo7.jpg",
-      alt: "Hình ảnh kỷ niệm tốt nghiệp",
-    },
-    {
-      id: "g8",
-      title: "Khoảnh Khắc Đáng Nhớ",
-      category: "Chân Dung",
-      src: "/images/graduation/photo8.jpg",
-      alt: "Chân dung tân kỹ sư IT",
-    },
-    {
-      id: "g9",
-      title: "Tự Hào Ngày Tốt Nghiệp",
-      category: "Vinh Danh",
-      src: "/images/graduation/photo9.jpg",
-      alt: "Tự hào ngày tốt nghiệp",
-    },
-  ] as GalleryItem[],
+  // Bộ sưu tập khoảnh khắc (Moments Gallery - do khách mời tải lên hoặc nạp từ Cloud)
+  gallery: [] as GalleryItem[],
 
   // Âm nhạc
   audioUrl: "/audio/invitation-bg.mp3",
