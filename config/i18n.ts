@@ -213,6 +213,11 @@ export interface TranslationSchema {
     uploadRestrictedTitle: string;
     uploadRestrictedDesc: string;
     emptyText: string;
+    paginationPage: string;
+    paginationOf: string;
+    paginationPhotos: string;
+    paginationPrev: string;
+    paginationNext: string;
     items: Array<{
       id: string;
       title: string;
@@ -371,6 +376,11 @@ export const translations: Record<Language, TranslationSchema> = {
       uploadRestrictedTitle: "Dành Riêng Cho Khách Mời",
       uploadRestrictedDesc: "Tính năng đóng góp ảnh kỷ niệm chỉ mở cho khách mời có tên trong danh sách của Nhã. Vui lòng mở thiệp bằng liên kết riêng mà Nhã đã gửi cho bạn nhé! 💌",
       emptyText: "Kho kỷ niệm đang chờ những bức ảnh đầu tiên! Hãy bấm nút 'Đóng Góp Ảnh' phía trên để cùng Nhã lưu giữ khoảnh khắc nhé ✨",
+      paginationPage: "Trang",
+      paginationOf: "trên",
+      paginationPhotos: "bức ảnh kỷ niệm",
+      paginationPrev: "Trang trước",
+      paginationNext: "Trang sau",
       items: [],
     },
     location: {
@@ -521,6 +531,11 @@ export const translations: Record<Language, TranslationSchema> = {
       uploadRestrictedTitle: "Exclusive For Invited Guests",
       uploadRestrictedDesc: "Photo contribution is reserved for guests on Nhã's guest list. Please access the invitation using the personal link sent to you! 💌",
       emptyText: "The memory album is waiting for the first photos! Click 'Upload Photo' above to share your cherished memories with Nhã ✨",
+      paginationPage: "Page",
+      paginationOf: "of",
+      paginationPhotos: "memory photos",
+      paginationPrev: "Previous page",
+      paginationNext: "Next page",
       items: [],
     },
     location: {
@@ -671,6 +686,11 @@ export const translations: Record<Language, TranslationSchema> = {
       uploadRestrictedTitle: "ផ្តាច់មុខសម្រាប់ភ្ញៀវកិត្តិយស",
       uploadRestrictedDesc: "ការចែករំលែករូបថតគឺសម្រាប់តែភ្ញៀវដែលមានឈ្មោះក្នុងបញ្ជីអញ្ជើញរបស់ Nhã ប៉ុណ្ណោះ។ សូមបើកលិខិតអញ្ជើញតាមរយៈតំណភ្ជាប់ផ្ទាល់ខ្លួនរបស់អ្នក! 💌",
       emptyText: "អាល់ប៊ុមអនុស្សាវរីយ៍កំពុងរង់ចាំរូបថតដំបូង! សូមចុចប៊ូតុងខាងលើដើម្បីចែករំលែករូបថតជាមួយ Nhã ✨",
+      paginationPage: "ទំព័រ",
+      paginationOf: "នៃ",
+      paginationPhotos: "រូបថតអនុស្សាវរីយ៍",
+      paginationPrev: "ទំព័រមុន",
+      paginationNext: "ទំព័របន្ទាប់",
       items: [],
     },
     location: {

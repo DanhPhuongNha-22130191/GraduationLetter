@@ -44,12 +44,27 @@ function getOptimizedImageUrl(src: string, width = 1200): string {
 }
 
 const PRESET_CATEGORIES = ["Kỷ Niệm", "Tình Bạn", "Kỷ Ức", "Chân Dung", "Vinh Danh"];
+const ITEMS_PER_PAGE = 6;
+
+function getPaginationRange(current: number, total: number): (number | string)[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, "...", total];
+  }
+  if (current >= total - 3) {
+    return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+  }
+  return [1, "...", current - 1, current, current + 1, "...", total];
+}
 
 export const GallerySection: React.FC = () => {
   const { t } = useLanguage();
   const { guestName, isRegisteredGuest, canUpload } = useGuest();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   // User-uploaded photos state (locally added)
   const [userPhotos, setUserPhotos] = useState<GalleryItem[]>([]);
@@ -102,6 +117,48 @@ export const GallerySection: React.FC = () => {
 
         setCloudPhotos(cleanedRemote);
         setFailedPhotoUrls(new Set());
+
+        // Tự động kiểm tra và đồng bộ bù ngầm các ảnh trong userPhotos (từ máy này) nếu chưa có trên Google Sheet
+        try {
+          const cloudSrcs = new Set(cleanedRemote.map((p) => p.src));
+          const savedRaw = localStorage.getItem("graduation_user_photos");
+          if (savedRaw && graduationConfig.googleScriptUrl) {
+            const savedItems: GalleryItem[] = JSON.parse(savedRaw);
+            const unsynced = savedItems.filter(
+              (p) => p && p.src && !cloudSrcs.has(p.src) && !p.src.startsWith("blob:")
+            );
+            if (unsynced.length > 0) {
+              (async () => {
+                for (let i = 0; i < unsynced.length; i++) {
+                  const item = unsynced[i];
+                  try {
+                    await fetch(graduationConfig.googleScriptUrl, {
+                      method: "POST",
+                      mode: "no-cors",
+                      headers: { "Content-Type": "text/plain;charset=utf-8" },
+                      body: JSON.stringify({
+                        type: "PHOTO_UPLOAD",
+                        action: "PHOTO_UPLOAD",
+                        sheet: "AnhKyNiem",
+                        name: guestName || "Khách mời",
+                        caption: item.title || "Ảnh kỷ niệm cùng Nhã",
+                        category: item.category || "Kỷ Niệm",
+                        photoUrl: item.src,
+                        sourceType: "file",
+                        timestamp: new Date().toLocaleString("vi-VN"),
+                      }),
+                    });
+                    await new Promise((r) => setTimeout(r, 350));
+                  } catch {
+                    // ignore
+                  }
+                }
+              })();
+            }
+          }
+        } catch {
+          // ignore
+        }
 
         if (cleanedRemote.length === 0) {
           try {
@@ -255,6 +312,34 @@ export const GallerySection: React.FC = () => {
     selectedCategory === "all"
       ? items
       : items.filter((item) => item.category === selectedCategory);
+
+  // Tự động chuyển về trang 1 khi thay đổi chủ đề lọc
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
+
+  // Đảm bảo currentPage luôn hợp lệ nếu số lượng ảnh thay đổi
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredItems.length);
+  const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
+    setCurrentPage(newPage);
+    const galleryElement = document.getElementById("gallery");
+    if (galleryElement) {
+      const topPos = galleryElement.getBoundingClientRect().top + window.scrollY - 70;
+      window.scrollTo({ top: Math.max(0, topPos), behavior: "smooth" });
+    }
+  };
 
   const handleOpenLightbox = (index: number) => {
     setSelectedIndex(index);
@@ -451,31 +536,38 @@ export const GallerySection: React.FC = () => {
         // ignore
       }
 
-      // 3. Ghi log lên Google Sheet ngầm (gửi từng ảnh)
+      // 3. Ghi log lên Google Sheet ngầm (gửi tuần tự an toàn tránh xung đột đồng thời làm rơi rớt ảnh)
       try {
         if (graduationConfig.googleScriptUrl) {
-          Promise.allSettled(
-            uploadedUrls.map((url, i) =>
-              fetch(graduationConfig.googleScriptUrl, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({
-                  type: "PHOTO_UPLOAD",
-                  action: "PHOTO_UPLOAD",
-                  sheet: "AnhKyNiem",
-                  name: guestName || uploaderName || "Khách mời",
-                  caption: caption.trim()
-                    ? `${caption.trim()}${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`
-                    : "Ảnh kỷ niệm cùng Nhã",
-                  category: targetCategory,
-                  photoUrl: url,
-                  sourceType: uploadSourceMode,
-                  timestamp: new Date().toLocaleString("vi-VN"),
-                }),
-              })
-            )
-          ).catch(() => {});
+          (async () => {
+            for (let i = 0; i < uploadedUrls.length; i++) {
+              try {
+                await fetch(graduationConfig.googleScriptUrl, {
+                  method: "POST",
+                  mode: "no-cors",
+                  headers: { "Content-Type": "text/plain;charset=utf-8" },
+                  body: JSON.stringify({
+                    type: "PHOTO_UPLOAD",
+                    action: "PHOTO_UPLOAD",
+                    sheet: "AnhKyNiem",
+                    name: guestName || uploaderName || "Khách mời",
+                    caption: caption.trim()
+                      ? `${caption.trim()}${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`
+                      : "Ảnh kỷ niệm cùng Nhã",
+                    category: targetCategory,
+                    photoUrl: uploadedUrls[i],
+                    sourceType: uploadSourceMode,
+                    timestamp: new Date().toLocaleString("vi-VN"),
+                  }),
+                });
+                if (i < uploadedUrls.length - 1) {
+                  await new Promise((resolve) => setTimeout(resolve, 320));
+                }
+              } catch {
+                // ignore
+              }
+            }
+          })();
         }
       } catch {
         // ignore
@@ -608,54 +700,130 @@ export const GallerySection: React.FC = () => {
             </button>
           </motion.div>
         ) : (
-          <motion.div layout className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
-            <AnimatePresence>
-              {filteredItems.map((photo, idx) => (
-                <motion.div
-                  key={photo.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.4, delay: idx * 0.04 }}
-                  onClick={() => handleOpenLightbox(idx)}
-                  className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer border border-gold/30 shadow-card-glow bg-emerald-deep/10 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl active:scale-98 touch-manipulation transform-gpu"
-                >
-                  {/* Crystal Clear High-Resolution Image */}
-                  <Image
-                    src={getOptimizedImageUrl(photo.src, 1200)}
-                    alt={photo.alt}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    quality={100}
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    loading={idx < 4 ? "eager" : "lazy"}
-                    priority={idx < 2}
-                    onError={() => handleImageError(photo.src)}
-                    unoptimized
-                  />
+          <div>
+            <motion.div layout className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+              <AnimatePresence mode="popLayout">
+                {paginatedItems.map((photo, localIdx) => {
+                  const globalIdx = startIndex + localIdx;
+                  return (
+                    <motion.div
+                      key={photo.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.35, delay: localIdx * 0.04 }}
+                      onClick={() => handleOpenLightbox(globalIdx)}
+                      className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer border border-gold/30 shadow-card-glow bg-emerald-deep/10 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl active:scale-98 touch-manipulation transform-gpu"
+                    >
+                      {/* Crystal Clear High-Resolution Image */}
+                      <Image
+                        src={getOptimizedImageUrl(photo.src, 1200)}
+                        alt={photo.alt}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        quality={100}
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        loading={localIdx < 4 ? "eager" : "lazy"}
+                        priority={currentPage === 1 && localIdx < 2}
+                        onError={() => handleImageError(photo.src)}
+                        unoptimized
+                      />
 
-                  {/* Shimmer Gold Hover Border */}
-                  <div className="absolute inset-0 border-2 border-gold/0 group-hover:border-gold/60 rounded-2xl transition-colors pointer-events-none z-10" />
+                      {/* Shimmer Gold Hover Border */}
+                      <div className="absolute inset-0 border-2 border-gold/0 group-hover:border-gold/60 rounded-2xl transition-colors pointer-events-none z-10" />
 
-                  {/* Compact Bottom-Only Caption Gradient (Leaves photo 100% bright, sharp & uncovered) */}
-                  <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex flex-col justify-end p-2.5 sm:p-3 text-ivory pointer-events-none z-10">
-                    <span className="text-[10px] font-sans uppercase tracking-widest text-gold font-bold mb-0.5 line-clamp-1 drop-shadow-md">
-                      {photo.category}
-                    </span>
-                    <p className="font-serif text-xs sm:text-sm font-semibold line-clamp-1 drop-shadow-md text-ivory/95">
-                      {photo.title}
-                    </p>
-                  </div>
+                      {/* Compact Bottom-Only Caption Gradient (Leaves photo 100% bright, sharp & uncovered) */}
+                      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex flex-col justify-end p-2.5 sm:p-3 text-ivory pointer-events-none z-10">
+                        <span className="text-[10px] font-sans uppercase tracking-widest text-gold font-bold mb-0.5 line-clamp-1 drop-shadow-md">
+                          {photo.category}
+                        </span>
+                        <p className="font-serif text-xs sm:text-sm font-semibold line-clamp-1 drop-shadow-md text-ivory/95">
+                          {photo.title}
+                        </p>
+                      </div>
 
-                  {/* Zoom Indicator Icon */}
-                  <div className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-black/50 text-gold backdrop-blur-md opacity-80 sm:opacity-0 group-hover:opacity-100 transition-all border border-gold/30 z-20">
-                    <ZoomIn className="w-3.5 h-3.5" />
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
+                      {/* Zoom Indicator Icon */}
+                      <div className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-black/50 text-gold backdrop-blur-md opacity-80 sm:opacity-0 group-hover:opacity-100 transition-all border border-gold/30 z-20">
+                        <ZoomIn className="w-3.5 h-3.5" />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* Pagination Controls */}
+            {filteredItems.length > ITEMS_PER_PAGE && (
+              <div className="mt-10 sm:mt-12 flex flex-col items-center justify-center gap-3.5">
+                {/* Page Summary Info */}
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-deep/5 border border-gold/35 text-emerald-deep font-sans text-xs font-medium shadow-xs">
+                  <span className="text-gold-dark font-bold">
+                    {t.gallery.paginationPage} {currentPage} {t.gallery.paginationOf} {totalPages}
+                  </span>
+                  <span className="text-emerald-deep/30">•</span>
+                  <span className="text-emerald-deep/80">
+                    Hiển thị {startIndex + 1}–{endIndex} {t.gallery.paginationOf} {filteredItems.length} {t.gallery.paginationPhotos}
+                  </span>
+                </div>
+
+                {/* Pagination Navigation Buttons */}
+                <div className="flex items-center justify-center gap-1.5 sm:gap-2 select-none">
+                  {/* Previous Button */}
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    title={t.gallery.paginationPrev}
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gold/40 bg-white/90 text-emerald-deep flex items-center justify-center hover:bg-gold/20 hover:border-gold transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-xs"
+                  >
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-deep" />
+                  </button>
+
+                  {/* Numbered Page Buttons */}
+                  {getPaginationRange(currentPage, totalPages).map((item, idx) => {
+                    if (typeof item === "string") {
+                      return (
+                        <span
+                          key={`ellipsis-${idx}`}
+                          className="w-7 sm:w-8 text-center text-gold-dark font-sans font-bold tracking-widest text-xs"
+                        >
+                          …
+                        </span>
+                      );
+                    }
+
+                    const isActive = item === currentPage;
+                    return (
+                      <button
+                        key={`page-${item}`}
+                        type="button"
+                        onClick={() => handlePageChange(item)}
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full font-sans text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer border touch-manipulation ${
+                          isActive
+                            ? "bg-emerald-deep text-gold border-gold shadow-md font-bold scale-105 ring-2 ring-gold/30"
+                            : "bg-white/90 text-emerald-deep border-gold/30 hover:bg-gold/20 hover:border-gold active:scale-95"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    );
+                  })}
+
+                  {/* Next Button */}
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    title={t.gallery.paginationNext}
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gold/40 bg-white/90 text-emerald-deep flex items-center justify-center hover:bg-gold/20 hover:border-gold transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-xs"
+                  >
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-deep" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
