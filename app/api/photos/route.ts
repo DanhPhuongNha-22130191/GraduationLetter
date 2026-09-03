@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   try {
     const res = await fetch(
-      `${graduationConfig.googleScriptUrl}?action=getPhotos&sheet=AnhKyNiem`,
+      `${graduationConfig.googleScriptUrl}?action=getPhotos&sheet=AnhKyNiem${isRefresh ? `&_t=${Date.now()}` : ""}`,
       {
         method: "GET",
         headers: { Accept: "application/json" },

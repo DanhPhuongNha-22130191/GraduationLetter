@@ -132,6 +132,11 @@ export const EnvelopeOverlay: React.FC = () => {
     // Ghi nhận lượt mở thiệp vào Google Sheets ngay khi bấm Mở Thiệp
     trackOpenInvitation(guestName, pronounMode);
 
+    // Tự động kích hoạt tải lại kho ảnh mới nhất ngay khi người dùng bấm Mở Thiệp
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("refresh_gallery_photos"));
+    }
+
     setTimeout(() => {
       setIsOpen(true);
       const el = document.getElementById("invitation");

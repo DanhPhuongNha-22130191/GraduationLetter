@@ -368,7 +368,7 @@ export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import
   // 1. Ưu tiên fetch từ /api/photos (server-side verification đã lọc sạch 404 và ảnh đã xóa)
   if (typeof window !== "undefined") {
     try {
-      const apiUrl = `/api/photos${forceRefresh ? "?refresh=1" : ""}`;
+      const apiUrl = `/api/photos${forceRefresh ? `?refresh=1&_t=${Date.now()}` : ""}`;
       const res = await fetch(apiUrl, {
         cache: forceRefresh ? "no-store" : "default",
       });

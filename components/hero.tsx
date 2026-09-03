@@ -16,6 +16,9 @@ export const HeroSection: React.FC = () => {
 
   const scrollToNext = () => {
     playBackgroundMusic();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("refresh_gallery_photos"));
+    }
     const el = document.getElementById("invitation");
     if (el) {
       el.scrollIntoView({ behavior: "smooth" });

@@ -298,6 +298,18 @@ export const GallerySection: React.FC = () => {
     syncPhotos(false);
   }, []);
 
+  // Tự động reload để lấy toàn bộ ảnh mới nhất ngay khi người dùng nhấn "Mở Thiệp"
+  useEffect(() => {
+    const handleTriggerRefresh = () => {
+      syncPhotos(true);
+    };
+
+    window.addEventListener("refresh_gallery_photos", handleTriggerRefresh);
+    return () => {
+      window.removeEventListener("refresh_gallery_photos", handleTriggerRefresh);
+    };
+  }, []);
+
   // Tự động dọn dẹp ảnh lỗi (404 hoặc bị xóa khỏi Cloud) ngay lập tức
   const handleImageError = (failedSrc: string) => {
     if (!failedSrc) return;
