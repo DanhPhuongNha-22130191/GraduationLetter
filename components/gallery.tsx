@@ -28,6 +28,20 @@ import { graduationConfig, GalleryItem } from "@/config/graduation";
 import { fetchPhotosFromSheet } from "@/config/guests";
 import { Lock, ShieldCheck } from "lucide-react";
 
+function getOptimizedImageUrl(src: string, width = 800): string {
+  if (!src || typeof src !== "string") return "";
+  const clean = src.trim();
+  if (clean.includes("res.cloudinary.com") && clean.includes("/image/upload/")) {
+    if (!clean.includes("/image/upload/f_auto") && !clean.includes("/image/upload/w_")) {
+      return clean.replace(
+        "/image/upload/",
+        `/image/upload/f_auto,q_auto:good,w_${width},c_limit/`
+      );
+    }
+  }
+  return clean;
+}
+
 const PRESET_CATEGORIES = ["Kỷ Niệm", "Tình Bạn", "Kỷ Ức", "Chân Dung", "Vinh Danh"];
 
 export const GallerySection: React.FC = () => {
@@ -370,15 +384,15 @@ export const GallerySection: React.FC = () => {
     }
 
     try {
-      // 2. Tạo đối tượng ảnh mới đưa ngay vào Gallery
+      // 2. Tạo đối tượng ảnh mới đưa ngay vào Gallery (chỉ hiển thị lời nhắn / mô tả, không gắn tên)
       const newPhotos: GalleryItem[] = uploadedUrls.map((url, i) => ({
         id: `user-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
         title: caption.trim()
-          ? `${caption.trim()} — (${guestName || uploaderName || "Khách mời"})${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`
-          : `Khoảnh khắc từ ${guestName || uploaderName || "Khách mời"}${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`,
+          ? (uploadedUrls.length > 1 ? `${caption.trim()} (#${i + 1})` : caption.trim())
+          : (targetCategory || "Ảnh kỷ niệm"),
         category: targetCategory,
         src: url,
-        alt: `Ảnh kỷ niệm [${targetCategory}] đóng góp bởi ${guestName || uploaderName || "Khách mời"}`,
+        alt: caption.trim() || `Ảnh kỷ niệm [${targetCategory}]`,
       }));
 
       const updatedUserPhotos = [...newPhotos, ...userPhotos];
@@ -539,7 +553,7 @@ export const GallerySection: React.FC = () => {
                 >
                   {/* Crystal Clear High-Resolution Image */}
                   <Image
-                    src={photo.src}
+                    src={getOptimizedImageUrl(photo.src, 800)}
                     alt={photo.alt}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -553,12 +567,12 @@ export const GallerySection: React.FC = () => {
                   {/* Shimmer Gold Hover Border */}
                   <div className="absolute inset-0 border-2 border-gold/0 group-hover:border-gold/60 rounded-2xl transition-colors pointer-events-none z-10" />
 
-                  {/* Bottom-Only Caption Gradient (Does NOT fog or darken the photo) */}
-                  <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-emerald-deep/95 via-emerald-deep/50 to-transparent flex flex-col justify-end p-3 sm:p-4 text-ivory pointer-events-none z-10">
-                    <span className="text-[10px] font-sans uppercase tracking-widest text-gold font-bold mb-0.5 line-clamp-1 drop-shadow-sm">
+                  {/* Compact Bottom-Only Caption Gradient (Leaves photo 100% bright, sharp & uncovered) */}
+                  <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex flex-col justify-end p-2.5 sm:p-3 text-ivory pointer-events-none z-10">
+                    <span className="text-[10px] font-sans uppercase tracking-widest text-gold font-bold mb-0.5 line-clamp-1 drop-shadow-md">
                       {photo.category}
                     </span>
-                    <p className="font-serif text-xs sm:text-sm font-semibold line-clamp-1 drop-shadow-sm">
+                    <p className="font-serif text-xs sm:text-sm font-semibold line-clamp-1 drop-shadow-md text-ivory/95">
                       {photo.title}
                     </p>
                   </div>

@@ -402,18 +402,17 @@ export async function fetchPhotosFromSheet(): Promise<import("@/config/graduatio
               if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://") || cleanUrl.startsWith("/")) {
                 if (!seenUrls.has(cleanUrl)) {
                   seenUrls.add(cleanUrl);
-                  const name = String(item.name || item.Name || item["Người Gửi"] || item["Họ và Tên"] || item["Tên"] || item.guestName || item.hoTen || "Khách mời").trim();
                   const rawCaption = String(item.caption || item.Caption || item["Lời Nhắn / Kỷ Niệm"] || item["Lời Nhắn"] || item["Kỷ Niệm"] || item.title || item.Title || item.loiChuc || "").trim();
                   const category = String(item.category || item.Category || item["Chủ Đề"] || item["Chủ đề"] || item.chuDe || item.ChuDe || "Kỷ Niệm").trim();
-                  const caption = rawCaption || `Khoảnh khắc từ ${name}`;
-                  const title = caption.includes(name) ? caption : `${caption} — (${name})`;
+                  // Chỉ hiển thị lời nhắn / mô tả ảnh thuần túy (không đính kèm tên người gửi trên UI)
+                  const title = rawCaption || category || "Ảnh kỷ niệm";
 
                   freshPhotos.push({
                     id: `cloud-${item.id || item.timestamp || item["Thời gian"] || idx}-${Date.now()}`,
                     title,
                     category: category || "Kỷ Niệm",
                     src: cleanUrl,
-                    alt: `Ảnh kỷ niệm [${category}] đóng góp bởi ${name}`,
+                    alt: rawCaption || `Ảnh kỷ niệm [${category}]`,
                   });
                 }
               }
