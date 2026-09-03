@@ -436,6 +436,30 @@ export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import
                   const category = String(item.category || item.Category || item["Chủ Đề"] || item["Chủ đề"] || item.chuDe || item.ChuDe || "Kỷ Niệm").trim();
                   const title = rawCaption || category || "Ảnh kỷ niệm";
 
+                  const rawPriority =
+                    item.priority ??
+                    item.Priority ??
+                    item["Mức độ ưu tiên"] ??
+                    item["Mức Độ Ưu Tiên"] ??
+                    item["Mức độ"] ??
+                    item["Mức Độ"] ??
+                    item["Độ ưu tiên"] ??
+                    item["Độ Ưu Tiên"] ??
+                    item["Ưu tiên"] ??
+                    item["Ưu Tiên"] ??
+                    item["Thứ tự"] ??
+                    item["Thứ Tự"] ??
+                    item.order ??
+                    item.Order;
+
+                  let priority = 1;
+                  if (rawPriority !== undefined && rawPriority !== null && String(rawPriority).trim() !== "") {
+                    const num = Number(rawPriority);
+                    if (!isNaN(num)) {
+                      priority = num;
+                    }
+                  }
+
                   const filename = cleanUrl.split("/").pop()?.replace(/[^a-zA-Z0-9_-]/g, "") || idx;
                   freshPhotos.push({
                     id: `cloud-${idx}-${filename}`,
@@ -443,6 +467,7 @@ export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import
                     category: category || "Kỷ Niệm",
                     src: cleanUrl,
                     alt: rawCaption || `Ảnh kỷ niệm [${category}]`,
+                    priority,
                   });
                 }
               }
@@ -454,6 +479,13 @@ export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import
   } catch (err) {
     console.warn("Could not fetch cloud photos:", err);
   }
+
+  // Sắp xếp theo mức độ ưu tiên (1, 2, 3, 4... số nhỏ hơn xếp trước lên các trang đầu, mặc định là 1)
+  freshPhotos.sort((a, b) => {
+    const pA = typeof a.priority === "number" && !isNaN(a.priority) ? a.priority : 1;
+    const pB = typeof b.priority === "number" && !isNaN(b.priority) ? b.priority : 1;
+    return pA - pB;
+  });
 
   // 3. Quét thêm ảnh riêng từ danh sách khách mời (specialPhoto)
   try {

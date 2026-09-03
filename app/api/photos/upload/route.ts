@@ -10,6 +10,7 @@ interface PhotoPayload {
   photoUrl: string;
   sourceType?: string;
   timestamp?: string;
+  priority?: number;
 }
 
 // Global server-side queue to serialize all Google Sheets writes across all concurrent users
@@ -33,6 +34,10 @@ async function writeSinglePhotoToSheet(photo: PhotoPayload, retries = 3): Promis
           photoUrl: photo.photoUrl,
           sourceType: photo.sourceType || "file",
           timestamp: photo.timestamp || new Date().toLocaleString("vi-VN"),
+          priority: typeof photo.priority === "number" && !isNaN(photo.priority) ? photo.priority : 1,
+          "Mức độ ưu tiên": typeof photo.priority === "number" && !isNaN(photo.priority) ? photo.priority : 1,
+          "Ưu tiên": typeof photo.priority === "number" && !isNaN(photo.priority) ? photo.priority : 1,
+          "Thứ tự": typeof photo.priority === "number" && !isNaN(photo.priority) ? photo.priority : 1,
         }),
       });
 

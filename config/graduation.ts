@@ -4,6 +4,7 @@ export interface GalleryItem {
   category: string;
   src: string;
   alt: string;
+  priority?: number | undefined;
 }
 
 export interface JourneyStep {
@@ -34,7 +35,7 @@ export const graduationConfig = {
   mottoQuote: "The future belongs to those who believe in the beauty of their dreams.",
 
   // Endpoint Google Sheets gửi dữ liệu RSVP, Lượt xem & Danh sách khách mời
-  googleScriptUrl: "https://script.google.com/macros/s/AKfycbzLnIdJdxJnvsYjOn2zTeRIDXb68My9vHVHTP2_JZ_kfKApb00j1jYRhBOFJr7dcDFAQw/exec",
+  googleScriptUrl: "https://script.google.com/macros/s/AKfycbyM7rwbpIpryXHJXmk69c9SJyR8nLkYpoKF1KVI6aLNJZ9-4LIThfxfjRSGBBVZngslCA/exec",
 
   // Cấu hình Cloudinary tải ảnh kỷ niệm trực tiếp từ khách
   cloudinaryCloudName: "ddrqfuaji",

@@ -37,6 +37,7 @@ export async function GET(request: Request) {
       cleanUrl: string;
       rawCaption: string;
       category: string;
+      priority?: number;
       idx: number;
     }> = [];
 
@@ -90,11 +91,36 @@ export async function GET(request: Request) {
               "Kỷ Niệm"
           ).trim();
 
+          const rawPriority =
+            item.priority ??
+            item.Priority ??
+            item["Mức độ ưu tiên"] ??
+            item["Mức Độ Ưu Tiên"] ??
+            item["Mức độ"] ??
+            item["Mức Độ"] ??
+            item["Độ ưu tiên"] ??
+            item["Độ Ưu Tiên"] ??
+            item["Ưu tiên"] ??
+            item["Ưu Tiên"] ??
+            item["Thứ tự"] ??
+            item["Thứ Tự"] ??
+            item.order ??
+            item.Order;
+
+          let priority = 1;
+          if (rawPriority !== undefined && rawPriority !== null && String(rawPriority).trim() !== "") {
+            const num = Number(rawPriority);
+            if (!isNaN(num)) {
+              priority = num;
+            }
+          }
+
           candidates.push({
             item,
             cleanUrl,
             rawCaption,
             category: category || "Kỷ Niệm",
+            priority,
             idx,
           });
         }
@@ -131,10 +157,18 @@ export async function GET(request: Request) {
             category: c.category,
             src: c.cleanUrl,
             alt: c.rawCaption || `Ảnh kỷ niệm [${c.category}]`,
+            priority: c.priority ?? 1,
           });
         }
       })
     );
+
+    // Sắp xếp theo mức độ ưu tiên (1, 2, 3, 4... số nhỏ hơn xếp trước lên các trang đầu, mặc định là 1)
+    validPhotos.sort((a, b) => {
+      const pA = typeof a.priority === "number" && !isNaN(a.priority) ? a.priority : 1;
+      const pB = typeof b.priority === "number" && !isNaN(b.priority) ? b.priority : 1;
+      return pA - pB;
+    });
 
     return NextResponse.json(validPhotos, {
       headers: {

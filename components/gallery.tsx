@@ -165,6 +165,7 @@ export const GallerySection: React.FC = () => {
   const [selectedUploadCat, setSelectedUploadCat] = useState("Kỷ Niệm");
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
+  const [uploadPriority, setUploadPriority] = useState("1");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgressText, setUploadProgressText] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -178,14 +179,20 @@ export const GallerySection: React.FC = () => {
     try {
       const remotePhotos = await fetchPhotosFromSheet(force);
       if (Array.isArray(remotePhotos)) {
-        const cleanedRemote = remotePhotos
+        const cleanedRemote: GalleryItem[] = remotePhotos
           .map((p) => {
             if (!p || !p.src) return null;
             let cat = (p.category || "Kỷ Niệm").trim();
             if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
               cat = "Kỷ Niệm";
             }
-            return { ...p, category: cat };
+            const priority = typeof p.priority === "number" && !isNaN(p.priority) ? p.priority : undefined;
+            const item: GalleryItem = {
+              ...p,
+              category: cat,
+              ...(priority !== undefined ? { priority } : {}),
+            };
+            return item;
           })
           .filter((p): p is GalleryItem => p !== null);
 
@@ -251,14 +258,20 @@ export const GallerySection: React.FC = () => {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const cleaned = parsed
+          const cleaned: GalleryItem[] = parsed
             .map((p: GalleryItem) => {
               if (!p || !p.src) return null;
               let cat = (p.category || "Kỷ Niệm").trim();
               if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
                 cat = "Kỷ Niệm";
               }
-              return { ...p, category: cat };
+              const priority = typeof p.priority === "number" && !isNaN(p.priority) ? p.priority : undefined;
+              const item: GalleryItem = {
+                ...p,
+                category: cat,
+                ...(priority !== undefined ? { priority } : {}),
+              };
+              return item;
             })
             .filter((p): p is GalleryItem => p !== null);
 
@@ -275,14 +288,20 @@ export const GallerySection: React.FC = () => {
       if (cloudSaved) {
         const parsed = JSON.parse(cloudSaved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const cleaned = parsed
+          const cleaned: GalleryItem[] = parsed
             .map((p: GalleryItem) => {
               if (!p || !p.src) return null;
               let cat = (p.category || "Kỷ Niệm").trim();
               if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
                 cat = "Kỷ Niệm";
               }
-              return { ...p, category: cat };
+              const priority = typeof p.priority === "number" && !isNaN(p.priority) ? p.priority : undefined;
+              const item: GalleryItem = {
+                ...p,
+                category: cat,
+                ...(priority !== undefined ? { priority } : {}),
+              };
+              return item;
             })
             .filter((p): p is GalleryItem => p !== null);
 
@@ -366,24 +385,63 @@ export const GallerySection: React.FC = () => {
       cat = "Kỷ Niệm";
     }
     const safeKey = normalizePhotoKey(p.src) || `photo-${idx}`;
+    const priority = typeof p.priority === "number" && !isNaN(p.priority) ? p.priority : 1;
     return {
       ...p,
       id: `photo-${safeKey}`,
       category: cat,
+      priority,
     };
   });
 
-  // Tự động tính toán lại danh sách chủ đề DUY NHẤT (Chỉ chấp nhận chữ thuần túy, tuyệt đối không cho URL xuất hiện thành nút)
-  const cleanCategories = Array.from(
-    new Set(
-      items
-        .map((item) => item.category?.trim())
-        .filter((cat) => Boolean(cat && !cat.startsWith("http://") && !cat.startsWith("https://") && !cat.includes("://") && cat.length <= 35))
-    )
-  );
-  const categories = ["all", ...cleanCategories];
+  // Sắp xếp danh sách ảnh theo mức độ ưu tiên: 1, 2, 3, 4... (số càng nhỏ xếp trước lên các trang đầu, mặc định là 1)
+  items.sort((a, b) => {
+    const pA = typeof a.priority === "number" && !isNaN(a.priority) ? a.priority : 1;
+    const pB = typeof b.priority === "number" && !isNaN(b.priority) ? b.priority : 1;
+    return pA - pB;
+  });
 
-  // Tự động chuyển về tab "Tất cả" nếu chủ đề đang chọn không còn bức ảnh nào
+  // Thống kê số lượng ảnh cho từng chủ đề (bao gồm tổng số ảnh cho 'all')
+  const categoryCounts = React.useMemo(() => {
+    const counts: Record<string, number> = { all: items.length };
+    items.forEach((item) => {
+      const cat = item.category?.trim() || "Kỷ Niệm";
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [items]);
+
+  // Tự động tính toán lại danh sách chủ đề DUY NHẤT:
+  // Kết hợp chủ đề thực tế từ ảnh + các chủ đề mặc định của hệ thống
+  const cleanCategories = React.useMemo(() => {
+    const photoCategories = Array.from(
+      new Set(
+        items
+          .map((item) => item.category?.trim())
+          .filter((cat): cat is string => Boolean(cat && !cat.startsWith("http://") && !cat.startsWith("https://") && !cat.includes("://") && cat.length <= 35))
+      )
+    );
+
+    const combined = Array.from(new Set([...photoCategories, ...PRESET_CATEGORIES]));
+
+    // Sắp xếp ưu tiên:
+    // 1. Các chủ đề có ảnh đưa lên đầu (sắp xếp giảm dần theo số lượng ảnh)
+    // 2. Các chủ đề chưa có ảnh xếp sau
+    combined.sort((a, b) => {
+      const countA = categoryCounts[a] || 0;
+      const countB = categoryCounts[b] || 0;
+      if (countA > 0 && countB === 0) return -1;
+      if (countA === 0 && countB > 0) return 1;
+      if (countA !== countB) return countB - countA;
+      return a.localeCompare(b, "vi");
+    });
+
+    return combined;
+  }, [items, categoryCounts]);
+
+  const categories = React.useMemo(() => ["all", ...cleanCategories], [cleanCategories]);
+
+  // Tự động chuyển về tab "Tất cả" nếu chủ đề đang chọn không còn tồn tại trong danh sách
   useEffect(() => {
     if (selectedCategory !== "all" && !categories.includes(selectedCategory)) {
       setSelectedCategory("all");
@@ -519,6 +577,7 @@ export const GallerySection: React.FC = () => {
     setSelectedUploadCat("Kỷ Niệm");
     setIsCustomCategory(false);
     setCustomCategory("");
+    setUploadPriority("1");
     setIsUploading(false);
     setUploadProgressText("");
     setUploadSuccess(false);
@@ -655,6 +714,11 @@ export const GallerySection: React.FC = () => {
     }
 
     try {
+      const parsedPriority =
+        uploadPriority.trim() !== "" && !isNaN(Number(uploadPriority))
+          ? Number(uploadPriority)
+          : 1;
+
       // 2. Tạo đối tượng ảnh mới đưa ngay vào Gallery (hiển thị lập tức 0ms)
       const newPhotos: GalleryItem[] = uploadedUrls.map((url, i) => {
         const safeKey = normalizePhotoKey(url) || `user-${Date.now()}-${i}`;
@@ -666,6 +730,7 @@ export const GallerySection: React.FC = () => {
           category: targetCategory,
           src: url,
           alt: caption.trim() || `Ảnh kỷ niệm [${targetCategory}]`,
+          priority: parsedPriority,
         };
       });
 
@@ -678,7 +743,7 @@ export const GallerySection: React.FC = () => {
         // ignore
       }
 
-      // 3. Gửi toàn bộ danh sách ảnh đến server API /api/photos/upload (Server sẽ tuần tự hóa ghi vào Google Sheets, tuyệt đối không bị nghẽn hay lỗi khi nhiều người cùng up)
+      // 3. Gửi toàn bộ danh sách ảnh đến server API /api/photos/upload
       try {
         fetch("/api/photos/upload", {
           method: "POST",
@@ -693,6 +758,7 @@ export const GallerySection: React.FC = () => {
               photoUrl: url,
               sourceType: uploadSourceMode,
               timestamp: new Date().toLocaleString("vi-VN"),
+              priority: parsedPriority,
             })),
           }),
         }).catch(() => {
@@ -715,6 +781,10 @@ export const GallerySection: React.FC = () => {
                   photoUrl: url,
                   sourceType: uploadSourceMode,
                   timestamp: new Date().toLocaleString("vi-VN"),
+                  priority: parsedPriority,
+                  "Mức độ ưu tiên": parsedPriority,
+                  "Ưu tiên": parsedPriority,
+                  "Thứ tự": parsedPriority,
                 }),
               }).catch(() => {});
             });
@@ -791,23 +861,35 @@ export const GallerySection: React.FC = () => {
           </button>
         </motion.div>
 
-        {/* Filter Category Tabs (Chỉ hiển thị khi có ảnh và có từ 2 chủ đề trở lên) */}
-        {items.length > 0 && categories.length > 2 && (
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-8 sm:mb-10">
+        {/* Filter Category Tabs - Luôn hiển thị khi có ảnh để người dùng dễ dàng lọc theo chủ đề */}
+        {items.length > 0 && categories.length > 1 && (
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 mb-8 sm:mb-10 px-2">
             {categories.map((cat) => {
               const label = cat === "all" ? t.gallery.allTab : cat;
+              const count = categoryCounts[cat] || 0;
               const isActive = selectedCategory === cat;
               return (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-full font-sans text-xs font-semibold tracking-wider transition-all duration-300 active:scale-95 touch-manipulation cursor-pointer border ${
+                  className={`group relative px-4 py-2 sm:py-2.5 rounded-full font-sans text-xs font-semibold tracking-wide transition-all duration-300 active:scale-95 touch-manipulation cursor-pointer border flex items-center gap-2 ${
                     isActive
-                      ? "bg-emerald-deep text-gold border-gold shadow-md"
-                      : "bg-white/80 text-charcoal/80 border-gold/30 hover:border-gold hover:text-emerald-deep"
+                      ? "bg-emerald-deep text-gold border-gold shadow-md shadow-gold/20"
+                      : "bg-white/85 text-charcoal/80 border-gold/30 hover:border-gold hover:text-emerald-deep hover:bg-white shadow-xs"
                   }`}
                 >
-                  {label}
+                  <span>{label}</span>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold transition-colors ${
+                      isActive
+                        ? "bg-gold text-emerald-deep"
+                        : count > 0
+                        ? "bg-gold/25 text-emerald-deep font-semibold"
+                        : "bg-charcoal/10 text-charcoal/45"
+                    }`}
+                  >
+                    {count}
+                  </span>
                 </button>
               );
             })}
@@ -837,17 +919,37 @@ export const GallerySection: React.FC = () => {
               <Camera className="w-8 h-8" />
             </div>
             <p className="font-serif text-base sm:text-lg text-emerald-deep font-semibold">
-              {t.gallery.emptyText}
+              {selectedCategory === "all"
+                ? t.gallery.emptyText
+                : `Chưa có bức ảnh nào thuộc chủ đề "${selectedCategory}".`}
             </p>
+            {selectedCategory !== "all" && (
+              <p className="font-sans text-xs text-charcoal/70 max-w-sm mx-auto">
+                Hãy là người đầu tiên chia sẻ khoảnh khắc đẹp trong chủ đề này cùng Nhã nhé! ✨
+              </p>
+            )}
             <button
               onClick={() => {
                 handleResetUploadForm();
+                if (selectedCategory !== "all") {
+                  if (PRESET_CATEGORIES.includes(selectedCategory)) {
+                    setSelectedUploadCat(selectedCategory);
+                    setIsCustomCategory(false);
+                  } else {
+                    setIsCustomCategory(true);
+                    setCustomCategory(selectedCategory);
+                  }
+                }
                 setIsUploadOpen(true);
               }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-xs uppercase tracking-wider shadow-gold-glow hover:brightness-110 active:scale-95 transition-all cursor-pointer"
             >
               <UploadCloud className="w-4 h-4" />
-              <span>Đóng góp ảnh ngay</span>
+              <span>
+                {selectedCategory === "all"
+                  ? "Đóng góp ảnh ngay"
+                  : `Đóng góp ảnh cho "${selectedCategory}" ngay`}
+              </span>
             </button>
           </motion.div>
         ) : (
@@ -1402,6 +1504,31 @@ export const GallerySection: React.FC = () => {
                         placeholder={t.gallery.uploadCaptionPlaceholder}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all resize-none"
                       />
+                    </div>
+
+                    {/* Priority Order Input */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold">
+                          Thứ tự ưu tiên (Tùy chọn):
+                        </label>
+                        <span className="text-[10px] text-ivory/50 font-sans">
+                          Số càng nhỏ xếp càng trước (1, 2, 3...)
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        min="1"
+                        max="999"
+                        step="1"
+                        value={uploadPriority}
+                        onChange={(e) => setUploadPriority(e.target.value)}
+                        placeholder="Mặc định là 1"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all"
+                      />
+                      <p className="text-[10px] text-ivory/50 mt-1 pl-1">
+                        💡 Mức độ ưu tiên mặc định là 1. Số càng nhỏ (1, 2, 3...) sẽ được ưu tiên hiển thị ở các phân trang đầu tiên.
+                      </p>
                     </div>
 
                     {uploadError && (
