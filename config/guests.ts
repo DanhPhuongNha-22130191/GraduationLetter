@@ -436,8 +436,9 @@ export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import
                   const category = String(item.category || item.Category || item["Chủ Đề"] || item["Chủ đề"] || item.chuDe || item.ChuDe || "Kỷ Niệm").trim();
                   const title = rawCaption || category || "Ảnh kỷ niệm";
 
+                  const filename = cleanUrl.split("/").pop()?.replace(/[^a-zA-Z0-9_-]/g, "") || idx;
                   freshPhotos.push({
-                    id: `cloud-${item.id || item.timestamp || item["Thời gian"] || idx}`,
+                    id: `cloud-${idx}-${filename}`,
                     title,
                     category: category || "Kỷ Niệm",
                     src: cleanUrl,

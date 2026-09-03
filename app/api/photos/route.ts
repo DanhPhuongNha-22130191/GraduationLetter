@@ -124,8 +124,9 @@ export async function GET(request: Request) {
         }
 
         if (isValid) {
+          const filename = c.cleanUrl.split("/").pop()?.replace(/[^a-zA-Z0-9_-]/g, "") || c.idx;
           validPhotos.push({
-            id: `cloud-${c.item.id || c.item.timestamp || c.item["Thời gian"] || c.idx}`,
+            id: `cloud-${c.idx}-${filename}`,
             title: c.rawCaption || c.category || "Ảnh kỷ niệm",
             category: c.category,
             src: c.cleanUrl,
