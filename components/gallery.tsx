@@ -183,6 +183,15 @@ export const GallerySection: React.FC = () => {
           .map((p) => {
             if (!p || !p.src) return null;
             let cat = (p.category || "Kỷ Niệm").trim();
+            const lowerCat = cat.toLowerCase();
+            if (
+              lowerCat === "ảnh đại diện" ||
+              lowerCat === "anh dai dien" ||
+              lowerCat === "avatar" ||
+              lowerCat.includes("ảnh đại diện")
+            ) {
+              return null;
+            }
             if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
               cat = "Kỷ Niệm";
             }

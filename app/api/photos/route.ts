@@ -91,6 +91,17 @@ export async function GET(request: Request) {
               "Kỷ Niệm"
           ).trim();
 
+          // Bỏ qua ảnh thuộc chủ đề "Ảnh đại diện" hoặc "Avatar" (không hiển thị ở phần Kỷ niệm)
+          const lowerCat = category.toLowerCase();
+          if (
+            lowerCat === "ảnh đại diện" ||
+            lowerCat === "anh dai dien" ||
+            lowerCat === "avatar" ||
+            lowerCat.includes("ảnh đại diện")
+          ) {
+            continue;
+          }
+
           const rawPriority =
             item.priority ??
             item.Priority ??
