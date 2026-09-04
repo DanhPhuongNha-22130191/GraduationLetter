@@ -307,7 +307,9 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (isFetchingSheetRef.current) return;
           isFetchingSheetRef.current = true;
 
-          const activeSlug = slugParam || sessionStorage.getItem("invitation_guest_slug");
+          const activeSlug = slugParam || sessionStorage.getItem("invitation_guest_slug") || currentSlug;
+          const activeName = guestName || sessionStorage.getItem("invitation_guest_name");
+
           fetchGuestsFromSheet(true)
             .then((dynamicRegistry) => {
               // Cập nhật ngày giờ sớm nhất từ danh sách Sheet
@@ -315,41 +317,49 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               if (dynamicEarliest.earliestDate) setDefaultEarliestDate(dynamicEarliest.earliestDate);
               if (dynamicEarliest.earliestTime) setDefaultEarliestTime(dynamicEarliest.earliestTime);
 
+              let dynamicProfile: GuestProfile | null = null;
               if (activeSlug) {
-                const dynamicProfile = findGuestBySlug(activeSlug, dynamicRegistry);
-                if (dynamicProfile) {
-                  const allowUpload = dynamicProfile.canUpload !== false;
-                  setGuestNameState(dynamicProfile.name);
-                  setIsRegisteredGuest(true);
-                  setCanUploadState(allowUpload);
-                  setPronounModeState(dynamicProfile.mode);
-                  setCustomMessageState(dynamicProfile.customMessage);
-                  setCustomTimeState(dynamicProfile.customTime);
-                  setCustomDateState(dynamicProfile.customDate);
+                dynamicProfile = findGuestBySlug(activeSlug, dynamicRegistry);
+              }
+              if (!dynamicProfile && activeName) {
+                dynamicProfile = findGuestBySlug(activeName, dynamicRegistry);
+              }
 
-                  try {
-                    sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
-                    sessionStorage.setItem("invitation_guest_is_registered", "true");
-                    sessionStorage.setItem("invitation_guest_can_upload", allowUpload ? "true" : "false");
-                    sessionStorage.setItem("invitation_guest_mode", dynamicProfile.mode);
-                    if (dynamicProfile.customMessage) {
-                      sessionStorage.setItem("invitation_guest_msg", dynamicProfile.customMessage);
-                    } else {
-                      sessionStorage.removeItem("invitation_guest_msg");
-                    }
-                    if (dynamicProfile.customTime) {
-                      sessionStorage.setItem("invitation_guest_time", dynamicProfile.customTime);
-                    } else {
-                      sessionStorage.removeItem("invitation_guest_time");
-                    }
-                    if (dynamicProfile.customDate) {
-                      sessionStorage.setItem("invitation_guest_date", dynamicProfile.customDate);
-                    } else {
-                      sessionStorage.removeItem("invitation_guest_date");
-                    }
-                  } catch {
-                    // ignore
+              if (dynamicProfile) {
+                const allowUpload = dynamicProfile.canUpload !== false;
+                setGuestNameState(dynamicProfile.name);
+                setIsRegisteredGuest(true);
+                setCanUploadState(allowUpload);
+                setPronounModeState(dynamicProfile.mode);
+                setCustomMessageState(dynamicProfile.customMessage);
+                setCustomTimeState(dynamicProfile.customTime);
+                setCustomDateState(dynamicProfile.customDate);
+
+                try {
+                  sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
+                  sessionStorage.setItem("invitation_guest_is_registered", "true");
+                  sessionStorage.setItem("invitation_guest_can_upload", allowUpload ? "true" : "false");
+                  sessionStorage.setItem("invitation_guest_mode", dynamicProfile.mode);
+                  if (dynamicProfile.slug) {
+                    sessionStorage.setItem("invitation_guest_slug", dynamicProfile.slug);
                   }
+                  if (dynamicProfile.customMessage) {
+                    sessionStorage.setItem("invitation_guest_msg", dynamicProfile.customMessage);
+                  } else {
+                    sessionStorage.removeItem("invitation_guest_msg");
+                  }
+                  if (dynamicProfile.customTime) {
+                    sessionStorage.setItem("invitation_guest_time", dynamicProfile.customTime);
+                  } else {
+                    sessionStorage.removeItem("invitation_guest_time");
+                  }
+                  if (dynamicProfile.customDate) {
+                    sessionStorage.setItem("invitation_guest_date", dynamicProfile.customDate);
+                  } else {
+                    sessionStorage.removeItem("invitation_guest_date");
+                  }
+                } catch {
+                  // ignore
                 }
               }
             })

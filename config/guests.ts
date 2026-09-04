@@ -202,125 +202,136 @@ export async function fetchGuestsFromSheet(forceRefresh = false): Promise<Record
     }
   }
 
-  // 2. Fetch trực tiếp từ Google Apps Script với cache-busting
+  // 2. Fetch siêu tốc từ /api/guests (Server API Proxy) hoặc trực tiếp từ Google Apps Script
   try {
-    if (graduationConfig.googleScriptUrl) {
-      const apiUrl = `${graduationConfig.googleScriptUrl}?action=getGuests&sheet=KhachMoi${forceRefresh ? `&_t=${Date.now()}` : ""}`;
-      const res = await fetch(apiUrl, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-        cache: forceRefresh ? "no-store" : "default",
-      });
+    const apiUrl =
+      typeof window !== "undefined"
+        ? `/api/guests${forceRefresh ? `?refresh=1&_t=${Date.now()}` : ""}`
+        : `${graduationConfig.googleScriptUrl}?action=getGuests&sheet=KhachMoi`;
 
-      if (res.ok) {
-        const rawList = await res.json();
-        if (Array.isArray(rawList) && rawList.length > 0) {
-          const registry: Record<string, GuestProfile> = {};
+    const res = await fetch(apiUrl, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: forceRefresh ? "no-store" : "default",
+    });
 
-          rawList.forEach((item: Record<string, unknown>) => {
-            const rawSlug =
-              item.slug ||
-              item.Slug ||
-              item.id ||
-              item.ID ||
-              item.ma ||
-              item.Ma;
-            const name =
-              item.name ||
-              item.Name ||
-              item.ten ||
-              item.Ten ||
-              item.hoTen ||
-              item.HoTen;
+    if (res.ok) {
+      const rawList = await res.json();
+      if (Array.isArray(rawList) && rawList.length > 0) {
+        const registry: Record<string, GuestProfile> = {};
 
-            if (rawSlug && name) {
-              const slug = String(rawSlug).trim().toLowerCase().replace(/[-_]/g, "");
-              const rawMode = (item.mode || item.Mode || item.vaiXung || item.VaiXung || item.danhXung || "") as string;
-              const mode = normalizePronounMode(rawMode);
-              const customMessage = (item.customMessage ||
-                item.CustomMessage ||
-                item.message ||
-                item.Message ||
-                item.loiChuc ||
-                item.LoiChuc ||
-                item.tamThu ||
-                item.TamThu ||
-                undefined) as string | undefined;
-              const customTime = (item.customTime ||
-                item.CustomTime ||
-                item.thoiGian ||
-                item.ThoiGian ||
-                item.thoiGianMoi ||
-                item.ThoiGianMoi ||
-                item.time ||
-                item.Time ||
-                item.gio ||
-                item.Gio ||
-                undefined) as string | undefined;
-              const customDate = (item.customDate ||
-                item.CustomDate ||
-                item.ngay ||
-                item.Ngay ||
-                item.ngayMoi ||
-                item.NgayMoi ||
-                item.date ||
-                item.Date ||
-                undefined) as string | undefined;
+        rawList.forEach((item: Record<string, unknown>) => {
+          const rawSlug =
+            item.slug ||
+            item.Slug ||
+            item.id ||
+            item.ID ||
+            item.ma ||
+            item.Ma;
+          const name =
+            item.name ||
+            item.Name ||
+            item.ten ||
+            item.Ten ||
+            item.hoTen ||
+            item.HoTen;
 
-              const rawCanUpload =
-                item.canUpload !== undefined
-                  ? item.canUpload
-                  : item.CanUpload !== undefined
-                  ? item.CanUpload
-                  : item.quyenUpAnh !== undefined
-                  ? item.quyenUpAnh
-                  : item.QuyenUpAnh !== undefined
-                  ? item.QuyenUpAnh
-                  : item.allowUpload !== undefined
-                  ? item.allowUpload
-                  : item.upAnh !== undefined
-                  ? item.upAnh
-                  : item.upload;
+          if (rawSlug && name) {
+            const slug = String(rawSlug).trim().toLowerCase().replace(/[-_]/g, "");
+            const rawMode = (item.mode || item.Mode || item.vaiXung || item.VaiXung || item.danhXung || "") as string;
+            const mode = normalizePronounMode(rawMode);
+            const customMessage = (item.customMessage ||
+              item.CustomMessage ||
+              item.message ||
+              item.Message ||
+              item.loiChuc ||
+              item.LoiChuc ||
+              item.tamThu ||
+              item.TamThu ||
+              undefined) as string | undefined;
+            const customTime = (item.customTime ||
+              item.CustomTime ||
+              item.thoiGian ||
+              item.ThoiGian ||
+              item.thoiGianMoi ||
+              item.ThoiGianMoi ||
+              item.time ||
+              item.Time ||
+              item.gio ||
+              item.Gio ||
+              undefined) as string | undefined;
+            const customDate = (item.customDate ||
+              item.CustomDate ||
+              item.ngay ||
+              item.Ngay ||
+              item.ngayMoi ||
+              item.NgayMoi ||
+              item.date ||
+              item.Date ||
+              undefined) as string | undefined;
 
-              let canUpload = true;
-              if (rawCanUpload !== undefined && rawCanUpload !== null && String(rawCanUpload).trim() !== "") {
-                const s = String(rawCanUpload).trim().toLowerCase();
-                if (s === "false" || s === "0" || s === "khong" || s === "không" || s === "no" || s === "cấm" || s === "cam" || s === "tat" || s === "tắt") {
-                  canUpload = false;
-                } else {
-                  canUpload = true;
-                }
-              }
+            const rawCanUpload =
+              item.canUpload !== undefined
+                ? item.canUpload
+                : item.CanUpload !== undefined
+                ? item.CanUpload
+                : item.quyenUpAnh !== undefined
+                ? item.quyenUpAnh
+                : item.QuyenUpAnh !== undefined
+                ? item.QuyenUpAnh
+                : item.allowUpload !== undefined
+                ? item.allowUpload
+                : item.upAnh !== undefined
+                ? item.upAnh
+                : item.upload;
 
-              const specialPhoto = (item.specialPhoto ||
-                item.SpecialPhoto ||
-                item.photo ||
-                item.Photo ||
-                undefined) as string | undefined;
-
-              registry[slug] = {
-                name: String(name).trim(),
-                mode,
-                customMessage: customMessage ? String(customMessage).trim() : undefined,
-                customTime: customTime ? String(customTime).trim() : undefined,
-                customDate: customDate ? String(customDate).trim() : undefined,
-                canUpload,
-                specialPhoto: specialPhoto ? String(specialPhoto).trim() : undefined,
-              };
-            }
-          });
-
-          if (Object.keys(registry).length > 0) {
-            if (typeof window !== "undefined") {
-              try {
-                localStorage.setItem(cacheKey, JSON.stringify(registry));
-                sessionStorage.setItem(cacheKey, JSON.stringify(registry));
-              } catch {
-                // ignore
+            let canUpload = true;
+            if (rawCanUpload !== undefined && rawCanUpload !== null && String(rawCanUpload).trim() !== "") {
+              const s = String(rawCanUpload).trim().toLowerCase();
+              if (s === "false" || s === "0" || s === "khong" || s === "không" || s === "no" || s === "cấm" || s === "cam" || s === "tat" || s === "tắt") {
+                canUpload = false;
+              } else {
+                canUpload = true;
               }
             }
-            return registry;
+
+            const specialPhoto = (item.specialPhoto ||
+              item.SpecialPhoto ||
+              item.photo ||
+              item.Photo ||
+              undefined) as string | undefined;
+
+            const profile: GuestProfile = {
+              slug: String(rawSlug).trim(),
+              name: String(name).trim(),
+              mode,
+              customMessage: customMessage ? String(customMessage).trim() : undefined,
+              customTime: customTime ? String(customTime).trim() : undefined,
+              customDate: customDate ? String(customDate).trim() : undefined,
+              canUpload,
+              specialPhoto: specialPhoto ? String(specialPhoto).trim() : undefined,
+            };
+
+            registry[slug] = profile;
+
+            // Lưu thêm theo tên chuẩn hóa để tra cứu linh hoạt
+            const cleanNameKey = String(name).trim().toLowerCase().replace(/[-_]/g, "");
+            if (cleanNameKey && !registry[cleanNameKey]) {
+              registry[cleanNameKey] = profile;
+            }
           }
+        });
+
+        if (Object.keys(registry).length > 0) {
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(cacheKey, JSON.stringify(registry));
+              sessionStorage.setItem(cacheKey, JSON.stringify(registry));
+            } catch {
+              // ignore
+            }
+          }
+          return registry;
         }
       }
     }
@@ -342,8 +353,20 @@ export function findGuestBySlug(
   const cleanSlug = slug.trim().toLowerCase().replace(/[-_]/g, "");
 
   // 1. Kiểm tra trong registry truyền vào
-  if (customRegistry && customRegistry[cleanSlug]) {
-    return customRegistry[cleanSlug];
+  if (customRegistry) {
+    if (customRegistry[cleanSlug]) {
+      return customRegistry[cleanSlug];
+    }
+    for (const [key, profile] of Object.entries(customRegistry)) {
+      const cleanKey = key.trim().toLowerCase().replace(/[-_]/g, "");
+      const cleanName = profile.name.trim().toLowerCase().replace(/[-_]/g, "");
+      const cleanProfileSlug = profile.slug ? profile.slug.trim().toLowerCase().replace(/[-_]/g, "") : "";
+      if (cleanKey === cleanSlug || cleanName === cleanSlug || cleanProfileSlug === cleanSlug) {
+        return profile;
+      }
+    }
+    // Khi customRegistry mới nhất được truyền vào, KHÔNG rơi xuống cache LocalStorage cũ
+    return null;
   }
 
   // 2. Kiểm tra trong cache đồng bộ (LocalStorage / SessionStorage)
