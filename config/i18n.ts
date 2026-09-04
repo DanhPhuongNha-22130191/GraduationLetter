@@ -274,7 +274,7 @@ export const translations: Record<Language, TranslationSchema> = {
     hero: {
       invitationCard: "THIỆP MỜI TỐT NGHIỆP",
       ceremony: "LỄ TỐT NGHIỆP",
-      degree: "Kỹ sư",
+      degree: "Tân kỹ sư",
       major: "Công nghệ thông tin — 2026",
       subTitle: "Tri ân, tự hào & chặng đường mới rực rỡ.",
       openBtn: "MỞ THIỆP",

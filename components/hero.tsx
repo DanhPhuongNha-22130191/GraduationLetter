@@ -1,18 +1,161 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ChevronDown, Sparkles, GraduationCap, MailOpen } from "lucide-react";
+import { ChevronDown, Sparkles, GraduationCap, MailOpen, Camera, Loader2, CheckCircle2 } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { playBackgroundMusic } from "@/components/music-toggle";
 import { RotatingBotanicalCrest, AnimatedFlourishDivider } from "@/components/animated-motifs";
 
+async function compressAvatarFile(file: File, maxDim = 1200, quality = 0.85): Promise<Blob | File> {
+  if (typeof window === "undefined" || !file.type.startsWith("image/")) return file;
+  return new Promise((resolve) => {
+    const img = document.createElement("img");
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.onload = () => {
+        let { width, height } = img;
+        if (width <= maxDim && height <= maxDim && file.size < 500 * 1024) {
+          resolve(file);
+          return;
+        }
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve(file);
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => (blob && blob.size < file.size ? resolve(blob) : resolve(file)),
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
 export const HeroSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { guestName, hasCustomGuest, getGreetingPrefix } = useGuest();
+  const { guestName, hasCustomGuest, getGreetingPrefix, isOwner, currentSlug } = useGuest();
+  const [avatarUrl, setAvatarUrl] = useState<string>(graduationConfig.avatarUrl);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
+  const [uploadMessage, setUploadMessage] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Fetch persistent cloud avatar on mount
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem("custom_hero_avatar_url");
+      if (cached && cached.startsWith("http")) {
+        setAvatarUrl(cached);
+      }
+    } catch {}
+
+    fetch("/api/avatar")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.avatarUrl && typeof data.avatarUrl === "string") {
+          setAvatarUrl(data.avatarUrl);
+          try {
+            localStorage.setItem("custom_hero_avatar_url", data.avatarUrl);
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+
+    setIsUploading(true);
+    setUploadStatus("uploading");
+    setUploadMessage("Đang nén & tải ảnh lên Cloud...");
+
+    try {
+      const compressedBlob = await compressAvatarFile(file);
+      const formData = new FormData();
+      formData.append("file", compressedBlob, "avatar.jpg");
+      formData.append("upload_preset", graduationConfig.cloudinaryUploadPreset);
+      formData.append("folder", "graduation_avatar");
+
+      const cloudRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${graduationConfig.cloudinaryCloudName}/image/upload`,
+        { method: "POST", body: formData }
+      );
+
+      if (!cloudRes.ok) {
+        throw new Error("Lỗi tải ảnh lên Cloudinary");
+      }
+
+      const cloudData = await cloudRes.json();
+      const photoUrl = cloudData.secure_url || cloudData.url;
+
+      if (!photoUrl) {
+        throw new Error("Không nhận được URL ảnh");
+      }
+
+      // 1. Cập nhật state UI lập tức
+      setAvatarUrl(photoUrl);
+
+      // 2. Lưu bộ nhớ đệm LocalStorage
+      try {
+        localStorage.setItem("custom_hero_avatar_url", photoUrl);
+      } catch {}
+
+      // 3. Lưu bền vững vào Server / Google Sheets
+      await fetch("/api/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          avatarUrl: photoUrl,
+          slug: currentSlug || "phuongnha",
+        }),
+      });
+
+      setUploadStatus("success");
+      setUploadMessage("Đã cập nhật ảnh bìa thành công!");
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadStatus("idle");
+        setUploadMessage("");
+      }, 2500);
+    } catch (err) {
+      console.error("Avatar upload error:", err);
+      setUploadStatus("error");
+      setUploadMessage("Không thể tải ảnh. Vui lòng thử lại!");
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadStatus("idle");
+        setUploadMessage("");
+      }, 3000);
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   const scrollToNext = () => {
     playBackgroundMusic();
@@ -79,7 +222,7 @@ export const HeroSection: React.FC = () => {
         >
           <div className="relative w-full h-full rounded-full overflow-hidden border border-ivory/80">
             <Image
-              src={graduationConfig.avatarUrl}
+              src={avatarUrl}
               alt={graduationConfig.name}
               fill
               priority
@@ -88,12 +231,70 @@ export const HeroSection: React.FC = () => {
               className="object-cover"
               unoptimized
             />
+
+            {/* Upload Overlay */}
+            {isUploading && (
+              <div className="absolute inset-0 bg-emerald-deep/80 backdrop-blur-xs flex flex-col items-center justify-center p-2 text-center text-ivory z-10">
+                {uploadStatus === "uploading" && (
+                  <>
+                    <Loader2 className="w-6 h-6 text-gold animate-spin mb-1" />
+                    <span className="text-[9px] font-sans font-medium text-gold-light leading-tight">Đang tải...</span>
+                  </>
+                )}
+                {uploadStatus === "success" && (
+                  <>
+                    <CheckCircle2 className="w-6 h-6 text-emerald-400 mb-1" />
+                    <span className="text-[9px] font-sans font-semibold text-emerald-300 leading-tight">Thành công!</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-          {/* Gold Crest Icon Badge Overlay */}
-          <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gold-gradient text-emerald-deep flex items-center justify-center shadow-md border-2 border-ivory animate-float-slow">
-            <GraduationCap className="w-4 h-4 stroke-[2]" />
-          </div>
+
+          {/* Gold Crest Icon Badge Overlay (Default) */}
+          {!isOwner && (
+            <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gold-gradient text-emerald-deep flex items-center justify-center shadow-md border-2 border-ivory animate-float-slow">
+              <GraduationCap className="w-4 h-4 stroke-[2]" />
+            </div>
+          )}
+
+          {/* Owner Change Cover Photo Button (Only for slug phuongnha) */}
+          {isOwner && (
+            <>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                title="Đổi ảnh bìa (Dành riêng cho Phương Nhã)"
+                className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-gold-gradient text-emerald-deep flex items-center justify-center shadow-xl border-2 border-ivory hover:scale-110 active:scale-95 transition-all cursor-pointer z-20 group"
+              >
+                <Camera className="w-4.5 h-4.5 stroke-[2.2] group-hover:rotate-12 transition-transform" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarFileChange}
+                className="hidden"
+              />
+            </>
+          )}
         </motion.div>
+
+        {/* Upload status message feedback */}
+        {uploadMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`text-xs font-sans font-semibold mb-2 px-3 py-1 rounded-full ${
+              uploadStatus === "error"
+                ? "bg-red-100 text-red-700 border border-red-300"
+                : "bg-gold/20 text-emerald-deep border border-gold/40"
+            }`}
+          >
+            {uploadMessage}
+          </motion.div>
+        )}
 
         {/* Ceremony Title */}
         <h2 className="font-serif text-xs sm:text-sm uppercase tracking-[0.3em] text-gold-dark font-bold mb-1 flex items-center gap-2">

@@ -14,6 +14,8 @@ export type GuestPronounMode = "friend" | "elder" | "senior" | "junior";
 
 interface GuestContextType {
   guestName: string;
+  currentSlug: string;
+  isOwner: boolean;
   hasCustomGuest: boolean;
   isRegisteredGuest: boolean;
   canUpload: boolean;
@@ -36,6 +38,8 @@ interface GuestContextType {
 
 const GuestContext = createContext<GuestContextType>({
   guestName: "",
+  currentSlug: "",
+  isOwner: false,
   hasCustomGuest: false,
   isRegisteredGuest: false,
   canUpload: false,
@@ -163,6 +167,7 @@ export function trackOpenInvitation(guestName?: string, mode?: string) {
 
 export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [guestName, setGuestNameState] = useState<string>("");
+  const [currentSlug, setCurrentSlugState] = useState<string>("");
   const [isRegisteredGuest, setIsRegisteredGuest] = useState<boolean>(false);
   const [canUpload, setCanUploadState] = useState<boolean>(false);
   const [pronounMode, setPronounModeState] = useState<GuestPronounMode>("friend");
@@ -190,6 +195,18 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // 1. CÁCH 1: Lấy từ Google Sheet qua Slug (?u=giabao hoặc ?slug=giabao hoặc ?id=giabao)
         const slugParam = params.get("u") || params.get("slug") || params.get("id");
         
+        if (slugParam) {
+          setCurrentSlugState(slugParam);
+          try {
+            sessionStorage.setItem("invitation_guest_slug", slugParam);
+          } catch {}
+        } else {
+          const savedSlug = sessionStorage.getItem("invitation_guest_slug");
+          if (savedSlug) {
+            setCurrentSlugState(savedSlug);
+          }
+        }
+
         // 2. CÁCH 2: Truyền theo 4 tiền tố danh xưng trực tiếp
         const conParam = params.get("con"); // Bậc tiền bối, Thầy Cô, Người lớn -> xưng con (Kính mời)
         const emParam = params.get("em");   // Anh / Chị -> xưng em (Thân ái mời)
@@ -399,10 +416,15 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const effectiveDate = customDate || defaultEarliestDate;
   const effectiveTime = customTime || defaultEarliestTime;
 
+  const cleanSlug = (currentSlug || "").trim().toLowerCase().replace(/[-_]/g, "");
+  const isOwner = cleanSlug === "phuongnha";
+
   return (
     <GuestContext.Provider
       value={{
         guestName,
+        currentSlug,
+        isOwner,
         hasCustomGuest: Boolean(guestName.trim()),
         isRegisteredGuest,
         canUpload,
