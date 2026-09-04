@@ -13,8 +13,48 @@ export async function GET() {
       return NextResponse.json({ avatarUrl: cachedAvatarUrl });
     }
 
-    // Try fetching from Google Sheet to see if phuongnha has a specialPhoto or uploaded photo
     if (graduationConfig.googleScriptUrl) {
+      // 1. Kiểm tra sheet AnhKyNiem với Chủ Đề = "Ảnh đại diện"
+      try {
+        const photosRes = await fetch(`${graduationConfig.googleScriptUrl}?action=getPhotos&sheet=AnhKyNiem`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+          next: { revalidate: 0 },
+        });
+
+        if (photosRes.ok) {
+          const photosList = await photosRes.json();
+          if (Array.isArray(photosList) && photosList.length > 0) {
+            const avatarRows = photosList.filter((item: Record<string, unknown>) => {
+              const cat = String(
+                item.category || item.Category || item["Chủ Đề"] || item["Chủ đề"] || item.chuDe || ""
+              ).trim();
+              return cat === "Ảnh đại diện";
+            });
+
+            if (avatarRows.length > 0) {
+              const lastAvatarRow = avatarRows[avatarRows.length - 1];
+              const rawUrl =
+                lastAvatarRow.photoUrl ||
+                lastAvatarRow.PhotoUrl ||
+                lastAvatarRow["Link Ảnh Cloudinary"] ||
+                lastAvatarRow["Link Ảnh"] ||
+                lastAvatarRow.url ||
+                lastAvatarRow.photo ||
+                lastAvatarRow.specialPhoto;
+              if (rawUrl && typeof rawUrl === "string" && rawUrl.trim().startsWith("http")) {
+                cachedAvatarUrl = rawUrl.trim();
+                return NextResponse.json({ avatarUrl: cachedAvatarUrl });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[Avatar Route] Could not fetch photos from Sheet AnhKyNiem:", err);
+      }
+
+      // 2. Dự phòng: Kiểm tra sheet KhachMoi với slug = "phuongnha"
       try {
         const res = await fetch(`${graduationConfig.googleScriptUrl}?action=getGuests&sheet=KhachMoi`, {
           method: "GET",
@@ -53,7 +93,7 @@ export async function GET() {
           }
         }
       } catch (err) {
-        console.warn("[Avatar Route] Could not fetch from Google Sheet:", err);
+        console.warn("[Avatar Route] Could not fetch from Sheet KhachMoi:", err);
       }
     }
 
@@ -81,8 +121,34 @@ export async function POST(request: Request) {
     const cleanUrl = avatarUrl.trim();
     cachedAvatarUrl = cleanUrl;
 
-    // Send async update to Google Sheets
     if (graduationConfig.googleScriptUrl) {
+      // 1. Ghi dòng mới vào sheet AnhKyNiem với Chủ Đề = "Ảnh đại diện"
+      const payloadAnhKyNiem = {
+        type: "PHOTO_UPLOAD",
+        action: "PHOTO_UPLOAD",
+        sheet: "AnhKyNiem",
+        name: "Phương Nhã",
+        caption: "Ảnh đại diện bìa thiệp tốt nghiệp",
+        category: "Ảnh đại diện",
+        "Chủ Đề": "Ảnh đại diện",
+        photoUrl: cleanUrl,
+        sourceType: "file",
+        timestamp: new Date().toLocaleString("vi-VN"),
+        priority: 1,
+        "Mức độ ưu tiên": 1,
+        "Ưu tiên": 1,
+        "Thứ tự": 1,
+      };
+
+      fetch(graduationConfig.googleScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payloadAnhKyNiem),
+      }).catch((err) => {
+        console.warn("[Avatar Route] Google Sheet AnhKyNiem sync error:", err);
+      });
+
+      // 2. Cập nhật dòng của phuongnha trong sheet KhachMoi
       fetch(graduationConfig.googleScriptUrl, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -96,7 +162,7 @@ export async function POST(request: Request) {
           timestamp: new Date().toLocaleString("vi-VN"),
         }),
       }).catch((err) => {
-        console.warn("[Avatar Route] Google Sheet background sync error:", err);
+        console.warn("[Avatar Route] Google Sheet KhachMoi sync error:", err);
       });
     }
 
