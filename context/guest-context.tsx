@@ -177,6 +177,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [defaultEarliestDate, setDefaultEarliestDate] = useState<string | undefined>(undefined);
   const [defaultEarliestTime, setDefaultEarliestTime] = useState<string | undefined>(undefined);
   const isInitialized = useRef(false);
+  const isFetchingSheetRef = useRef(false);
 
   useEffect(() => {
     // 0. Khởi tạo ngày giờ sớm nhất từ bộ nhớ đệm
@@ -301,62 +302,82 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }
 
-        // 3. TỰ ĐỘNG ĐỒNG BỘ REALTIME TỪ GOOGLE SHEET (Cập nhật không cần bấm Reload)
+        // 3. TỰ ĐỘNG ĐỒNG BỘ REALTIME TỪ GOOGLE SHEET (Cập nhật siêu tốc không cần bấm Reload)
         const syncGuestDataFromSheet = () => {
+          if (isFetchingSheetRef.current) return;
+          isFetchingSheetRef.current = true;
+
           const activeSlug = slugParam || sessionStorage.getItem("invitation_guest_slug");
-          fetchGuestsFromSheet(true).then((dynamicRegistry) => {
-            // Cập nhật ngày giờ sớm nhất từ danh sách Sheet
-            const dynamicEarliest = getEarliestGraduationDateTime(dynamicRegistry);
-            if (dynamicEarliest.earliestDate) setDefaultEarliestDate(dynamicEarliest.earliestDate);
-            if (dynamicEarliest.earliestTime) setDefaultEarliestTime(dynamicEarliest.earliestTime);
+          fetchGuestsFromSheet(true)
+            .then((dynamicRegistry) => {
+              // Cập nhật ngày giờ sớm nhất từ danh sách Sheet
+              const dynamicEarliest = getEarliestGraduationDateTime(dynamicRegistry);
+              if (dynamicEarliest.earliestDate) setDefaultEarliestDate(dynamicEarliest.earliestDate);
+              if (dynamicEarliest.earliestTime) setDefaultEarliestTime(dynamicEarliest.earliestTime);
 
-            if (activeSlug) {
-              const dynamicProfile = findGuestBySlug(activeSlug, dynamicRegistry);
-              if (dynamicProfile) {
-                const allowUpload = dynamicProfile.canUpload !== false;
-                setGuestNameState(dynamicProfile.name);
-                setIsRegisteredGuest(true);
-                setCanUploadState(allowUpload);
-                setPronounModeState(dynamicProfile.mode);
-                setCustomMessageState(dynamicProfile.customMessage);
-                setCustomTimeState(dynamicProfile.customTime);
-                setCustomDateState(dynamicProfile.customDate);
+              if (activeSlug) {
+                const dynamicProfile = findGuestBySlug(activeSlug, dynamicRegistry);
+                if (dynamicProfile) {
+                  const allowUpload = dynamicProfile.canUpload !== false;
+                  setGuestNameState(dynamicProfile.name);
+                  setIsRegisteredGuest(true);
+                  setCanUploadState(allowUpload);
+                  setPronounModeState(dynamicProfile.mode);
+                  setCustomMessageState(dynamicProfile.customMessage);
+                  setCustomTimeState(dynamicProfile.customTime);
+                  setCustomDateState(dynamicProfile.customDate);
 
-                try {
-                  sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
-                  sessionStorage.setItem("invitation_guest_is_registered", "true");
-                  sessionStorage.setItem("invitation_guest_can_upload", allowUpload ? "true" : "false");
-                  sessionStorage.setItem("invitation_guest_mode", dynamicProfile.mode);
-                  if (dynamicProfile.customMessage) {
-                    sessionStorage.setItem("invitation_guest_msg", dynamicProfile.customMessage);
-                  } else {
-                    sessionStorage.removeItem("invitation_guest_msg");
+                  try {
+                    sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
+                    sessionStorage.setItem("invitation_guest_is_registered", "true");
+                    sessionStorage.setItem("invitation_guest_can_upload", allowUpload ? "true" : "false");
+                    sessionStorage.setItem("invitation_guest_mode", dynamicProfile.mode);
+                    if (dynamicProfile.customMessage) {
+                      sessionStorage.setItem("invitation_guest_msg", dynamicProfile.customMessage);
+                    } else {
+                      sessionStorage.removeItem("invitation_guest_msg");
+                    }
+                    if (dynamicProfile.customTime) {
+                      sessionStorage.setItem("invitation_guest_time", dynamicProfile.customTime);
+                    } else {
+                      sessionStorage.removeItem("invitation_guest_time");
+                    }
+                    if (dynamicProfile.customDate) {
+                      sessionStorage.setItem("invitation_guest_date", dynamicProfile.customDate);
+                    } else {
+                      sessionStorage.removeItem("invitation_guest_date");
+                    }
+                  } catch {
+                    // ignore
                   }
-                  if (dynamicProfile.customTime) {
-                    sessionStorage.setItem("invitation_guest_time", dynamicProfile.customTime);
-                  } else {
-                    sessionStorage.removeItem("invitation_guest_time");
-                  }
-                  if (dynamicProfile.customDate) {
-                    sessionStorage.setItem("invitation_guest_date", dynamicProfile.customDate);
-                  } else {
-                    sessionStorage.removeItem("invitation_guest_date");
-                  }
-                } catch {
-                  // ignore
                 }
               }
-            }
-          }).catch(() => {
-            // ignore
-          });
+            })
+            .catch(() => {
+              // ignore
+            })
+            .finally(() => {
+              isFetchingSheetRef.current = false;
+            });
         };
 
         // Chạy ngay khi vừa tải xong trang
         syncGuestDataFromSheet();
 
-        // Thiết lập vòng lặp Realtime tự động quét thay đổi từ Google Sheets mỗi 10 giây
-        const intervalId = setInterval(syncGuestDataFromSheet, 10000);
+        // Thiết lập vòng lặp Realtime tự động quét thay đổi từ Google Sheets siêu tốc mỗi 3 giây khi Tab đang mở
+        const intervalId = setInterval(() => {
+          if (typeof document !== "undefined" && document.visibilityState === "visible") {
+            syncGuestDataFromSheet();
+          }
+        }, 3000);
+
+        // Tự động quét lại ngay lập tức khi người dùng quay lại tab thiệp
+        const handleVisibilityChange = () => {
+          if (document.visibilityState === "visible") {
+            syncGuestDataFromSheet();
+          }
+        };
+        document.addEventListener("visibilitychange", handleVisibilityChange);
 
         // TỰ ĐỘNG XÓA SẠCH URL TRÊN THANH ĐỊA CHỈ (Clean URL & chống sửa tên)
         if (hasParams && window.history && window.history.replaceState) {
@@ -364,7 +385,10 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           window.history.replaceState({}, document.title, cleanUrl);
         }
 
-        return () => clearInterval(intervalId);
+        return () => {
+          clearInterval(intervalId);
+          document.removeEventListener("visibilitychange", handleVisibilityChange);
+        };
       }
     } catch (err) {
       console.warn("Could not process guest context:", err);
