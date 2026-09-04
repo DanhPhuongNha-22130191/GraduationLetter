@@ -301,60 +301,70 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }
 
-        // TỰ ĐỘNG CẬP NHẬT TỪ GOOGLE SHEET (Nạp ngầm danh sách mới nhất với forceRefresh = true)
-        const activeSlug = slugParam || sessionStorage.getItem("invitation_guest_slug");
-        fetchGuestsFromSheet(true).then((dynamicRegistry) => {
-          // Cập nhật ngày giờ sớm nhất từ danh sách Sheet
-          const dynamicEarliest = getEarliestGraduationDateTime(dynamicRegistry);
-          if (dynamicEarliest.earliestDate) setDefaultEarliestDate(dynamicEarliest.earliestDate);
-          if (dynamicEarliest.earliestTime) setDefaultEarliestTime(dynamicEarliest.earliestTime);
+        // 3. TỰ ĐỘNG ĐỒNG BỘ REALTIME TỪ GOOGLE SHEET (Cập nhật không cần bấm Reload)
+        const syncGuestDataFromSheet = () => {
+          const activeSlug = slugParam || sessionStorage.getItem("invitation_guest_slug");
+          fetchGuestsFromSheet(true).then((dynamicRegistry) => {
+            // Cập nhật ngày giờ sớm nhất từ danh sách Sheet
+            const dynamicEarliest = getEarliestGraduationDateTime(dynamicRegistry);
+            if (dynamicEarliest.earliestDate) setDefaultEarliestDate(dynamicEarliest.earliestDate);
+            if (dynamicEarliest.earliestTime) setDefaultEarliestTime(dynamicEarliest.earliestTime);
 
-          if (activeSlug) {
-            const dynamicProfile = findGuestBySlug(activeSlug, dynamicRegistry);
-            if (dynamicProfile) {
-              const allowUpload = dynamicProfile.canUpload !== false;
-              setGuestNameState(dynamicProfile.name);
-              setIsRegisteredGuest(true);
-              setCanUploadState(allowUpload);
-              setPronounModeState(dynamicProfile.mode);
-              setCustomMessageState(dynamicProfile.customMessage);
-              setCustomTimeState(dynamicProfile.customTime);
-              setCustomDateState(dynamicProfile.customDate);
+            if (activeSlug) {
+              const dynamicProfile = findGuestBySlug(activeSlug, dynamicRegistry);
+              if (dynamicProfile) {
+                const allowUpload = dynamicProfile.canUpload !== false;
+                setGuestNameState(dynamicProfile.name);
+                setIsRegisteredGuest(true);
+                setCanUploadState(allowUpload);
+                setPronounModeState(dynamicProfile.mode);
+                setCustomMessageState(dynamicProfile.customMessage);
+                setCustomTimeState(dynamicProfile.customTime);
+                setCustomDateState(dynamicProfile.customDate);
 
-              try {
-                sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
-                sessionStorage.setItem("invitation_guest_is_registered", "true");
-                sessionStorage.setItem("invitation_guest_can_upload", allowUpload ? "true" : "false");
-                sessionStorage.setItem("invitation_guest_mode", dynamicProfile.mode);
-                if (dynamicProfile.customMessage) {
-                  sessionStorage.setItem("invitation_guest_msg", dynamicProfile.customMessage);
-                } else {
-                  sessionStorage.removeItem("invitation_guest_msg");
+                try {
+                  sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
+                  sessionStorage.setItem("invitation_guest_is_registered", "true");
+                  sessionStorage.setItem("invitation_guest_can_upload", allowUpload ? "true" : "false");
+                  sessionStorage.setItem("invitation_guest_mode", dynamicProfile.mode);
+                  if (dynamicProfile.customMessage) {
+                    sessionStorage.setItem("invitation_guest_msg", dynamicProfile.customMessage);
+                  } else {
+                    sessionStorage.removeItem("invitation_guest_msg");
+                  }
+                  if (dynamicProfile.customTime) {
+                    sessionStorage.setItem("invitation_guest_time", dynamicProfile.customTime);
+                  } else {
+                    sessionStorage.removeItem("invitation_guest_time");
+                  }
+                  if (dynamicProfile.customDate) {
+                    sessionStorage.setItem("invitation_guest_date", dynamicProfile.customDate);
+                  } else {
+                    sessionStorage.removeItem("invitation_guest_date");
+                  }
+                } catch {
+                  // ignore
                 }
-                if (dynamicProfile.customTime) {
-                  sessionStorage.setItem("invitation_guest_time", dynamicProfile.customTime);
-                } else {
-                  sessionStorage.removeItem("invitation_guest_time");
-                }
-                if (dynamicProfile.customDate) {
-                  sessionStorage.setItem("invitation_guest_date", dynamicProfile.customDate);
-                } else {
-                  sessionStorage.removeItem("invitation_guest_date");
-                }
-              } catch {
-                // ignore
               }
             }
-          }
-        }).catch(() => {
-          // ignore
-        });
+          }).catch(() => {
+            // ignore
+          });
+        };
+
+        // Chạy ngay khi vừa tải xong trang
+        syncGuestDataFromSheet();
+
+        // Thiết lập vòng lặp Realtime tự động quét thay đổi từ Google Sheets mỗi 10 giây
+        const intervalId = setInterval(syncGuestDataFromSheet, 10000);
 
         // TỰ ĐỘNG XÓA SẠCH URL TRÊN THANH ĐỊA CHỈ (Clean URL & chống sửa tên)
         if (hasParams && window.history && window.history.replaceState) {
           const cleanUrl = window.location.origin + window.location.pathname;
           window.history.replaceState({}, document.title, cleanUrl);
         }
+
+        return () => clearInterval(intervalId);
       }
     } catch (err) {
       console.warn("Could not process guest context:", err);
