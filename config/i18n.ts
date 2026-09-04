@@ -96,6 +96,14 @@ export function formatLocalizedDate(dateStr?: string, lang: Language = "vi"): st
     d = parseInt(matchDM[1], 10);
     m = parseInt(matchDM[2], 10);
     y = 2026;
+  } else {
+    // Hỗ trợ tự động đọc chuỗi Date chuẩn của JavaScript / Google Sheets (ví dụ: Mon Jan 18 2027...)
+    const parsedDate = new Date(trimmed);
+    if (!isNaN(parsedDate.getTime())) {
+      d = parsedDate.getDate();
+      m = parsedDate.getMonth() + 1;
+      y = parsedDate.getFullYear();
+    }
   }
 
   if (d > 0 && m >= 1 && m <= 12 && y > 0) {
