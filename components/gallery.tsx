@@ -743,7 +743,38 @@ export const GallerySection: React.FC = () => {
         // ignore
       }
 
-      // 3. Gửi toàn bộ danh sách ảnh đến server API /api/photos/upload
+      // 3. Gửi đồng thời từ Trình duyệt (Direct no-cors) đến Google Sheets với thời gian chờ 350ms mỗi ảnh
+      if (graduationConfig.googleScriptUrl) {
+        uploadedUrls.forEach((url, i) => {
+          setTimeout(() => {
+            fetch(graduationConfig.googleScriptUrl, {
+              method: "POST",
+              mode: "no-cors",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: JSON.stringify({
+                type: "PHOTO_UPLOAD",
+                action: "PHOTO_UPLOAD",
+                sheet: "AnhKyNiem",
+                name: guestName || uploaderName || "Khách mời",
+                caption: caption.trim()
+                  ? `${caption.trim()}${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`
+                  : "Ảnh kỷ niệm cùng Nhã",
+                category: targetCategory,
+                "Chủ Đề": targetCategory,
+                photoUrl: url,
+                sourceType: uploadSourceMode,
+                timestamp: new Date().toLocaleString("vi-VN"),
+                priority: parsedPriority,
+                "Mức độ ưu tiên": parsedPriority,
+                "Ưu tiên": parsedPriority,
+                "Thứ tự": parsedPriority,
+              }),
+            }).catch(() => {});
+          }, i * 350);
+        });
+      }
+
+      // 4. Gửi qua Server API Route /api/photos/upload
       try {
         fetch("/api/photos/upload", {
           method: "POST",
@@ -761,35 +792,7 @@ export const GallerySection: React.FC = () => {
               priority: parsedPriority,
             })),
           }),
-        }).catch(() => {
-          // Fallback ngầm trực tiếp Google Sheet nếu cần
-          if (graduationConfig.googleScriptUrl) {
-            uploadedUrls.forEach((url, i) => {
-              fetch(graduationConfig.googleScriptUrl, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({
-                  type: "PHOTO_UPLOAD",
-                  action: "PHOTO_UPLOAD",
-                  sheet: "AnhKyNiem",
-                  name: guestName || uploaderName || "Khách mời",
-                  caption: caption.trim()
-                    ? `${caption.trim()}${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`
-                    : "Ảnh kỷ niệm cùng Nhã",
-                  category: targetCategory,
-                  photoUrl: url,
-                  sourceType: uploadSourceMode,
-                  timestamp: new Date().toLocaleString("vi-VN"),
-                  priority: parsedPriority,
-                  "Mức độ ưu tiên": parsedPriority,
-                  "Ưu tiên": parsedPriority,
-                  "Thứ tự": parsedPriority,
-                }),
-              }).catch(() => {});
-            });
-          }
-        });
+        }).catch(() => {});
       } catch {
         // ignore
       }

@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Không có dữ liệu ảnh" }, { status: 400 });
     }
 
-    // Schedule background queue processing on server with serialized execution
+    // Serialize Google Sheets write execution and wait for completion
     serverWriteQueue = serverWriteQueue
       .then(async () => {
         for (let i = 0; i < photos.length; i++) {
@@ -86,11 +86,13 @@ export async function POST(request: Request) {
         console.error("[Photos Upload] Server queue processing error:", err);
       });
 
-    // Return instant success to the client so UI updates immediately
+    // Wait for current queue batch to finish writing to Google Sheets
+    await serverWriteQueue;
+
     return NextResponse.json({
       success: true,
       count: photos.length,
-      message: `Đã đưa ${photos.length} ảnh vào hàng đợi lưu trữ an toàn`,
+      message: `Đã lưu thành công ${photos.length} ảnh vào Google Sheets`,
     });
   } catch (err) {
     console.error("[Photos Upload] Error in POST handler:", err);

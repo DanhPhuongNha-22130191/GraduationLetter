@@ -140,30 +140,34 @@ export async function POST(request: Request) {
         "Thứ tự": 1,
       };
 
-      fetch(graduationConfig.googleScriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payloadAnhKyNiem),
-      }).catch((err) => {
+      try {
+        await fetch(graduationConfig.googleScriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payloadAnhKyNiem),
+        });
+      } catch (err) {
         console.warn("[Avatar Route] Google Sheet AnhKyNiem sync error:", err);
-      });
+      }
 
       // 2. Cập nhật dòng của phuongnha trong sheet KhachMoi
-      fetch(graduationConfig.googleScriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          type: "AVATAR_UPDATE",
-          action: "AVATAR_UPDATE",
-          sheet: "KhachMoi",
-          slug: "phuongnha",
-          specialPhoto: cleanUrl,
-          photoUrl: cleanUrl,
-          timestamp: new Date().toLocaleString("vi-VN"),
-        }),
-      }).catch((err) => {
+      try {
+        await fetch(graduationConfig.googleScriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            type: "AVATAR_UPDATE",
+            action: "AVATAR_UPDATE",
+            sheet: "KhachMoi",
+            slug: "phuongnha",
+            specialPhoto: cleanUrl,
+            photoUrl: cleanUrl,
+            timestamp: new Date().toLocaleString("vi-VN"),
+          }),
+        });
+      } catch (err) {
         console.warn("[Avatar Route] Google Sheet KhachMoi sync error:", err);
-      });
+      }
     }
 
     return NextResponse.json({ success: true, avatarUrl: cleanUrl });

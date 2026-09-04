@@ -124,7 +124,32 @@ export const HeroSection: React.FC = () => {
         localStorage.setItem("custom_hero_avatar_url", photoUrl);
       } catch {}
 
-      // 3. Lưu bền vững vào Server / Google Sheets
+      // 3. Gửi trực tiếp từ trình duyệt đến Google Sheets (no-cors mode)
+      if (graduationConfig.googleScriptUrl) {
+        fetch(graduationConfig.googleScriptUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            type: "PHOTO_UPLOAD",
+            action: "PHOTO_UPLOAD",
+            sheet: "AnhKyNiem",
+            name: "Phương Nhã",
+            caption: "Ảnh đại diện bìa thiệp tốt nghiệp",
+            category: "Ảnh đại diện",
+            "Chủ Đề": "Ảnh đại diện",
+            photoUrl: photoUrl,
+            sourceType: "file",
+            timestamp: new Date().toLocaleString("vi-VN"),
+            priority: 1,
+            "Mức độ ưu tiên": 1,
+            "Ưu tiên": 1,
+            "Thứ tự": 1,
+          }),
+        }).catch(() => {});
+      }
+
+      // 4. Lưu bền vững vào Server API route
       await fetch("/api/avatar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
