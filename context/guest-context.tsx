@@ -301,16 +301,16 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }
 
-        // TỰ ĐỘNG CẬP NHẬT TỪ GOOGLE SHEET (Nạp ngầm danh sách mới nhất)
-        const targetSlug = slugParam;
-        fetchGuestsFromSheet().then((dynamicRegistry) => {
+        // TỰ ĐỘNG CẬP NHẬT TỪ GOOGLE SHEET (Nạp ngầm danh sách mới nhất với forceRefresh = true)
+        const activeSlug = slugParam || sessionStorage.getItem("invitation_guest_slug");
+        fetchGuestsFromSheet(true).then((dynamicRegistry) => {
           // Cập nhật ngày giờ sớm nhất từ danh sách Sheet
           const dynamicEarliest = getEarliestGraduationDateTime(dynamicRegistry);
           if (dynamicEarliest.earliestDate) setDefaultEarliestDate(dynamicEarliest.earliestDate);
           if (dynamicEarliest.earliestTime) setDefaultEarliestTime(dynamicEarliest.earliestTime);
 
-          if (targetSlug) {
-            const dynamicProfile = findGuestBySlug(targetSlug, dynamicRegistry);
+          if (activeSlug) {
+            const dynamicProfile = findGuestBySlug(activeSlug, dynamicRegistry);
             if (dynamicProfile) {
               const allowUpload = dynamicProfile.canUpload !== false;
               setGuestNameState(dynamicProfile.name);
@@ -328,12 +328,18 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 sessionStorage.setItem("invitation_guest_mode", dynamicProfile.mode);
                 if (dynamicProfile.customMessage) {
                   sessionStorage.setItem("invitation_guest_msg", dynamicProfile.customMessage);
+                } else {
+                  sessionStorage.removeItem("invitation_guest_msg");
                 }
                 if (dynamicProfile.customTime) {
                   sessionStorage.setItem("invitation_guest_time", dynamicProfile.customTime);
+                } else {
+                  sessionStorage.removeItem("invitation_guest_time");
                 }
                 if (dynamicProfile.customDate) {
                   sessionStorage.setItem("invitation_guest_date", dynamicProfile.customDate);
+                } else {
+                  sessionStorage.removeItem("invitation_guest_date");
                 }
               } catch {
                 // ignore

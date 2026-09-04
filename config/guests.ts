@@ -184,11 +184,11 @@ export function getCachedGuestSync(slug: string): GuestProfile | null {
 /**
  * Tải danh sách khách mời từ Google Sheet (Sheet 3 / KhachMoi)
  */
-export async function fetchGuestsFromSheet(): Promise<Record<string, GuestProfile>> {
+export async function fetchGuestsFromSheet(forceRefresh = false): Promise<Record<string, GuestProfile>> {
   const cacheKey = "cached_guest_registry";
 
-  // 1. Kiểm tra cache LocalStorage / SessionStorage trước để tải trang siêu tốc 0ms
-  if (typeof window !== "undefined") {
+  // 1. Kiểm tra cache LocalStorage / SessionStorage nếu không yêu cầu làm mới dữ liệu
+  if (!forceRefresh && typeof window !== "undefined") {
     try {
       const cached = localStorage.getItem(cacheKey) || sessionStorage.getItem(cacheKey);
       if (cached) {
@@ -202,12 +202,14 @@ export async function fetchGuestsFromSheet(): Promise<Record<string, GuestProfil
     }
   }
 
-  // 2. Fetch từ Google Apps Script
+  // 2. Fetch trực tiếp từ Google Apps Script với cache-busting
   try {
     if (graduationConfig.googleScriptUrl) {
-      const res = await fetch(`${graduationConfig.googleScriptUrl}?action=getGuests&sheet=KhachMoi`, {
+      const apiUrl = `${graduationConfig.googleScriptUrl}?action=getGuests&sheet=KhachMoi${forceRefresh ? `&_t=${Date.now()}` : ""}`;
+      const res = await fetch(apiUrl, {
         method: "GET",
         headers: { Accept: "application/json" },
+        cache: forceRefresh ? "no-store" : "default",
       });
 
       if (res.ok) {
