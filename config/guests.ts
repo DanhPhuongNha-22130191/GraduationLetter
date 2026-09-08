@@ -10,6 +10,7 @@ export interface GuestProfile {
   customDate?: string;
   canUpload?: boolean;
   specialPhoto?: string;
+  audioUrl?: string;
 }
 
 /**
@@ -301,6 +302,16 @@ export async function fetchGuestsFromSheet(forceRefresh = false): Promise<Record
               item.Photo ||
               undefined) as string | undefined;
 
+            const customAudio = (item.audioUrl ||
+              item.AudioUrl ||
+              item.audio ||
+              item.Audio ||
+              item.nhacNen ||
+              item.NhacNen ||
+              item.linkNhac ||
+              item.LinkNhac ||
+              undefined) as string | undefined;
+
             const profile: GuestProfile = {
               slug: String(rawSlug).trim(),
               name: String(name).trim(),
@@ -310,6 +321,7 @@ export async function fetchGuestsFromSheet(forceRefresh = false): Promise<Record
               customDate: customDate ? String(customDate).trim() : undefined,
               canUpload,
               specialPhoto: specialPhoto ? String(specialPhoto).trim() : undefined,
+              audioUrl: customAudio ? String(customAudio).trim() : undefined,
             };
 
             registry[slug] = profile;

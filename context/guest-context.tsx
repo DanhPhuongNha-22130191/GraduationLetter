@@ -367,7 +367,9 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 setPronounModeState(dynamicProfile.mode);
                 setCustomMessageState(dynamicProfile.customMessage);
                 setCustomTimeState(dynamicProfile.customTime);
-                setCustomDateState(dynamicProfile.customDate);
+                if (dynamicProfile.audioUrl) {
+                  setAudioUrlState(dynamicProfile.audioUrl);
+                }
 
                 try {
                   sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
