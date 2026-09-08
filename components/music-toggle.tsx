@@ -16,6 +16,7 @@ import {
   RotateCcw,
   FileAudio,
   Music2,
+  ArrowLeft,
 } from "lucide-react";
 import { graduationConfig, AudioPreset } from "@/config/graduation";
 import { useGuest } from "@/context/guest-context";
@@ -296,73 +297,82 @@ export const MusicToggle: React.FC = () => {
       {/* Modal Quản Lý Âm Nhạc Dành Cho Phương Nhã */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg bg-emerald-dark/95 border border-gold/40 rounded-2xl shadow-2xl overflow-hidden text-cream text-left"
+              className="relative w-full max-w-lg bg-[#0D2E26] border-2 border-gold/60 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden text-white text-left"
             >
               {/* Header Modal */}
-              <div className="relative px-6 py-5 border-b border-gold/20 bg-emerald-deep/60 flex items-center justify-between">
+              <div className="relative px-6 py-5 border-b border-gold/30 bg-[#081F1A] flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/30 flex items-center justify-center text-gold">
+                  <button
+                    onClick={() => setIsModalOpen(false)}
+                    title="Quay lại thiệp"
+                    className="px-2.5 py-1.5 rounded-xl bg-gold/15 hover:bg-gold text-gold hover:text-[#0D2E26] border border-gold/40 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span className="hidden sm:inline">Quay lại</span>
+                  </button>
+                  <div className="w-10 h-10 rounded-xl bg-gold/20 border border-gold/50 flex items-center justify-center text-gold shrink-0">
                     <Music2 className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="font-serif text-lg font-bold text-gold tracking-wide flex items-center gap-2">
                       Quản Lý Nhạc Nền Thiệp
-                      <span className="text-[10px] uppercase font-sans font-semibold px-2 py-0.5 rounded-full bg-gold/20 text-gold border border-gold/30">
+                      <span className="text-[10px] uppercase font-sans font-extrabold px-2.5 py-0.5 rounded-full bg-gold text-[#0D2E26]">
                         Owner
                       </span>
                     </h3>
-                    <p className="text-xs text-cream/70">Tùy chọn bản nhạc nền phát trên thiệp cho tất cả mọi người</p>
+                    <p className="text-xs text-white/90 font-medium">Tùy chọn bản nhạc nền phát trên thiệp cho tất cả mọi người</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-black/20 hover:bg-gold/20 text-cream hover:text-gold flex items-center justify-center transition-colors"
+                  title="Đóng cửa sổ"
+                  className="w-8 h-8 rounded-full bg-gold/20 hover:bg-gold text-gold hover:text-[#0D2E26] flex items-center justify-center transition-all cursor-pointer shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Tabs Navigation */}
-              <div className="flex border-b border-gold/20 bg-black/20 p-1.5 gap-1">
+              <div className="flex border-b border-gold/30 bg-[#061713] p-1.5 gap-1.5">
                 <button
                   onClick={() => setActiveTab("upload")}
-                  className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2.5 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     activeTab === "upload"
-                      ? "bg-gold text-emerald-deep font-bold shadow-md"
-                      : "text-cream/80 hover:text-gold hover:bg-gold/10"
+                      ? "bg-gold text-[#0D2E26] font-extrabold shadow-md border border-gold-shimmer"
+                      : "bg-[#123C32] text-white hover:text-gold hover:bg-[#1A4D41] border border-gold/30"
                   }`}
                 >
-                  <UploadCloud className="w-3.5 h-3.5" />
+                  <UploadCloud className="w-4 h-4" />
                   Cloudinary Up
                 </button>
 
                 <button
                   onClick={() => setActiveTab("playlist")}
-                  className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2.5 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     activeTab === "playlist"
-                      ? "bg-gold text-emerald-deep font-bold shadow-md"
-                      : "text-cream/80 hover:text-gold hover:bg-gold/10"
+                      ? "bg-gold text-[#0D2E26] font-extrabold shadow-md border border-gold-shimmer"
+                      : "bg-[#123C32] text-white hover:text-gold hover:bg-[#1A4D41] border border-gold/30"
                   }`}
                 >
-                  <Radio className="w-3.5 h-3.5" />
+                  <Radio className="w-4 h-4" />
                   Playlist Mẫu
                 </button>
 
                 <button
                   onClick={() => setActiveTab("url")}
-                  className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2.5 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     activeTab === "url"
-                      ? "bg-gold text-emerald-deep font-bold shadow-md"
-                      : "text-cream/80 hover:text-gold hover:bg-gold/10"
+                      ? "bg-gold text-[#0D2E26] font-extrabold shadow-md border border-gold-shimmer"
+                      : "bg-[#123C32] text-white hover:text-gold hover:bg-[#1A4D41] border border-gold/30"
                   }`}
                 >
-                  <Link2 className="w-3.5 h-3.5" />
+                  <Link2 className="w-4 h-4" />
                   Link Nhạc Trực Tiếp
                 </button>
               </div>
@@ -371,14 +381,14 @@ export const MusicToggle: React.FC = () => {
               <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
                 {/* Error & Success Messages */}
                 {uploadError && (
-                  <div className="p-3.5 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 text-xs flex items-center gap-2">
+                  <div className="p-3.5 rounded-xl bg-red-950/90 border border-red-500 text-red-200 text-xs font-medium flex items-center gap-2 shadow-md">
                     <X className="w-4 h-4 text-red-400 shrink-0" />
                     <span>{uploadError}</span>
                   </div>
                 )}
 
                 {uploadSuccessMessage && (
-                  <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-gold/50 text-gold text-xs flex items-center gap-2">
+                  <div className="p-3.5 rounded-xl bg-emerald-950/90 border border-gold text-gold text-xs font-bold flex items-center gap-2 shadow-md">
                     <Check className="w-4 h-4 text-gold shrink-0" />
                     <span>{uploadSuccessMessage}</span>
                   </div>
@@ -387,7 +397,7 @@ export const MusicToggle: React.FC = () => {
                 {/* TAB 1: UPLOAD ĐẾN CLOUDINARY */}
                 {activeTab === "upload" && (
                   <form onSubmit={handleUploadToCloudinary} className="space-y-4">
-                    <div className="p-4 rounded-xl border border-dashed border-gold/40 bg-gold/5 text-center transition-colors hover:border-gold">
+                    <div className="p-5 rounded-xl border-2 border-dashed border-gold/50 bg-[#081F1A] text-center transition-colors hover:border-gold">
                       <input
                         ref={audioFileInputRef}
                         type="file"
@@ -397,53 +407,63 @@ export const MusicToggle: React.FC = () => {
                         id="cloud-audio-upload"
                       />
                       <label htmlFor="cloud-audio-upload" className="cursor-pointer block space-y-2">
-                        <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/30 mx-auto flex items-center justify-center text-gold">
+                        <div className="w-12 h-12 rounded-full bg-gold/20 border border-gold/40 mx-auto flex items-center justify-center text-gold">
                           <FileAudio className="w-6 h-6" />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gold">
+                          <p className="text-sm font-bold text-gold">
                             {selectedAudioFile ? selectedAudioFile.name : "Nhấp để chọn file nhạc MP3 từ thiết bị"}
                           </p>
-                          <p className="text-[11px] text-cream/60 mt-1">
+                          <p className="text-xs text-white/80 mt-1">
                             Hỗ trợ MP3, M4A, WAV, AAC, OGG (Tối đa 30MB)
                           </p>
                         </div>
                         {selectedAudioFile && (
-                          <span className="inline-block text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-gold/20 text-gold border border-gold/30">
+                          <span className="inline-block text-xs font-mono font-bold px-3 py-1 rounded-full bg-gold text-[#0D2E26] shadow-sm">
                             {(selectedAudioFile.size / (1024 * 1024)).toFixed(2)} MB
                           </span>
                         )}
                       </label>
                     </div>
 
-                    <button
-                      type="submit"
-                      disabled={isUploading || !selectedAudioFile}
-                      className={`w-full py-3 px-4 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 ${
-                        isUploading || !selectedAudioFile
-                          ? "bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700"
-                          : "bg-gold text-emerald-deep hover:bg-gold-shimmer active:scale-[0.99] cursor-pointer"
-                      }`}
-                    >
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>{uploadProgressText || "Đang tải bài hát lên Cloudinary..."}</span>
-                        </>
-                      ) : (
-                        <>
-                          <UploadCloud className="w-4 h-4" />
-                          <span>Tải Nhạc Lên Cloudinary & Đặt Làm Nhạc Nền</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsModalOpen(false)}
+                        className="py-3 px-4 rounded-xl border border-gold/40 text-gold hover:bg-gold/20 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Quay lại</span>
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isUploading || !selectedAudioFile}
+                        className={`flex-1 py-3 px-4 rounded-xl font-extrabold text-sm shadow-lg transition-all flex items-center justify-center gap-2 ${
+                          isUploading || !selectedAudioFile
+                            ? "bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-700"
+                            : "bg-gold text-[#0D2E26] hover:bg-gold-shimmer active:scale-[0.99] cursor-pointer"
+                        }`}
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>{uploadProgressText || "Đang tải lên..."}</span>
+                          </>
+                        ) : (
+                          <>
+                            <UploadCloud className="w-4 h-4" />
+                            <span>Tải Lên Cloudinary</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </form>
                 )}
 
                 {/* TAB 2: PLAYLIST MẪU */}
                 {activeTab === "playlist" && (
                   <div className="space-y-2.5">
-                    <p className="text-xs text-cream/70 mb-2">Chọn nhanh một bản nhạc mẫu không lời tinh tế:</p>
+                    <p className="text-xs text-white/90 font-medium mb-2">Chọn nhanh một bản nhạc mẫu không lời tinh tế:</p>
                     {graduationConfig.audioPlaylist.map((item) => {
                       const isCurrent = audioUrl === item.url;
                       return (
@@ -452,31 +472,40 @@ export const MusicToggle: React.FC = () => {
                           onClick={() => handleSelectPreset(item)}
                           className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                             isCurrent
-                              ? "bg-gold/20 border-gold shadow-md text-gold"
-                              : "bg-black/20 border-gold/20 hover:border-gold/50 text-cream"
+                              ? "bg-gold/25 border-2 border-gold shadow-md text-gold"
+                              : "bg-[#081F1A] border border-gold/30 hover:border-gold text-white"
                           }`}
                         >
                           <div className="flex items-center gap-3">
                             <div
                               className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                isCurrent ? "bg-gold text-emerald-deep font-bold" : "bg-gold/10 text-gold"
+                                isCurrent ? "bg-gold text-[#0D2E26] font-bold" : "bg-gold/20 text-gold"
                               }`}
                             >
                               <Music className="w-4 h-4" />
                             </div>
                             <div>
-                              <p className="text-xs font-bold">{item.title}</p>
-                              <p className="text-[10px] text-cream/60">{item.artist}</p>
+                              <p className="text-xs font-bold text-white">{item.title}</p>
+                              <p className="text-[11px] text-white/70">{item.artist}</p>
                             </div>
                           </div>
                           {isCurrent && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold text-emerald-deep flex items-center gap-1">
+                            <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-gold text-[#0D2E26] flex items-center gap-1 shadow-sm">
                               <Sparkles className="w-3 h-3" /> ĐANG PHÁT
                             </span>
                           )}
                         </div>
                       );
                     })}
+
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="w-full mt-3 py-2.5 px-4 rounded-xl border border-gold/40 text-gold hover:bg-gold/20 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>Quay lại thiệp mời</span>
+                    </button>
                   </div>
                 )}
 
@@ -484,7 +513,7 @@ export const MusicToggle: React.FC = () => {
                 {activeTab === "url" && (
                   <form onSubmit={handleApplyDirectUrl} className="space-y-4">
                     <div>
-                      <label className="block text-xs font-semibold text-gold mb-1.5">
+                      <label className="block text-xs font-bold text-gold mb-1.5">
                         Đường dẫn trực tiếp bài hát (.mp3):
                       </label>
                       <input
@@ -492,30 +521,48 @@ export const MusicToggle: React.FC = () => {
                         value={directUrlInput}
                         onChange={(e) => setDirectUrlInput(e.target.value)}
                         placeholder="https://res.cloudinary.com/.../music.mp3"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-gold/30 text-cream placeholder-cream/40 text-xs focus:outline-none focus:border-gold"
+                        className="w-full px-3.5 py-3 rounded-xl bg-[#061713] border-2 border-gold/50 text-white placeholder:text-white/40 text-xs font-medium focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30 shadow-inner"
                       />
                     </div>
-                    <button
-                      type="submit"
-                      className="w-full py-2.5 px-4 rounded-xl bg-gold text-emerald-deep font-bold text-xs hover:bg-gold-shimmer transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                    >
-                      <Check className="w-4 h-4" />
-                      Áp Dụng Bản Nhạc Này
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsModalOpen(false)}
+                        className="py-3 px-4 rounded-xl border border-gold/40 text-gold hover:bg-gold/20 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Quay lại</span>
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-3 px-4 rounded-xl bg-gold text-[#0D2E26] font-extrabold text-xs hover:bg-gold-shimmer transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg border border-gold-shimmer"
+                      >
+                        <Check className="w-4 h-4 stroke-[3]" />
+                        <span>Áp Dụng Bản Nhạc Này</span>
+                      </button>
+                    </div>
                   </form>
                 )}
 
-                {/* Reset Button */}
-                <div className="pt-3 border-t border-gold/20 flex justify-between items-center text-xs">
-                  <span className="text-[11px] text-cream/60 truncate max-w-[220px]">
-                    Đang phát: <span className="text-gold font-mono">{audioUrl.split("/").pop() || "audio"}</span>
+                {/* Reset Button & Back Link */}
+                <div className="pt-3 border-t border-gold/30 flex justify-between items-center text-xs">
+                  <span className="text-[11px] text-white/80 font-medium truncate max-w-[220px]">
+                    Đang phát: <span className="text-gold font-mono font-bold">{audioUrl.split("/").pop() || "audio"}</span>
                   </span>
-                  <button
-                    onClick={handleResetDefault}
-                    className="text-[11px] text-gold/80 hover:text-gold flex items-center gap-1 underline cursor-pointer"
-                  >
-                    <RotateCcw className="w-3 h-3" /> Mặc định
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleResetDefault}
+                      className="text-[11px] text-gold hover:text-gold-shimmer font-bold flex items-center gap-1 underline cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" /> Mặc định
+                    </button>
+                    <button
+                      onClick={() => setIsModalOpen(false)}
+                      className="text-[11px] text-white/90 hover:text-gold font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3 h-3" /> Thoát
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -525,3 +572,6 @@ export const MusicToggle: React.FC = () => {
     </>
   );
 };
+
+
+
