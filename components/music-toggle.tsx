@@ -182,8 +182,28 @@ export const MusicToggle: React.FC = () => {
     }
   };
 
+  const saveMusicToSheet = (title: string, url: string, artist = "Cloudinary Upload") => {
+    if (!graduationConfig.googleScriptUrl) return;
+    try {
+      fetch(graduationConfig.googleScriptUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          type: "SAVE_MUSIC",
+          action: "SAVE_MUSIC",
+          title: title.trim(),
+          artist: artist.trim(),
+          url: url.trim(),
+          timestamp: new Date().toLocaleString("vi-VN"),
+        }),
+      }).catch(() => {});
+    } catch {}
+  };
+
   const handleSelectPreset = (preset: AudioPreset) => {
     setAudioUrl(preset.url);
+    saveMusicToSheet(preset.title, preset.url, preset.artist);
     setUploadSuccessMessage(`Đã chọn bài: ${preset.title}`);
     isManuallyPausedRef.current = false;
     setTimeout(() => {
@@ -204,7 +224,9 @@ export const MusicToggle: React.FC = () => {
     }
 
     const fileName = clean.split("/").pop()?.split("?")[0] || "Link Nhạc Trực Tiếp";
-    addCustomTrackToPlaylist(decodeURIComponent(fileName), clean, "Link MP3 Trực Tiếp");
+    const songTitle = decodeURIComponent(fileName);
+    addCustomTrackToPlaylist(songTitle, clean, "Link MP3 Trực Tiếp");
+    saveMusicToSheet(songTitle, clean, "Link MP3 Trực Tiếp");
 
     setAudioUrl(clean);
     setUploadError(null);
@@ -275,6 +297,7 @@ export const MusicToggle: React.FC = () => {
 
       const songTitle = selectedAudioFile.name.replace(/\.[^/.]+$/, "");
       addCustomTrackToPlaylist(songTitle, uploadedMusicUrl, "Cloudinary Upload");
+      saveMusicToSheet(songTitle, uploadedMusicUrl, "Cloudinary Upload");
 
       setAudioUrl(uploadedMusicUrl);
       setUploadSuccessMessage(`Tải lên thành công! Bài hát "${songTitle}" đã được thêm vào Playlist & đặt làm nhạc nền.`);

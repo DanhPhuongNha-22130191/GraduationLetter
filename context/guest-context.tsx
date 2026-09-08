@@ -405,14 +405,24 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         // 4. TỰ ĐỘNG ĐỒNG BỘ REALTIME NHẠC NỀN TỪ SHEET 'NhacNen'
         const syncMusicFromSheet = () => {
-          fetch("/api/music")
+          fetch(`/api/music?refresh=1&_t=${Date.now()}`)
             .then((res) => res.json())
             .then((data) => {
               if (data && data.activeAudioUrl) {
-                const hasManualChoice = sessionStorage.getItem("invitation_bg_audio_url_manual");
-                if (!hasManualChoice) {
-                  setAudioUrlState(data.activeAudioUrl);
-                }
+                const newUrl = data.activeAudioUrl.trim();
+                setAudioUrlState((prev) => {
+                  if (prev !== newUrl) {
+                    try {
+                      localStorage.setItem("invitation_bg_audio_url", newUrl);
+                      sessionStorage.setItem("invitation_bg_audio_url", newUrl);
+                    } catch {}
+                    if (typeof window !== "undefined") {
+                      window.dispatchEvent(new CustomEvent("AUDIO_URL_CHANGED", { detail: newUrl }));
+                    }
+                    return newUrl;
+                  }
+                  return prev;
+                });
               }
             })
             .catch(() => {});

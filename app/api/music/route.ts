@@ -11,10 +11,10 @@ export async function GET(request: Request) {
   const isRefresh = searchParams.get("refresh") === "1";
   const now = Date.now();
 
-  if (!isRefresh && cachedMusicData && now - lastFetchTime < 5000) {
+  if (!isRefresh && cachedMusicData && now - lastFetchTime < 2000) {
     return NextResponse.json(cachedMusicData, {
       headers: {
-        "Cache-Control": "public, s-maxage=5, stale-while-revalidate=10",
+        "Cache-Control": "public, s-maxage=1, stale-while-revalidate=3",
       },
     });
   }
@@ -25,12 +25,12 @@ export async function GET(request: Request) {
 
   try {
     const res = await fetch(
-      `${graduationConfig.googleScriptUrl}?action=getMusic&sheet=NhacNen${isRefresh ? `&_t=${now}` : ""}`,
+      `${graduationConfig.googleScriptUrl}?action=getMusic&sheet=NhacNen&_t=${now}`,
       {
         method: "GET",
         headers: { Accept: "application/json" },
-        cache: isRefresh ? "no-store" : "default",
-        next: isRefresh ? { revalidate: 0 } : { revalidate: 5 },
+        cache: "no-store",
+        next: { revalidate: 0 },
       }
     );
 
