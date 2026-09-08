@@ -18,6 +18,7 @@ import {
   Music2,
   ArrowLeft,
   Trash2,
+  Clock,
 } from "lucide-react";
 import { graduationConfig, AudioPreset } from "@/config/graduation";
 import { useGuest } from "@/context/guest-context";
@@ -36,6 +37,8 @@ export const MusicToggle: React.FC = () => {
 
   // State lưu danh sách bài hát đã upload/thêm mới vào Playlist
   const [customAudioTracks, setCustomAudioTracks] = useState<AudioPreset[]>([]);
+  // State lưu danh sách bài hát đồng bộ từ Google Sheet 'NhacNen'
+  const [sheetAudioTracks, setSheetAudioTracks] = useState<AudioPreset[]>([]);
 
   // State cho Cloudinary Upload
   const [selectedAudioFile, setSelectedAudioFile] = useState<File | null>(null);
@@ -51,7 +54,7 @@ export const MusicToggle: React.FC = () => {
   const audioFileInputRef = useRef<HTMLInputElement | null>(null);
   const isManuallyPausedRef = useRef(false);
 
-  // Khôi phục danh sách bài hát đã up từ LocalStorage
+  // Khôi phục danh sách bài hát đã up từ LocalStorage & Tải nhạc từ Sheet 'NhacNen'
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
@@ -63,6 +66,15 @@ export const MusicToggle: React.FC = () => {
           }
         }
       } catch {}
+
+      fetch("/api/music")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && Array.isArray(data.playlist)) {
+            setSheetAudioTracks(data.playlist);
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 
@@ -72,6 +84,7 @@ export const MusicToggle: React.FC = () => {
       title: title.trim() || "Bài hát đã tải lên",
       artist,
       url: url.trim(),
+      uploadedAt: new Date().toLocaleString("vi-VN"),
     };
 
     setCustomAudioTracks((prev) => {
@@ -527,7 +540,11 @@ export const MusicToggle: React.FC = () => {
                       Chọn bài hát từ danh sách đã tải lên hoặc playlist mẫu:
                     </p>
 
-                    {[...customAudioTracks, ...graduationConfig.audioPlaylist].map((item) => {
+                    {Array.from(
+                      new Map(
+                        [...customAudioTracks, ...sheetAudioTracks, ...graduationConfig.audioPlaylist].map((item) => [item.url, item])
+                      ).values()
+                    ).map((item) => {
                       const isCurrent = audioUrl === item.url;
                       const isCustom = item.id.startsWith("custom-");
                       return (
@@ -551,6 +568,12 @@ export const MusicToggle: React.FC = () => {
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-bold text-white truncate">{item.title}</p>
                               <p className="text-[11px] text-white/70 truncate">{item.artist}</p>
+                              {item.uploadedAt && (
+                                <p className="text-[10px] text-gold/80 flex items-center gap-1 mt-0.5 font-mono">
+                                  <Clock className="w-3 h-3 text-gold/60 shrink-0" />
+                                  <span>{item.uploadedAt}</span>
+                                </p>
+                              )}
                             </div>
                           </div>
 

@@ -367,10 +367,6 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 setPronounModeState(dynamicProfile.mode);
                 setCustomMessageState(dynamicProfile.customMessage);
                 setCustomTimeState(dynamicProfile.customTime);
-                if (dynamicProfile.audioUrl) {
-                  setAudioUrlState(dynamicProfile.audioUrl);
-                }
-
                 try {
                   sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
                   sessionStorage.setItem("invitation_guest_is_registered", "true");
@@ -407,13 +403,30 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             });
         };
 
+        // 4. TỰ ĐỘNG ĐỒNG BỘ REALTIME NHẠC NỀN TỪ SHEET 'NhacNen'
+        const syncMusicFromSheet = () => {
+          fetch("/api/music")
+            .then((res) => res.json())
+            .then((data) => {
+              if (data && data.activeAudioUrl) {
+                const hasManualChoice = sessionStorage.getItem("invitation_bg_audio_url_manual");
+                if (!hasManualChoice) {
+                  setAudioUrlState(data.activeAudioUrl);
+                }
+              }
+            })
+            .catch(() => {});
+        };
+
         // Chạy ngay khi vừa tải xong trang
         syncGuestDataFromSheet();
+        syncMusicFromSheet();
 
         // Thiết lập vòng lặp Realtime tự động quét thay đổi từ Google Sheets siêu tốc mỗi 3 giây khi Tab đang mở
         const intervalId = setInterval(() => {
           if (typeof document !== "undefined" && document.visibilityState === "visible") {
             syncGuestDataFromSheet();
+            syncMusicFromSheet();
           }
         }, 3000);
 
@@ -421,6 +434,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const handleVisibilityChange = () => {
           if (document.visibilityState === "visible") {
             syncGuestDataFromSheet();
+            syncMusicFromSheet();
           }
         };
         document.addEventListener("visibilitychange", handleVisibilityChange);

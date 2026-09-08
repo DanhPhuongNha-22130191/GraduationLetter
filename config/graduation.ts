@@ -20,6 +20,7 @@ export interface AudioPreset {
   title: string;
   artist: string;
   url: string;
+  uploadedAt?: string;
 }
 
 export const graduationConfig = {
@@ -41,8 +42,8 @@ export const graduationConfig = {
   email: "danhphnha@gmail.com",
   mottoQuote: "The future belongs to those who believe in the beauty of their dreams.",
 
-  // Endpoint Google Sheets gửi dữ liệu RSVP, Lượt xem & Danh sách khách mời
-  googleScriptUrl: "https://script.google.com/macros/s/AKfycbyM7rwbpIpryXHJXmk69c9SJyR8nLkYpoKF1KVI6aLNJZ9-4LIThfxfjRSGBBVZngslCA/exec",
+  // Endpoint Google Sheets gửi dữ liệu RSVP, Lượt xem, Ảnh kỷ niệm & Nhạc nền
+  googleScriptUrl: "https://script.google.com/macros/s/AKfycbwQz_x4KMk0cmRtYGQ4TaBu6zTGIjCgwPk7rTT5Ulc75-ELCzxtnmouz3-rzCGeVNXKjw/exec",
 
   // Cấu hình Cloudinary tải ảnh kỷ niệm trực tiếp từ khách
   cloudinaryCloudName: "ddrqfuaji",
