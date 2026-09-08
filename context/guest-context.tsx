@@ -30,6 +30,8 @@ interface GuestContextType {
   isFormal: boolean;
   isSenior: boolean;
   isJunior: boolean;
+  audioUrl: string;
+  setAudioUrl: (url: string) => void;
   setGuestName: (name: string, mode?: GuestPronounMode) => void;
   getGreetingPrefix: (lang?: Language) => string;
   getSelfPronoun: () => string;
@@ -54,6 +56,8 @@ const GuestContext = createContext<GuestContextType>({
   isFormal: false,
   isSenior: false,
   isJunior: false,
+  audioUrl: graduationConfig.audioUrl,
+  setAudioUrl: () => {},
   setGuestName: () => {},
   getGreetingPrefix: (_lang?: Language) => "Thân mời",
   getSelfPronoun: () => "Nhã",
@@ -176,8 +180,38 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [customDate, setCustomDateState] = useState<string | undefined>(undefined);
   const [defaultEarliestDate, setDefaultEarliestDate] = useState<string | undefined>(undefined);
   const [defaultEarliestTime, setDefaultEarliestTime] = useState<string | undefined>(undefined);
+  const [audioUrl, setAudioUrlState] = useState<string>(graduationConfig.audioUrl);
   const isInitialized = useRef(false);
   const isFetchingSheetRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedAudio = localStorage.getItem("invitation_bg_audio_url") || sessionStorage.getItem("invitation_bg_audio_url");
+        if (savedAudio) {
+          setAudioUrlState(savedAudio);
+        }
+      } catch {}
+    }
+  }, []);
+
+  const setAudioUrl = (url: string) => {
+    const clean = url.trim();
+    const finalUrl = clean || graduationConfig.audioUrl;
+    setAudioUrlState(finalUrl);
+    if (typeof window !== "undefined") {
+      try {
+        if (clean) {
+          localStorage.setItem("invitation_bg_audio_url", clean);
+          sessionStorage.setItem("invitation_bg_audio_url", clean);
+        } else {
+          localStorage.removeItem("invitation_bg_audio_url");
+          sessionStorage.removeItem("invitation_bg_audio_url");
+        }
+        window.dispatchEvent(new CustomEvent("AUDIO_URL_CHANGED", { detail: finalUrl }));
+      } catch {}
+    }
+  };
 
   useEffect(() => {
     // 0. Khởi tạo ngày giờ sớm nhất từ bộ nhớ đệm
@@ -489,6 +523,8 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isFormal: pronounMode === "elder",
         isSenior: pronounMode === "senior",
         isJunior: pronounMode === "junior",
+        audioUrl,
+        setAudioUrl,
         setGuestName,
         getGreetingPrefix,
         getSelfPronoun,

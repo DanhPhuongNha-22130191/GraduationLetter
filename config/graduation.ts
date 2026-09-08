@@ -15,6 +15,13 @@ export interface JourneyStep {
   iconName: string;
 }
 
+export interface AudioPreset {
+  id: string;
+  title: string;
+  artist: string;
+  url: string;
+}
+
 export const graduationConfig = {
   name: "Danh Phương Nhã",
   major: "Công nghệ thông tin",
@@ -94,4 +101,18 @@ export const graduationConfig = {
 
   // Âm nhạc
   audioUrl: "/audio/invitation-bg.mp3",
+  audioPlaylist: [
+    {
+      id: "default-bg",
+      title: "Nhạc Nền Mặc Định (Acoustic Piano)",
+      artist: "Graduation Theme",
+      url: "/audio/invitation-bg.mp3",
+    },
+    {
+      id: "preset-gentle",
+      title: "Kỷ Niệm Ngày Ra Trường (Piano Warm)",
+      artist: "Soft Instrumental",
+      url: "https://files.catbox.moe/0v2q7l.mp3",
+    },
+  ] as AudioPreset[],
 };
