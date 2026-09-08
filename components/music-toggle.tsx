@@ -17,6 +17,7 @@ import {
   FileAudio,
   Music2,
   ArrowLeft,
+  Trash2,
 } from "lucide-react";
 import { graduationConfig, AudioPreset } from "@/config/graduation";
 import { useGuest } from "@/context/guest-context";
@@ -33,6 +34,9 @@ export const MusicToggle: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"upload" | "playlist" | "url">("upload");
 
+  // State lưu danh sách bài hát đã upload/thêm mới vào Playlist
+  const [customAudioTracks, setCustomAudioTracks] = useState<AudioPreset[]>([]);
+
   // State cho Cloudinary Upload
   const [selectedAudioFile, setSelectedAudioFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -46,6 +50,56 @@ export const MusicToggle: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioFileInputRef = useRef<HTMLInputElement | null>(null);
   const isManuallyPausedRef = useRef(false);
+
+  // Khôi phục danh sách bài hát đã up từ LocalStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("custom_audio_playlist");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setCustomAudioTracks(parsed);
+          }
+        }
+      } catch {}
+    }
+  }, []);
+
+  const addCustomTrackToPlaylist = (title: string, url: string, artist = "Cloudinary Upload") => {
+    const newTrack: AudioPreset = {
+      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      title: title.trim() || "Bài hát đã tải lên",
+      artist,
+      url: url.trim(),
+    };
+
+    setCustomAudioTracks((prev) => {
+      const filtered = prev.filter((item) => item.url !== newTrack.url);
+      const updated = [newTrack, ...filtered];
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("custom_audio_playlist", JSON.stringify(updated));
+          sessionStorage.setItem("custom_audio_playlist", JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
+  };
+
+  const handleDeleteCustomTrack = (e: React.MouseEvent, trackId: string) => {
+    e.stopPropagation();
+    setCustomAudioTracks((prev) => {
+      const updated = prev.filter((t) => t.id !== trackId);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("custom_audio_playlist", JSON.stringify(updated));
+          sessionStorage.setItem("custom_audio_playlist", JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
+  };
 
   const startPlayback = (force = false) => {
     if (isManuallyPausedRef.current && !force) return;
@@ -136,9 +190,12 @@ export const MusicToggle: React.FC = () => {
       return;
     }
 
+    const fileName = clean.split("/").pop()?.split("?")[0] || "Link Nhạc Trực Tiếp";
+    addCustomTrackToPlaylist(decodeURIComponent(fileName), clean, "Link MP3 Trực Tiếp");
+
     setAudioUrl(clean);
     setUploadError(null);
-    setUploadSuccessMessage("Đã cập nhật bài nhạc nền mới thành công!");
+    setUploadSuccessMessage("Đã cập nhật & thêm bài nhạc nền vào Playlist thành công!");
     setDirectUrlInput("");
     isManuallyPausedRef.current = false;
     setTimeout(() => {
@@ -203,8 +260,11 @@ export const MusicToggle: React.FC = () => {
         throw new Error("Không nhận được liên kết bài hát từ Cloudinary.");
       }
 
+      const songTitle = selectedAudioFile.name.replace(/\.[^/.]+$/, "");
+      addCustomTrackToPlaylist(songTitle, uploadedMusicUrl, "Cloudinary Upload");
+
       setAudioUrl(uploadedMusicUrl);
-      setUploadSuccessMessage(`Tải lên thành công! Bài hát "${selectedAudioFile.name}" đã được đặt làm nhạc nền.`);
+      setUploadSuccessMessage(`Tải lên thành công! Bài hát "${songTitle}" đã được thêm vào Playlist & đặt làm nhạc nền.`);
       setSelectedAudioFile(null);
       if (audioFileInputRef.current) {
         audioFileInputRef.current.value = "";
@@ -460,40 +520,56 @@ export const MusicToggle: React.FC = () => {
                   </form>
                 )}
 
-                {/* TAB 2: PLAYLIST MẪU */}
+                {/* TAB 2: PLAYLIST MẪU & BÀI HÁT ĐÃ TẢI LÊN */}
                 {activeTab === "playlist" && (
                   <div className="space-y-2.5">
-                    <p className="text-xs text-white/90 font-medium mb-2">Chọn nhanh một bản nhạc mẫu không lời tinh tế:</p>
-                    {graduationConfig.audioPlaylist.map((item) => {
+                    <p className="text-xs text-white/90 font-medium mb-2">
+                      Chọn bài hát từ danh sách đã tải lên hoặc playlist mẫu:
+                    </p>
+
+                    {[...customAudioTracks, ...graduationConfig.audioPlaylist].map((item) => {
                       const isCurrent = audioUrl === item.url;
+                      const isCustom = item.id.startsWith("custom-");
                       return (
                         <div
                           key={item.id}
                           onClick={() => handleSelectPreset(item)}
-                          className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                          className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
                             isCurrent
                               ? "bg-gold/25 border-2 border-gold shadow-md text-gold"
                               : "bg-[#081F1A] border border-gold/30 hover:border-gold text-white"
                           }`}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                                 isCurrent ? "bg-gold text-[#0D2E26] font-bold" : "bg-gold/20 text-gold"
                               }`}
                             >
                               <Music className="w-4 h-4" />
                             </div>
-                            <div>
-                              <p className="text-xs font-bold text-white">{item.title}</p>
-                              <p className="text-[11px] text-white/70">{item.artist}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-white truncate">{item.title}</p>
+                              <p className="text-[11px] text-white/70 truncate">{item.artist}</p>
                             </div>
                           </div>
-                          {isCurrent && (
-                            <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-gold text-[#0D2E26] flex items-center gap-1 shadow-sm">
-                              <Sparkles className="w-3 h-3" /> ĐANG PHÁT
-                            </span>
-                          )}
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isCurrent && (
+                              <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-gold text-[#0D2E26] flex items-center gap-1 shadow-sm">
+                                <Sparkles className="w-3 h-3" /> ĐANG PHÁT
+                              </span>
+                            )}
+                            {isCustom && (
+                              <button
+                                onClick={(e) => handleDeleteCustomTrack(e, item.id)}
+                                title="Xóa bài hát khỏi Playlist"
+                                className="w-7 h-7 rounded-lg bg-red-950/60 hover:bg-red-600 text-red-300 hover:text-white flex items-center justify-center transition-all border border-red-500/40 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       );
                     })}

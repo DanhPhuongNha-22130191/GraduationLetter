@@ -108,11 +108,5 @@ export const graduationConfig = {
       artist: "Graduation Theme",
       url: "/audio/invitation-bg.mp3",
     },
-    {
-      id: "preset-gentle",
-      title: "Kỷ Niệm Ngày Ra Trường (Piano Warm)",
-      artist: "Soft Instrumental",
-      url: "https://files.catbox.moe/0v2q7l.mp3",
-    },
   ] as AudioPreset[],
 };
