@@ -67,7 +67,7 @@ export const MusicToggle: React.FC = () => {
         }
       } catch {}
 
-      fetch("/api/music")
+      fetch("/api/music?refresh=1")
         .then((res) => res.json())
         .then((data) => {
           if (data && Array.isArray(data.playlist)) {
@@ -182,36 +182,60 @@ export const MusicToggle: React.FC = () => {
     }
   };
 
-  const saveMusicToSheet = (title: string, url: string, artist = "Cloudinary Upload") => {
-    if (!graduationConfig.googleScriptUrl) return;
+  const saveMusicToSheet = async (title: string, url: string, artist = "Cloudinary Upload") => {
     try {
-      fetch(graduationConfig.googleScriptUrl, {
+      // 1. Gửi ngay lập tức qua API Route Server (0ms cập nhật RAM server, server chuyển tiếp Google Sheet)
+      const apiPromise = fetch("/api/music", {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: "SAVE_MUSIC",
-          action: "SAVE_MUSIC",
           title: title.trim(),
           artist: artist.trim(),
           url: url.trim(),
-          timestamp: new Date().toLocaleString("vi-VN"),
         }),
-      }).catch(() => {});
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && Array.isArray(data.playlist)) {
+            setSheetAudioTracks(data.playlist);
+          }
+          return data;
+        })
+        .catch(() => null);
+
+      // 2. Kênh dự phòng trực tiếp từ client đến Google Apps Script
+      if (graduationConfig.googleScriptUrl) {
+        fetch(graduationConfig.googleScriptUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            type: "SAVE_MUSIC",
+            action: "SAVE_MUSIC",
+            title: title.trim(),
+            artist: artist.trim(),
+            url: url.trim(),
+            timestamp: new Date().toLocaleString("vi-VN"),
+          }),
+        }).catch(() => {});
+      }
+
+      await apiPromise;
     } catch {}
   };
 
-  const handleSelectPreset = (preset: AudioPreset) => {
+  const handleSelectPreset = async (preset: AudioPreset) => {
     setAudioUrl(preset.url);
-    saveMusicToSheet(preset.title, preset.url, preset.artist);
-    setUploadSuccessMessage(`Đã chọn bài: ${preset.title}`);
+    setUploadSuccessMessage(`Đã chọn bài: "${preset.title}". Đang đồng bộ Google Sheets...`);
+    await saveMusicToSheet(preset.title, preset.url, preset.artist);
+    setUploadSuccessMessage(`Đã chọn bài: "${preset.title}" & đồng bộ tức thì cho tất cả thiết bị!`);
     isManuallyPausedRef.current = false;
     setTimeout(() => {
       startPlayback(true);
     }, 150);
   };
 
-  const handleApplyDirectUrl = (e: React.FormEvent) => {
+  const handleApplyDirectUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = directUrlInput.trim();
     if (!clean) {
@@ -226,11 +250,12 @@ export const MusicToggle: React.FC = () => {
     const fileName = clean.split("/").pop()?.split("?")[0] || "Link Nhạc Trực Tiếp";
     const songTitle = decodeURIComponent(fileName);
     addCustomTrackToPlaylist(songTitle, clean, "Link MP3 Trực Tiếp");
-    saveMusicToSheet(songTitle, clean, "Link MP3 Trực Tiếp");
-
     setAudioUrl(clean);
     setUploadError(null);
-    setUploadSuccessMessage("Đã cập nhật & thêm bài nhạc nền vào Playlist thành công!");
+    setUploadSuccessMessage("Đang lưu bài hát vào Google Sheets...");
+
+    await saveMusicToSheet(songTitle, clean, "Link MP3 Trực Tiếp");
+    setUploadSuccessMessage("Đã cập nhật & lưu nhạc vào Google Sheet thành công!");
     setDirectUrlInput("");
     isManuallyPausedRef.current = false;
     setTimeout(() => {
@@ -297,10 +322,12 @@ export const MusicToggle: React.FC = () => {
 
       const songTitle = selectedAudioFile.name.replace(/\.[^/.]+$/, "");
       addCustomTrackToPlaylist(songTitle, uploadedMusicUrl, "Cloudinary Upload");
-      saveMusicToSheet(songTitle, uploadedMusicUrl, "Cloudinary Upload");
+
+      setUploadProgressText("Đang lưu link nhạc vào Google Sheets ngay tức khắc...");
+      await saveMusicToSheet(songTitle, uploadedMusicUrl, "Cloudinary Upload");
 
       setAudioUrl(uploadedMusicUrl);
-      setUploadSuccessMessage(`Tải lên thành công! Bài hát "${songTitle}" đã được thêm vào Playlist & đặt làm nhạc nền.`);
+      setUploadSuccessMessage(`Tải lên & đồng bộ thành công! Bài hát "${songTitle}" đã được đặt làm nhạc nền cho toàn bộ thiết bị.`);
       setSelectedAudioFile(null);
       if (audioFileInputRef.current) {
         audioFileInputRef.current.value = "";
@@ -319,9 +346,15 @@ export const MusicToggle: React.FC = () => {
     }
   };
 
-  const handleResetDefault = () => {
+  const handleResetDefault = async () => {
     setAudioUrl(graduationConfig.audioUrl);
-    setUploadSuccessMessage("Đã khôi phục về bản nhạc nền mặc định!");
+    setUploadSuccessMessage("Đang khôi phục về bản nhạc mặc định & đồng bộ Google Sheets...");
+    await saveMusicToSheet(
+      "Nhạc Nền Mặc Định (Acoustic Piano)",
+      graduationConfig.audioUrl,
+      "Graduation Theme"
+    );
+    setUploadSuccessMessage("Đã khôi phục về bản nhạc nền mặc định & đồng bộ Google Sheets!");
     isManuallyPausedRef.current = false;
     setTimeout(() => {
       startPlayback(true);

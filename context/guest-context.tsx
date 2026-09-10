@@ -405,7 +405,10 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         // 4. TỰ ĐỘNG ĐỒNG BỘ REALTIME NHẠC NỀN TỪ SHEET 'NhacNen'
         const syncMusicFromSheet = () => {
-          fetch(`/api/music?refresh=1&_t=${Date.now()}`)
+          fetch(`/api/music?refresh=1&_t=${Date.now()}`, {
+            cache: "no-store",
+            headers: { Accept: "application/json" },
+          })
             .then((res) => res.json())
             .then((data) => {
               if (data && data.activeAudioUrl) {
@@ -449,6 +452,27 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
         document.addEventListener("visibilitychange", handleVisibilityChange);
 
+        const handleWindowFocus = () => {
+          syncGuestDataFromSheet();
+          syncMusicFromSheet();
+        };
+        window.addEventListener("focus", handleWindowFocus);
+
+        // Đồng bộ tức thì giữa các tab khác nhau trên cùng trình duyệt (0ms)
+        const handleStorageChange = (e: StorageEvent) => {
+          if (e.key === "invitation_bg_audio_url" && e.newValue) {
+            const freshUrl = e.newValue.trim();
+            setAudioUrlState((prev) => {
+              if (prev !== freshUrl) {
+                window.dispatchEvent(new CustomEvent("AUDIO_URL_CHANGED", { detail: freshUrl }));
+                return freshUrl;
+              }
+              return prev;
+            });
+          }
+        };
+        window.addEventListener("storage", handleStorageChange);
+
         // TỰ ĐỘNG XÓA SẠCH URL TRÊN THANH ĐỊA CHỈ (Clean URL & chống sửa tên)
         if (hasParams && window.history && window.history.replaceState) {
           const cleanUrl = window.location.origin + window.location.pathname;
@@ -458,6 +482,8 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return () => {
           clearInterval(intervalId);
           document.removeEventListener("visibilitychange", handleVisibilityChange);
+          window.removeEventListener("focus", handleWindowFocus);
+          window.removeEventListener("storage", handleStorageChange);
         };
       }
     } catch (err) {
