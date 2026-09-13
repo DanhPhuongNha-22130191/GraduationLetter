@@ -111,32 +111,74 @@ export const HeroSection: React.FC = () => {
     setUploadMessage("Đang nén & tải ảnh lên Cloud...");
 
     try {
-      const compressedBlob = await compressAvatarFile(file);
-      const formData = new FormData();
-      formData.append("file", compressedBlob, "avatar.jpg");
-      formData.append("upload_preset", graduationConfig.cloudinaryUploadPreset);
-      formData.append("folder", "graduation_avatar");
-
-      const cloudRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${graduationConfig.cloudinaryCloudName}/image/upload`,
-        { method: "POST", body: formData }
-      );
-
-      if (!cloudRes.ok) {
-        throw new Error("Lỗi tải ảnh lên Cloudinary");
+      // 1. Tính toán fingerprint SHA-256 để phát hiện ảnh trùng lặp
+      let fileHash = "";
+      try {
+        const fileBuffer = await file.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest("SHA-256", fileBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        fileHash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+      } catch {
+        fileHash = `${file.name}_${file.size}_${file.lastModified}`;
       }
 
-      const cloudData = await cloudRes.json();
-      const photoUrl = cloudData.secure_url || cloudData.url;
+      // Kiểm tra bộ nhớ đệm các ảnh đã tải lên Cloudinary
+      let hashCache: Record<string, string> = {};
+      try {
+        hashCache = JSON.parse(localStorage.getItem("avatar_hash_cache") || "{}");
+      } catch {}
 
+      let photoUrl = hashCache[fileHash];
+
+      // Nếu ảnh này đã trùng với ảnh đại diện hiện tại thì dừng ngay
+      if (photoUrl && (photoUrl === avatarUrl || avatarUrl.includes(photoUrl))) {
+        setUploadStatus("success");
+        setUploadMessage("Ảnh này hiện đang là ảnh đại diện của bạn!");
+        setTimeout(() => {
+          setIsUploading(false);
+          setUploadStatus("idle");
+          setUploadMessage("");
+        }, 1500);
+        return;
+      }
+
+      // 2. Chỉ tải lên Cloudinary nếu ảnh chưa từng được upload trước đó
       if (!photoUrl) {
-        throw new Error("Không nhận được URL ảnh");
+        const compressedBlob = await compressAvatarFile(file);
+        const formData = new FormData();
+        formData.append("file", compressedBlob, "avatar.jpg");
+        formData.append("upload_preset", graduationConfig.cloudinaryUploadPreset);
+        formData.append("folder", "graduation_avatar");
+
+        const cloudRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${graduationConfig.cloudinaryCloudName}/image/upload`,
+          { method: "POST", body: formData }
+        );
+
+        if (!cloudRes.ok) {
+          throw new Error("Lỗi tải ảnh lên Cloudinary");
+        }
+
+        const cloudData = await cloudRes.json();
+        photoUrl = cloudData.secure_url || cloudData.url;
+
+        if (!photoUrl) {
+          throw new Error("Không nhận được URL ảnh");
+        }
+
+        // Lưu hash vào bộ nhớ đệm để các lần sau không bị tải trùng lên Cloudinary
+        try {
+          hashCache[fileHash] = photoUrl;
+          localStorage.setItem("avatar_hash_cache", JSON.stringify(hashCache));
+        } catch {}
+      } else {
+        setUploadMessage("Phát hiện ảnh đã có trên Cloud. Đang kích hoạt...");
       }
 
-      // 1. Cập nhật state UI lập tức
+      // 3. Cập nhật state UI lập tức
       setAvatarUrl(photoUrl);
 
-      // 2. Lưu bộ nhớ đệm LocalStorage
+      // 4. Lưu bộ nhớ đệm LocalStorage
       try {
         localStorage.setItem("custom_hero_avatar_url", photoUrl);
       } catch {}
