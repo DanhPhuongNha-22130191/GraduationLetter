@@ -227,19 +227,14 @@ export async function POST(request: Request) {
         timestamp: timestampStr,
       };
 
-      try {
-        await fetch(graduationConfig.googleScriptUrl, {
+      // Chạy đồng bộ Google Sheet ngầm (song song) không để client bị nghẽn
+      Promise.allSettled([
+        fetch(graduationConfig.googleScriptUrl, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payloadAvatar),
-        });
-      } catch (err) {
-        console.warn("[Avatar Route] Google Sheet avatars sync error:", err);
-      }
-
-      // 2. Cập nhật đồng bộ vào dòng của phuongnha trong sheet guests
-      try {
-        await fetch(graduationConfig.googleScriptUrl, {
+        }),
+        fetch(graduationConfig.googleScriptUrl, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
@@ -252,10 +247,10 @@ export async function POST(request: Request) {
             photoUrl: cleanUrl,
             timestamp: timestampStr,
           }),
-        });
-      } catch (err) {
-        console.warn("[Avatar Route] Google Sheet guests sync error:", err);
-      }
+        }),
+      ]).catch((err) => {
+        console.warn("[Avatar Route] Background Google Sheet sync error:", err);
+      });
     }
 
     return NextResponse.json({ success: true, avatarUrl: cleanUrl });

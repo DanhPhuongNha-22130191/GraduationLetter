@@ -173,23 +173,26 @@ export const HeroSection: React.FC = () => {
         }).catch(() => {});
       }
 
-      // 4. Lưu bền vững vào Server API route
-      await fetch("/api/avatar", {
+      // 4. Lưu bền vững vào Server API route (chạy ngầm không chặn UI)
+      fetch("/api/avatar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           avatarUrl: photoUrl,
           slug: currentSlug || "phuongnha",
         }),
+      }).catch((err) => {
+        console.warn("Background /api/avatar sync error:", err);
       });
 
+      // 5. Kết thúc trạng thái đang tải ngay lập tức để người dùng không bị xoay màn hình
       setUploadStatus("success");
       setUploadMessage("Đã cập nhật ảnh bìa thành công!");
       setTimeout(() => {
         setIsUploading(false);
         setUploadStatus("idle");
         setUploadMessage("");
-      }, 2500);
+      }, 1200);
     } catch (err) {
       console.error("Avatar upload error:", err);
       setUploadStatus("error");
@@ -198,7 +201,7 @@ export const HeroSection: React.FC = () => {
         setIsUploading(false);
         setUploadStatus("idle");
         setUploadMessage("");
-      }, 3000);
+      }, 2000);
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
