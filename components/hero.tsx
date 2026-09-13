@@ -183,37 +183,6 @@ export const HeroSection: React.FC = () => {
         localStorage.setItem("custom_hero_avatar_url", photoUrl);
       } catch {}
 
-      // 3. Gửi trực tiếp từ trình duyệt đến Google Sheets qua Sheet "avatars" (no-cors mode)
-      if (graduationConfig.googleScriptUrl) {
-        const timestampStr = new Date().toLocaleString("vi-VN");
-        fetch(graduationConfig.googleScriptUrl, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            type: "AVATAR_UPLOAD",
-            action: "AVATAR_UPLOAD",
-            sheet: "avatars",
-            uploadTime: timestampStr,
-            cloudinaryImageLink: photoUrl,
-            uploader: "Phương Nhã",
-            status: "true",
-            note: "Ảnh đại diện bìa thiệp chính thức",
-            // Backward-compatibility keys
-            "Thời Gian": timestampStr,
-            "Link Ảnh Cloudinary": photoUrl,
-            photoUrl: photoUrl,
-            url: photoUrl,
-            "Tên": "Phương Nhã",
-            name: "Phương Nhã",
-            "Đang Sử Dụng": "true",
-            isActive: "true",
-            "Ghi Chú": "Ảnh đại diện bìa thiệp chính thức",
-            caption: "Ảnh đại diện bìa thiệp chính thức",
-            timestamp: timestampStr,
-          }),
-        }).catch(() => {});
-      }
 
       // 4. Lưu bền vững vào Server API route (chạy ngầm không chặn UI)
       fetch("/api/avatar", {

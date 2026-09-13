@@ -203,29 +203,6 @@ export const MusicToggle: React.FC = () => {
         })
         .catch(() => null);
 
-      // 2. Kênh dự phòng trực tiếp từ client đến Google Apps Script
-      if (graduationConfig.googleScriptUrl) {
-        fetch(graduationConfig.googleScriptUrl, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            type: "SAVE_MUSIC",
-            action: "SAVE_MUSIC",
-            sheet: "songs",
-            cloudinarySongLink: url.trim(),
-            singer: artist.trim() || "Cloudinary Upload",
-            songTitle: title.trim() || "Bài hát mới",
-            status: "true",
-            uploadTime: new Date().toLocaleString("vi-VN"),
-            // Backward-compatibility keys
-            title: title.trim(),
-            artist: artist.trim(),
-            url: url.trim(),
-            timestamp: new Date().toLocaleString("vi-VN"),
-          }),
-        }).catch(() => {});
-      }
 
       await apiPromise;
     } catch {}
