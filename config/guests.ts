@@ -503,6 +503,7 @@ export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import
                     src: cleanUrl,
                     alt: rawCaption || `Ảnh kỷ niệm [${category}]`,
                     priority,
+                    uploadIdx: idx,
                   });
                 }
               }
@@ -515,11 +516,16 @@ export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import
     console.warn("Could not fetch cloud photos:", err);
   }
 
-  // Sắp xếp theo mức độ ưu tiên (1, 2, 3, 4... số nhỏ hơn xếp trước lên các trang đầu, mặc định là 1)
+  // Sắp xếp:
+  // 1. Mức độ ưu tiên nhỏ hơn xếp trước (1, 2, 3...)
+  // 2. Cùng mức ưu tiên: Ảnh mới hơn (uploadIdx lớn hơn) xếp lên đầu
   freshPhotos.sort((a, b) => {
     const pA = typeof a.priority === "number" && !isNaN(a.priority) ? a.priority : 1;
     const pB = typeof b.priority === "number" && !isNaN(b.priority) ? b.priority : 1;
-    return pA - pB;
+    if (pA !== pB) return pA - pB;
+    const idxA = a.uploadIdx ?? 0;
+    const idxB = b.uploadIdx ?? 0;
+    return idxB - idxA;
   });
 
   // 3. Quét thêm ảnh riêng từ danh sách khách mời (specialPhoto)

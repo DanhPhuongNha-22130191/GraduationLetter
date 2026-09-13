@@ -5,6 +5,7 @@ export interface GalleryItem {
   src: string;
   alt: string;
   priority?: number | undefined;
+  uploadIdx?: number | undefined;
 }
 
 export interface JourneyStep {

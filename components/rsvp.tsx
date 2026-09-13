@@ -137,15 +137,7 @@ export const RsvpSection: React.FC = () => {
     };
 
     try {
-      await fetch(graduationConfig.googleScriptUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8",
-        },
-        body: JSON.stringify(payload),
-      });
-
+      // 1. Lưu vào LocalStorage tức thì
       try {
         const existing = JSON.parse(localStorage.getItem("rsvp_responses") || "[]");
         existing.push(payload);
@@ -153,6 +145,24 @@ export const RsvpSection: React.FC = () => {
       } catch (err) {
         console.error("Local storage error:", err);
       }
+
+      // 2. Gửi đến Google Apps Script
+      const scriptPromise = fetch(graduationConfig.googleScriptUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8",
+        },
+        body: JSON.stringify(payload),
+      }).catch((err) => {
+        console.warn("RSVP background sync warning:", err);
+      });
+
+      // 3. Giới hạn thời gian chờ tối đa 1.2s (Google Apps Script mất 5-10s do chuyển hướng 302 ngầm)
+      await Promise.race([
+        scriptPromise,
+        new Promise((resolve) => setTimeout(resolve, 1200)),
+      ]);
 
       triggerConfetti();
       setSubmitted(true);

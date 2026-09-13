@@ -176,16 +176,22 @@ export async function GET(request: Request) {
             src: c.cleanUrl,
             alt: c.rawCaption || `Ảnh kỷ niệm [${c.category}]`,
             priority: c.priority ?? 1,
+            uploadIdx: c.idx,
           });
         }
       })
     );
 
-    // Sắp xếp theo mức độ ưu tiên (1, 2, 3, 4... số nhỏ hơn xếp trước lên các trang đầu, mặc định là 1)
+    // Sắp xếp:
+    // 1. Mức độ ưu tiên nhỏ hơn xếp trước (1, 2, 3...)
+    // 2. Cùng mức ưu tiên: Ảnh mới hơn (uploadIdx lớn hơn) xếp lên đầu trang
     validPhotos.sort((a, b) => {
       const pA = typeof a.priority === "number" && !isNaN(a.priority) ? a.priority : 1;
       const pB = typeof b.priority === "number" && !isNaN(b.priority) ? b.priority : 1;
-      return pA - pB;
+      if (pA !== pB) return pA - pB;
+      const idxA = a.uploadIdx ?? 0;
+      const idxB = b.uploadIdx ?? 0;
+      return idxB - idxA;
     });
 
     return NextResponse.json(validPhotos, {

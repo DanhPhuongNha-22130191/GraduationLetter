@@ -117,7 +117,7 @@ async function compressImageFile(file: File, maxWidth = 1920, quality = 0.84): P
 }
 
 const PRESET_CATEGORIES = ["Kỷ Niệm", "Tình Bạn", "Kỷ Ức", "Chân Dung", "Vinh Danh"];
-const ITEMS_PER_PAGE = 4;
+const ITEMS_PER_PAGE = 8;
 const MAX_UPLOAD_PHOTOS = 12;
 
 function getPaginationRange(current: number, total: number): (number | string)[] {
@@ -379,8 +379,10 @@ export const GallerySection: React.FC = () => {
   }, [guestName]);
 
   const defaultItems = (t.gallery.items || []) as GalleryItem[];
-  // Kết hợp ảnh vừa upload trên máy + toàn bộ ảnh từ Cloud của mọi người + ảnh mặc định (nếu có)
-  const allPhotos = [...userPhotos, ...cloudPhotos, ...defaultItems];
+  // Kết hợp ảnh: đưa userPhotos sau defaultItems và cloudPhotos để Map giữ bản ghi mới nhất của user
+  const allPhotos = [...defaultItems, ...cloudPhotos, ...userPhotos];
+  const userPhotoKeys = new Set(userPhotos.map((p) => normalizePhotoKey(p.src)));
+
   // Khử trùng lặp ảnh triệt để theo normalizePhotoKey & loại bỏ các ảnh không hợp lệ hoặc đã bị xóa
   const items = Array.from(
     new Map(
@@ -403,11 +405,23 @@ export const GallerySection: React.FC = () => {
     };
   });
 
-  // Sắp xếp danh sách ảnh theo mức độ ưu tiên: 1, 2, 3, 4... (số càng nhỏ xếp trước lên các trang đầu, mặc định là 1)
+  // Sắp xếp danh sách ảnh:
+  // 1. Ảnh do người dùng vừa tải lên trên thiết bị này luôn được ưu tiên lên đầu trang
+  // 2. Mức độ ưu tiên nhỏ hơn xếp trước (1, 2, 3...)
+  // 3. Cùng mức ưu tiên: Ảnh mới hơn (uploadIdx lớn hơn) xếp lên trước
   items.sort((a, b) => {
+    const aIsUser = userPhotoKeys.has(normalizePhotoKey(a.src));
+    const bIsUser = userPhotoKeys.has(normalizePhotoKey(b.src));
+    if (aIsUser && !bIsUser) return -1;
+    if (!aIsUser && bIsUser) return 1;
+
     const pA = typeof a.priority === "number" && !isNaN(a.priority) ? a.priority : 1;
     const pB = typeof b.priority === "number" && !isNaN(b.priority) ? b.priority : 1;
-    return pA - pB;
+    if (pA !== pB) return pA - pB;
+
+    const idxA = a.uploadIdx ?? 0;
+    const idxB = b.uploadIdx ?? 0;
+    return idxB - idxA;
   });
 
   // Thống kê số lượng ảnh cho từng chủ đề (bao gồm tổng số ảnh cho 'all')
@@ -740,6 +754,7 @@ export const GallerySection: React.FC = () => {
           src: url,
           alt: caption.trim() || `Ảnh kỷ niệm [${targetCategory}]`,
           priority: parsedPriority,
+          uploadIdx: Date.now() + i,
         };
       });
 
@@ -751,7 +766,6 @@ export const GallerySection: React.FC = () => {
       } catch {
         // ignore
       }
-
 
       // 4. Gửi qua Server API Route /api/photos/upload
       try {
@@ -781,8 +795,13 @@ export const GallerySection: React.FC = () => {
       setTimeout(() => {
         setIsUploadOpen(false);
         handleResetUploadForm();
+        // Tự động chuyển về trang 1 và chọn chủ đề vừa đăng để người dùng nhìn thấy ảnh ngay lập tức
+        setCurrentPage(1);
+        if (targetCategory && targetCategory !== selectedCategory && selectedCategory !== "all") {
+          setSelectedCategory(targetCategory);
+        }
         syncPhotos(true);
-      }, 1500);
+      }, 1200);
     } catch (err) {
       console.error(err);
       setUploadError("Có lỗi xảy ra khi lưu ảnh. Vui lòng thử lại!");
