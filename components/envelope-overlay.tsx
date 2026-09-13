@@ -118,18 +118,34 @@ const AnimatedBackground: React.FC = () => (
 );
 
 interface EnvelopeOverlayProps {
+  isOpen?: boolean;
   onOpen?: () => void;
+  onClose?: () => void;
 }
 
-export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({ onOpen }) => {
+export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
+  isOpen: controlledIsOpen,
+  onOpen,
+  onClose,
+}) => {
   const { t, lang } = useLanguage();
   const { guestName, hasCustomGuest, pronounMode, getGreetingPrefix } = useGuest();
   const [isOpening, setIsOpening] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+  // If controlledIsOpen is provided, use it; otherwise fallback to internalIsOpen
+  const isCurrentlyOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+
+  // Whenever the envelope is closed (e.g. user clicked Back to Envelope), reset isOpening
+  React.useEffect(() => {
+    if (!isCurrentlyOpen) {
+      setIsOpening(false);
+    }
+  }, [isCurrentlyOpen]);
 
   const handleOpenEnvelope = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isOpening || isOpen) return;
+    if (isOpening || isCurrentlyOpen) return;
     setIsOpening(true);
     playBackgroundMusic();
 
@@ -142,7 +158,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({ onOpen }) => {
     }
 
     setTimeout(() => {
-      setIsOpen(true);
+      setInternalIsOpen(true);
       onOpen?.();
       const el = document.getElementById("invitation");
       if (el) {
@@ -153,11 +169,12 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({ onOpen }) => {
 
   return (
     <AnimatePresence>
-      {!isOpen && (
+      {!isCurrentlyOpen && (
         <motion.div
-          initial={{ opacity: 1 }}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 1.08 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           onClick={handleOpenEnvelope}
           className="fixed inset-0 z-50 bg-[#0c2b24] text-ivory flex flex-col items-center justify-between p-4 sm:p-8 cursor-pointer overflow-y-auto overflow-x-hidden select-none touch-manipulation"
         >

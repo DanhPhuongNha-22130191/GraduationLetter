@@ -8,7 +8,11 @@ import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { AnimatedFlourishDivider } from "@/components/animated-motifs";
 
-export const ClosingSection: React.FC = () => {
+interface ClosingSectionProps {
+  onReopenEnvelope?: () => void;
+}
+
+export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope }) => {
   const { t } = useLanguage();
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -116,6 +120,16 @@ export const ClosingSection: React.FC = () => {
                 </>
               )}
             </button>
+
+            {onReopenEnvelope && (
+              <button
+                onClick={onReopenEnvelope}
+                className="w-full py-3.5 px-4 rounded-full bg-gold/15 hover:bg-gold/25 border border-gold/45 text-xs font-serif font-bold text-gold uppercase tracking-widest hover:text-gold-light transition-all flex items-center justify-center gap-2 active:scale-95 touch-manipulation cursor-pointer shadow-sm group"
+              >
+                <Mail className="w-4 h-4 text-gold group-hover:scale-110 transition-transform stroke-[2]" />
+                <span>{t.nav.backToEnvelope}</span>
+              </button>
+            )}
           </div>
 
           <div className="pt-4 border-t border-gold/20 flex flex-col items-center">

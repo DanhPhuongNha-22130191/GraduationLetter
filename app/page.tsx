@@ -17,9 +17,27 @@ import { MobileNav } from "@/components/mobile-nav";
 import { MusicToggle } from "@/components/music-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { EnvelopeOverlay } from "@/components/envelope-overlay";
+import { BackToEnvelopeButton } from "@/components/back-to-envelope-button";
 
 export default function Home() {
   const [isEnvelopeOpen, setIsEnvelopeOpen] = React.useState(false);
+
+  const handleCloseEnvelope = React.useCallback(() => {
+    setIsEnvelopeOpen(false);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, []);
+
+  const handleOpenEnvelope = React.useCallback(() => {
+    setIsEnvelopeOpen(true);
+  }, []);
+
+  React.useEffect(() => {
+    const handleReopen = () => handleCloseEnvelope();
+    window.addEventListener("CLOSE_ENVELOPE", handleReopen);
+    return () => window.removeEventListener("CLOSE_ENVELOPE", handleReopen);
+  }, [handleCloseEnvelope]);
 
   return (
     <LanguageProvider>
@@ -29,10 +47,18 @@ export default function Home() {
           <ParticleCanvas showGradCaps={!isEnvelopeOpen} showButterflies={!isEnvelopeOpen} />
 
           {/* Envelope Opening Screen Modal */}
-          <EnvelopeOverlay onOpen={() => setIsEnvelopeOpen(true)} />
+          <EnvelopeOverlay
+            isOpen={isEnvelopeOpen}
+            onOpen={handleOpenEnvelope}
+            onClose={handleCloseEnvelope}
+          />
 
           {/* Floating Controls */}
           <LanguageToggle />
+          <BackToEnvelopeButton
+            isVisible={isEnvelopeOpen}
+            onClick={handleCloseEnvelope}
+          />
           <MusicToggle />
 
           {/* Main Single Page Sections */}
@@ -44,7 +70,7 @@ export default function Home() {
           <GallerySection />
           <LocationSection />
           <RsvpSection />
-          <ClosingSection />
+          <ClosingSection onReopenEnvelope={handleCloseEnvelope} />
 
           {/* Mobile Floating Navigation */}
           <MobileNav />
