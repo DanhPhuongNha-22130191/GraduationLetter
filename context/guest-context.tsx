@@ -143,7 +143,12 @@ export function trackOpenInvitation(guestName?: string, mode?: string) {
       const payload = {
         type: "OPEN",
         action: "OPEN",
-        sheet: "LuotXem",
+        sheet: "views",
+        visitTime: new Date().toLocaleString("vi-VN"),
+        viewer: nameToLog,
+        role: modeLabel,
+        note: isAnonymous ? "Khách mở thiệp (Link chung)" : `Khách mở thiệp (${modeLabel})`,
+        // Backward-compatibility keys
         name: nameToLog,
         phone: "-",
         attending: "ĐÃ MỞ THIỆP 💌",

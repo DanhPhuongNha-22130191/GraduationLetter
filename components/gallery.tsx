@@ -763,7 +763,16 @@ export const GallerySection: React.FC = () => {
               body: JSON.stringify({
                 type: "PHOTO_UPLOAD",
                 action: "PHOTO_UPLOAD",
-                sheet: "AnhKyNiem",
+                sheet: "photos",
+                uploadTime: new Date().toLocaleString("vi-VN"),
+                uploader: guestName || uploaderName || "Khách mời",
+                topic: targetCategory,
+                label: caption.trim()
+                  ? `${caption.trim()}${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`
+                  : "Ảnh kỷ niệm cùng Nhã",
+                cloudinaryImageLink: url,
+                priorityLevel: parsedPriority,
+                // Backward-compatibility keys
                 name: guestName || uploaderName || "Khách mời",
                 caption: caption.trim()
                   ? `${caption.trim()}${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`

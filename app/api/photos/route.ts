@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   try {
     const res = await fetch(
-      `${graduationConfig.googleScriptUrl}?action=getPhotos&sheet=AnhKyNiem${isRefresh ? `&_t=${Date.now()}` : ""}`,
+      `${graduationConfig.googleScriptUrl}?action=getPhotos&sheet=photos${isRefresh ? `&_t=${Date.now()}` : ""}`,
       {
         method: "GET",
         headers: { Accept: "application/json" },
@@ -44,6 +44,7 @@ export async function GET(request: Request) {
     for (let idx = 0; idx < rawList.length; idx++) {
       const item = rawList[idx];
       const rawUrl =
+        item.cloudinaryImageLink ||
         item.photoUrl ||
         item.PhotoUrl ||
         item["Link Ảnh Cloudinary"] ||
@@ -71,7 +72,9 @@ export async function GET(request: Request) {
         ) {
           seenUrls.add(cleanUrl);
           const rawCaption = String(
-            item.caption ||
+            item.label ||
+              item.Label ||
+              item.caption ||
               item.Caption ||
               item["Lời Nhắn / Kỷ Niệm"] ||
               item["Lời Nhắn"] ||
@@ -82,7 +85,9 @@ export async function GET(request: Request) {
               ""
           ).trim();
           const category = String(
-            item.category ||
+            item.topic ||
+              item.Topic ||
+              item.category ||
               item.Category ||
               item["Chủ Đề"] ||
               item["Chủ đề"] ||
@@ -103,6 +108,8 @@ export async function GET(request: Request) {
           }
 
           const rawPriority =
+            item.priorityLevel ??
+            item.PriorityLevel ??
             item.priority ??
             item.Priority ??
             item["Mức độ ưu tiên"] ??

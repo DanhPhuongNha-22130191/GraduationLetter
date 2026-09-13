@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 
   try {
     const res = await fetch(
-      `${graduationConfig.googleScriptUrl}?action=getGuests&sheet=KhachMoi${isRefresh ? `&_t=${now}` : ""}`,
+      `${graduationConfig.googleScriptUrl}?action=getGuests&sheet=guests${isRefresh ? `&_t=${now}` : ""}`,
       {
         method: "GET",
         headers: { Accept: "application/json" },

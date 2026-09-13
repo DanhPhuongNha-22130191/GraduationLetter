@@ -212,6 +212,13 @@ export const MusicToggle: React.FC = () => {
           body: JSON.stringify({
             type: "SAVE_MUSIC",
             action: "SAVE_MUSIC",
+            sheet: "songs",
+            cloudinarySongLink: url.trim(),
+            singer: artist.trim() || "Cloudinary Upload",
+            songTitle: title.trim() || "Bài hát mới",
+            status: "true",
+            uploadTime: new Date().toLocaleString("vi-VN"),
+            // Backward-compatibility keys
             title: title.trim(),
             artist: artist.trim(),
             url: url.trim(),

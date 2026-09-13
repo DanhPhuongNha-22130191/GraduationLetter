@@ -119,12 +119,20 @@ export const RsvpSection: React.FC = () => {
     const payload = {
       type: "RSVP",
       action: "RSVP",
-      sheet: "RSVP",
-      name: fullName.trim(),
+      sheet: "confirms",
+      confirmTime: new Date().toLocaleString(lang === "vi" ? "vi-VN" : "en-US"),
+      fullName: fullName.trim(),
       phone: phone.trim(),
-      attending: attending === "yes" ? "Có" : "Không",
-      guests: attending === "yes" ? guestCount : 0,
+      attendStatus: attending === "yes" ? "Có" : "Không",
+      quantity: attending === "yes" ? guestCount : 0,
       message: message.trim(),
+      // Fallback compatibility keys
+      guestName: fullName.trim(),
+      phoneNumber: phone.trim(),
+      attending: attending === "yes" ? "Có" : "Không",
+      guestCount: attending === "yes" ? guestCount : 0,
+      name: fullName.trim(),
+      guests: attending === "yes" ? guestCount : 0,
       timestamp: new Date().toLocaleString(lang === "vi" ? "vi-VN" : "en-US"),
     };
 

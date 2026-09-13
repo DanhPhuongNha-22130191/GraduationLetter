@@ -10,6 +10,7 @@ const CACHE_TTL_MS = 5000;
 
 function extractPhotoUrl(item: Record<string, unknown>): string | null {
   const raw =
+    item.cloudinaryImageLink ||
     item["Link Ảnh Cloudinary"] ||
     item["Link Ảnh"] ||
     item["LinkAnh"] ||
@@ -32,7 +33,8 @@ function extractPhotoUrl(item: Record<string, unknown>): string | null {
 
 function isRowActive(item: Record<string, unknown>): boolean {
   const activeVal = String(
-    item["Đang Sử Dụng"] ||
+    item.status ||
+      item["Đang Sử Dụng"] ||
       item.DangSuDung ||
       item.isActive ||
       item.IsActive ||
@@ -73,10 +75,10 @@ export async function GET(request: Request) {
     }
 
     if (graduationConfig.googleScriptUrl) {
-      // 1. Kiểm tra sheet chuyên dụng: "Avatar"
+      // 1. Kiểm tra sheet chuyên dụng: "avatars"
       try {
         const avatarRes = await fetch(
-          `${graduationConfig.googleScriptUrl}?action=getAvatar&sheet=Avatar&_t=${now}`,
+          `${graduationConfig.googleScriptUrl}?action=getAvatar&sheet=avatars&_t=${now}`,
           {
             method: "GET",
             headers: { Accept: "application/json" },
@@ -88,7 +90,7 @@ export async function GET(request: Request) {
         if (avatarRes.ok) {
           const avatarRows = await avatarRes.json();
           if (Array.isArray(avatarRows) && avatarRows.length > 0) {
-            // Tìm dòng có đánh dấu đang sử dụng (isActive: true)
+            // Tìm dòng có đánh dấu đang sử dụng (status: "true" hoặc isActive: true)
             const activeRow = avatarRows.slice().reverse().find((item: Record<string, unknown>) => isRowActive(item));
             
             // Nếu có dòng active thì lấy dòng đó, nếu không thì lấy dòng mới nhất (dòng cuối cùng)
@@ -110,13 +112,13 @@ export async function GET(request: Request) {
           }
         }
       } catch (err) {
-        console.warn("[Avatar Route] Could not fetch from Sheet Avatar:", err);
+        console.warn("[Avatar Route] Could not fetch from Sheet avatars:", err);
       }
 
-      // 2. Dự phòng: Kiểm tra sheet KhachMoi với slug = "phuongnha"
+      // 2. Dự phòng: Kiểm tra sheet guests với slug = "phuongnha"
       try {
         const res = await fetch(
-          `${graduationConfig.googleScriptUrl}?action=getGuests&sheet=KhachMoi&_t=${now}`,
+          `${graduationConfig.googleScriptUrl}?action=getGuests&sheet=guests&_t=${now}`,
           {
             method: "GET",
             headers: { Accept: "application/json" },
@@ -155,7 +157,7 @@ export async function GET(request: Request) {
           }
         }
       } catch (err) {
-        console.warn("[Avatar Route] Could not fetch from Sheet KhachMoi:", err);
+        console.warn("[Avatar Route] Could not fetch from Sheet guests:", err);
       }
     }
 
@@ -201,21 +203,27 @@ export async function POST(request: Request) {
     if (graduationConfig.googleScriptUrl) {
       const timestampStr = new Date().toLocaleString("vi-VN");
 
-      // 1. Ghi dòng mới vào sheet chuyên dụng "Avatar" (không dùng AnhKyNiem nữa)
+      // 1. Ghi dòng mới vào sheet chuyên dụng "avatars"
       const payloadAvatar = {
         type: "AVATAR_UPLOAD",
         action: "AVATAR_UPLOAD",
-        sheet: "Avatar",
+        sheet: "avatars",
+        uploadTime: timestampStr,
+        cloudinaryImageLink: cleanUrl,
+        uploader: "Phương Nhã",
+        status: "true",
+        note: "Ảnh đại diện bìa thiệp chính thức",
+        // Backward-compatibility keys
         "Thời Gian": timestampStr,
         "Link Ảnh Cloudinary": cleanUrl,
-        "photoUrl": cleanUrl,
-        "url": cleanUrl,
-        "Tên": "Phương Nhã",
-        "name": "Phương Nhã",
+        photoUrl: cleanUrl,
+        url: cleanUrl,
+        Tên: "Phương Nhã",
+        name: "Phương Nhã",
         "Đang Sử Dụng": "true",
-        "isActive": "true",
-        "Ghi Chú": "Ảnh đại diện bìa thiệp tốt nghiệp",
-        "caption": "Ảnh đại diện bìa thiệp tốt nghiệp",
+        isActive: "true",
+        "Ghi Chú": "Ảnh đại diện bìa thiệp chính thức",
+        caption: "Ảnh đại diện bìa thiệp chính thức",
         timestamp: timestampStr,
       };
 
@@ -226,10 +234,10 @@ export async function POST(request: Request) {
           body: JSON.stringify(payloadAvatar),
         });
       } catch (err) {
-        console.warn("[Avatar Route] Google Sheet Avatar sync error:", err);
+        console.warn("[Avatar Route] Google Sheet avatars sync error:", err);
       }
 
-      // 2. Cập nhật đồng bộ vào dòng của phuongnha trong sheet KhachMoi
+      // 2. Cập nhật đồng bộ vào dòng của phuongnha trong sheet guests
       try {
         await fetch(graduationConfig.googleScriptUrl, {
           method: "POST",
@@ -237,15 +245,16 @@ export async function POST(request: Request) {
           body: JSON.stringify({
             type: "AVATAR_UPDATE",
             action: "AVATAR_UPDATE",
-            sheet: "KhachMoi",
+            sheet: "guests",
             slug: "phuongnha",
             specialPhoto: cleanUrl,
+            cloudinaryImageLink: cleanUrl,
             photoUrl: cleanUrl,
             timestamp: timestampStr,
           }),
         });
       } catch (err) {
-        console.warn("[Avatar Route] Google Sheet KhachMoi sync error:", err);
+        console.warn("[Avatar Route] Google Sheet guests sync error:", err);
       }
     }
 

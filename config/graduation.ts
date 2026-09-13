@@ -43,7 +43,7 @@ export const graduationConfig = {
   mottoQuote: "The future belongs to those who believe in the beauty of their dreams.",
 
   // Endpoint Google Sheets gửi dữ liệu RSVP, Lượt xem, Ảnh kỷ niệm & Nhạc nền
-  googleScriptUrl: "https://script.google.com/macros/s/AKfycby0oBRK4WeCXQ1NP8a24EdHzThRHnJtpTUnOvkvim7RP1wMzRYDDmFWY_lvznat9Y_-/exec",
+  googleScriptUrl: "https://script.google.com/macros/s/AKfycbwYTOn8ZV3ooJ2Mt5NrJ_VDT6KrTON4iA95LB4OFuCDqpN37fkV9KaAELZsa9GB-yHnsg/exec",
 
   // Cấu hình Cloudinary tải ảnh kỷ niệm trực tiếp từ khách
   cloudinaryCloudName: "ddrqfuaji",

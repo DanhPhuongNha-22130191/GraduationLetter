@@ -10,8 +10,9 @@ let lastFetchTime = 0;
  * Trích xuất đường dẫn âm thanh hợp lệ từ bất kỳ cột nào trong hàng dữ liệu Google Sheet
  */
 function extractAudioUrl(item: Record<string, unknown>): string | null {
-  // 1. Kiểm tra các trường thông dụng nhất (Google Sheet NhacNen lưu URL ở cột DangSuDung)
+  // 1. Kiểm tra các trường thông dụng nhất (Google Sheet songs lưu URL ở cột cloudinarySongLink hoặc DangSuDung)
   const priorityCandidates = [
+    item.cloudinarySongLink,
     item.DangSuDung,
     item.dangSuDung,
     item.url,
@@ -64,6 +65,7 @@ function extractAudioUrl(item: Record<string, unknown>): string | null {
  */
 function extractIsActive(item: Record<string, unknown>): boolean {
   const activeCandidates = [
+    item.status,
     item.ThuTu,
     item.thuTu,
     item.isActive,
@@ -105,12 +107,16 @@ function extractIsActive(item: Record<string, unknown>): boolean {
  */
 function extractTitle(item: Record<string, unknown>, audioUrl: string, idx: number): string {
   const candidates = [
-    item.CaSi, // Google Apps Script lưu title vào cột CaSi
+    item.songTitle,
+    item.SongTitle,
+    item.singer,
+    item.Singer,
+    item.title,
+    item.Title,
+    item.CaSi, // Google Apps Script lưu title vào cột CaSi / singer
     item.caSi,
     item.tenBaiHat,
     item.TenBaiHat,
-    item.title,
-    item.Title,
     item.name,
     item.Name,
   ];
@@ -147,6 +153,8 @@ function extractTitle(item: Record<string, unknown>, audioUrl: string, idx: numb
  */
 function extractArtist(item: Record<string, unknown>): string {
   const candidates = [
+    item.singer,
+    item.Singer,
     item.LinkNhac,
     item.linkNhac,
     item.artist,
@@ -188,7 +196,7 @@ export async function GET(request: Request) {
 
   try {
     const res = await fetch(
-      `${graduationConfig.googleScriptUrl}?action=getMusic&sheet=NhacNen&_t=${now}`,
+      `${graduationConfig.googleScriptUrl}?action=getMusic&sheet=songs&_t=${now}`,
       {
         method: "GET",
         headers: { Accept: "application/json" },
@@ -216,7 +224,8 @@ export async function GET(request: Request) {
             }
 
             const uploadedAt = String(
-              item.ThoiGianUp ||
+              item.uploadTime ||
+                item.ThoiGianUp ||
                 item.thoiGianUp ||
                 item.uploadedAt ||
                 item.UploadedAt ||
@@ -256,14 +265,21 @@ export async function GET(request: Request) {
       }
     }
   } catch (err) {
-    console.warn("[Music Route GET] Error fetching from Google Sheet 'NhacNen':", err);
+    console.warn("[Music Route GET] Error fetching from Google Sheet 'songs':", err);
   }
 
-  return NextResponse.json(cachedMusicData || { activeAudioUrl: null, playlist: [] }, {
-    headers: {
-      "Cache-Control": "no-store, no-cache, must-revalidate",
+  // Fallback: Trả về cache cũ nếu có hoặc playlist từ graduationConfig
+  return NextResponse.json(
+    cachedMusicData || {
+      activeAudioUrl: graduationConfig.audioUrl,
+      playlist: graduationConfig.audioPlaylist,
     },
-  });
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    }
+  );
 }
 
 /**
@@ -272,28 +288,22 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const title = String(body.title || body.name || "Bài hát đã tải lên").trim();
-    const artist = String(body.artist || "Cloudinary Upload").trim();
-    const rawUrl = String(body.url || body.audioUrl || body.link || "").trim();
+    const { url, title, artist, timestamp = new Date().toLocaleString("vi-VN") } = body;
 
-    if (
-      !rawUrl ||
-      (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://") && !rawUrl.startsWith("/"))
-    ) {
+    if (!url || typeof url !== "string") {
       return NextResponse.json(
         { success: false, error: "Đường dẫn bài hát không hợp lệ" },
         { status: 400 }
       );
     }
 
-    const timestamp = new Date().toLocaleString("vi-VN");
+    const rawUrl = url.trim();
 
-    // 1. CẬP NHẬT NGAY LẬP TỨC VÀO RAM SERVER (0ms)
-    // Giúp tất cả các thiết bị (điện thoại, laptop) đọc được bài hát mới ngay lập tức
+    // 1. CẬP NHẬT CACHE TẠM TRÊN SERVER LẬP TỨC
     const newTrack: AudioPreset = {
-      id: `sheet-music-${Date.now()}`,
-      title,
-      artist,
+      id: `uploaded-${Date.now()}`,
+      title: title || "Bài hát mới",
+      artist: artist || "Cloudinary Upload",
       url: rawUrl,
       uploadedAt: timestamp,
     };
@@ -307,7 +317,6 @@ export async function POST(request: Request) {
     lastFetchTime = Date.now();
 
     // 2. GỬI TỨC THỜI TỪ SERVER ĐẾN GOOGLE APPS SCRIPT
-    // Server-to-server request không bị trình duyệt bóp băng thông, không bị lỗi CORS redirect
     let googleSheetSaved = false;
     if (graduationConfig.googleScriptUrl) {
       try {
@@ -317,6 +326,13 @@ export async function POST(request: Request) {
           body: JSON.stringify({
             type: "SAVE_MUSIC",
             action: "SAVE_MUSIC",
+            sheet: "songs",
+            cloudinarySongLink: rawUrl,
+            singer: artist || "Cloudinary Upload",
+            songTitle: title || "Bài hát mới",
+            status: "true",
+            uploadTime: timestamp,
+            // Backward-compatibility keys
             title,
             artist,
             url: rawUrl,

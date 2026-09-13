@@ -207,7 +207,7 @@ export async function fetchGuestsFromSheet(forceRefresh = false): Promise<Record
     const apiUrl =
       typeof window !== "undefined"
         ? `/api/guests${forceRefresh ? `?refresh=1&_t=${Date.now()}` : ""}`
-        : `${graduationConfig.googleScriptUrl}?action=getGuests&sheet=KhachMoi`;
+        : `${graduationConfig.googleScriptUrl}?action=getGuests&sheet=guests`;
 
     const res = await fetch(apiUrl, {
       method: "GET",
@@ -229,19 +229,24 @@ export async function fetchGuestsFromSheet(forceRefresh = false): Promise<Record
             item.ma ||
             item.Ma;
           const name =
+            item.guestName ||
+            item.GuestName ||
             item.name ||
             item.Name ||
             item.ten ||
             item.Ten ||
+            item.viewer ||
             item.hoTen ||
             item.HoTen;
 
           if (rawSlug && name) {
             const slug = String(rawSlug).trim().toLowerCase().replace(/[-_]/g, "");
-            const rawMode = (item.mode || item.Mode || item.vaiXung || item.VaiXung || item.danhXung || "") as string;
+            const rawMode = (item.role || item.Role || item.mode || item.Mode || item.vaiXung || item.VaiXung || item.danhXung || "") as string;
             const mode = normalizePronounMode(rawMode);
             const customMessage = (item.customMessage ||
               item.CustomMessage ||
+              item.note ||
+              item.Note ||
               item.message ||
               item.Message ||
               item.loiChuc ||
@@ -297,6 +302,8 @@ export async function fetchGuestsFromSheet(forceRefresh = false): Promise<Record
 
             const specialPhoto = (item.specialPhoto ||
               item.SpecialPhoto ||
+              item.cloudinaryImageLink ||
+              item.photoUrl ||
               item.photo ||
               item.Photo ||
               undefined) as string | undefined;
@@ -424,7 +431,7 @@ export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import
 
   try {
     if (graduationConfig.googleScriptUrl) {
-      const res = await fetch(`${graduationConfig.googleScriptUrl}?action=getPhotos&sheet=AnhKyNiem`, {
+      const res = await fetch(`${graduationConfig.googleScriptUrl}?action=getPhotos&sheet=photos`, {
         method: "GET",
         headers: { Accept: "application/json" },
       });
@@ -435,6 +442,7 @@ export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import
         if (Array.isArray(rawList)) {
           rawList.forEach((item: Record<string, unknown>, idx: number) => {
             const rawUrl =
+              item.cloudinaryImageLink ||
               item.photoUrl ||
               item.PhotoUrl ||
               item["Link Ảnh Cloudinary"] ||
@@ -457,11 +465,13 @@ export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import
               if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://") || cleanUrl.startsWith("/")) {
                 if (!seenUrls.has(cleanUrl)) {
                   seenUrls.add(cleanUrl);
-                  const rawCaption = String(item.caption || item.Caption || item["Lời Nhắn / Kỷ Niệm"] || item["Lời Nhắn"] || item["Kỷ Niệm"] || item.title || item.Title || item.loiChuc || "").trim();
-                  const category = String(item.category || item.Category || item["Chủ Đề"] || item["Chủ đề"] || item.chuDe || item.ChuDe || "Kỷ Niệm").trim();
+                  const rawCaption = String(item.label || item.Label || item.caption || item.Caption || item["Lời Nhắn / Kỷ Niệm"] || item["Lời Nhắn"] || item["Kỷ Niệm"] || item.title || item.Title || item.loiChuc || "").trim();
+                  const category = String(item.topic || item.Topic || item.category || item.Category || item["Chủ Đề"] || item["Chủ đề"] || item.chuDe || item.ChuDe || "Kỷ Niệm").trim();
                   const title = rawCaption || category || "Ảnh kỷ niệm";
 
                   const rawPriority =
+                    item.priorityLevel ??
+                    item.PriorityLevel ??
                     item.priority ??
                     item.Priority ??
                     item["Mức độ ưu tiên"] ??

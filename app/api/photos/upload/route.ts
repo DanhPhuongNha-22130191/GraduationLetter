@@ -27,7 +27,14 @@ async function writeSinglePhotoToSheet(photo: PhotoPayload, retries = 3): Promis
         body: JSON.stringify({
           type: "PHOTO_UPLOAD",
           action: "PHOTO_UPLOAD",
-          sheet: "AnhKyNiem",
+          sheet: "photos",
+          uploadTime: photo.timestamp || new Date().toLocaleString("vi-VN"),
+          uploader: photo.name || "Khách mời",
+          topic: photo.category || "Kỷ Niệm",
+          label: photo.caption || "Ảnh kỷ niệm cùng Nhã",
+          cloudinaryImageLink: photo.photoUrl,
+          priorityLevel: typeof photo.priority === "number" && !isNaN(photo.priority) ? photo.priority : 1,
+          // Backward-compatibility keys
           name: photo.name || "Khách mời",
           caption: photo.caption || "Ảnh kỷ niệm cùng Nhã",
           category: photo.category || "Kỷ Niệm",
