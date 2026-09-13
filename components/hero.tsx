@@ -62,7 +62,7 @@ export const HeroSection: React.FC = () => {
   const [uploadMessage, setUploadMessage] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Fetch persistent cloud avatar on mount
+  // Fetch persistent cloud avatar on mount and on tab focus
   useEffect(() => {
     try {
       const cached = localStorage.getItem("custom_hero_avatar_url");
@@ -71,17 +71,34 @@ export const HeroSection: React.FC = () => {
       }
     } catch {}
 
-    fetch("/api/avatar")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.avatarUrl && typeof data.avatarUrl === "string") {
-          setAvatarUrl(data.avatarUrl);
-          try {
-            localStorage.setItem("custom_hero_avatar_url", data.avatarUrl);
-          } catch {}
-        }
+    const loadAvatar = () => {
+      fetch(`/api/avatar?refresh=1&_t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
       })
-      .catch(() => {});
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.avatarUrl && typeof data.avatarUrl === "string") {
+            setAvatarUrl(data.avatarUrl);
+            try {
+              localStorage.setItem("custom_hero_avatar_url", data.avatarUrl);
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    };
+
+    loadAvatar();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadAvatar();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,27 +141,28 @@ export const HeroSection: React.FC = () => {
         localStorage.setItem("custom_hero_avatar_url", photoUrl);
       } catch {}
 
-      // 3. Gửi trực tiếp từ trình duyệt đến Google Sheets (no-cors mode)
+      // 3. Gửi trực tiếp từ trình duyệt đến Google Sheets qua Sheet "Avatar" (no-cors mode)
       if (graduationConfig.googleScriptUrl) {
+        const timestampStr = new Date().toLocaleString("vi-VN");
         fetch(graduationConfig.googleScriptUrl, {
           method: "POST",
           mode: "no-cors",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
-            type: "PHOTO_UPLOAD",
-            action: "PHOTO_UPLOAD",
-            sheet: "AnhKyNiem",
-            name: "Phương Nhã",
-            caption: "Ảnh đại diện bìa thiệp tốt nghiệp",
-            category: "Ảnh đại diện",
-            "Chủ Đề": "Ảnh đại diện",
+            type: "AVATAR_UPLOAD",
+            action: "AVATAR_UPLOAD",
+            sheet: "Avatar",
+            "Thời Gian": timestampStr,
+            "Link Ảnh Cloudinary": photoUrl,
             photoUrl: photoUrl,
-            sourceType: "file",
-            timestamp: new Date().toLocaleString("vi-VN"),
-            priority: 1,
-            "Mức độ ưu tiên": 1,
-            "Ưu tiên": 1,
-            "Thứ tự": 1,
+            url: photoUrl,
+            "Tên": "Phương Nhã",
+            name: "Phương Nhã",
+            "Đang Sử Dụng": "true",
+            isActive: "true",
+            "Ghi Chú": "Ảnh đại diện bìa thiệp tốt nghiệp",
+            caption: "Ảnh đại diện bìa thiệp tốt nghiệp",
+            timestamp: timestampStr,
           }),
         }).catch(() => {});
       }

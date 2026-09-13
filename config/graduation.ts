@@ -34,7 +34,7 @@ export const graduationConfig = {
   subTitle: "With gratitude, pride & a new beginning.",
   
   // Hình ảnh cá nhân & Logo trường
-  avatarUrl: "/images/graduation/Avatar.jpg",
+  avatarUrl: "https://res.cloudinary.com/ddrqfuaji/image/upload/v1789219993/graduation_avatar/slqon9at3yatr76efkkk.jpg",
   universityLogoUrl: "/images/graduation/Logo-Dai-Hoc-Nong-Lam-HCM-HCMUAF.webp",
 
   // Thông tin liên hệ
@@ -43,7 +43,7 @@ export const graduationConfig = {
   mottoQuote: "The future belongs to those who believe in the beauty of their dreams.",
 
   // Endpoint Google Sheets gửi dữ liệu RSVP, Lượt xem, Ảnh kỷ niệm & Nhạc nền
-  googleScriptUrl: "https://script.google.com/macros/s/AKfycbwkL2xe4NvyRygeWq1c_fQzhpMOmVkId8s1LiyQO6ptxVOlicCcH1-bvLcMo1x40nPtuQ/exec",
+  googleScriptUrl: "https://script.google.com/macros/s/AKfycby0oBRK4WeCXQ1NP8a24EdHzThRHnJtpTUnOvkvim7RP1wMzRYDDmFWY_lvznat9Y_-/exec",
 
   // Cấu hình Cloudinary tải ảnh kỷ niệm trực tiếp từ khách
   cloudinaryCloudName: "ddrqfuaji",

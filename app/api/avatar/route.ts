@@ -3,65 +3,127 @@ import { graduationConfig } from "@/config/graduation";
 
 export const dynamic = "force-dynamic";
 
-// In-memory server cache for persistent fast response across requests
+// In-memory cache with short TTL (5 seconds) to avoid hammering Google Script while allowing rapid updates
 let cachedAvatarUrl: string | null = null;
+let lastFetchTime = 0;
+const CACHE_TTL_MS = 5000;
 
-export async function GET() {
+function extractPhotoUrl(item: Record<string, unknown>): string | null {
+  const raw =
+    item["Link Ảnh Cloudinary"] ||
+    item["Link Ảnh"] ||
+    item["LinkAnh"] ||
+    item.photoUrl ||
+    item.PhotoUrl ||
+    item.url ||
+    item.Url ||
+    item.avatar ||
+    item.Avatar ||
+    item.link ||
+    item.Link ||
+    item.specialPhoto ||
+    item.SpecialPhoto;
+
+  if (raw && typeof raw === "string" && raw.trim().startsWith("http")) {
+    return raw.trim();
+  }
+  return null;
+}
+
+function isRowActive(item: Record<string, unknown>): boolean {
+  const activeVal = String(
+    item["Đang Sử Dụng"] ||
+      item.DangSuDung ||
+      item.isActive ||
+      item.IsActive ||
+      item.active ||
+      item.Active ||
+      item.trangThai ||
+      item["Trạng Thái"] ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+
+  return (
+    activeVal === "true" ||
+    activeVal === "1" ||
+    activeVal === "yes" ||
+    activeVal === "đang dùng" ||
+    activeVal === "active"
+  );
+}
+
+export async function GET(request: Request) {
   try {
-    // If we have an in-memory cached URL, return it
-    if (cachedAvatarUrl) {
-      return NextResponse.json({ avatarUrl: cachedAvatarUrl });
+    const { searchParams } = new URL(request.url);
+    const isRefresh = searchParams.get("refresh") === "1";
+    const now = Date.now();
+
+    // If cache is fresh and not a forced refresh, return cached avatar
+    if (!isRefresh && cachedAvatarUrl && now - lastFetchTime < CACHE_TTL_MS) {
+      return NextResponse.json(
+        { avatarUrl: cachedAvatarUrl },
+        {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          },
+        }
+      );
     }
 
     if (graduationConfig.googleScriptUrl) {
-      // 1. Kiểm tra sheet AnhKyNiem với Chủ Đề = "Ảnh đại diện"
+      // 1. Kiểm tra sheet chuyên dụng: "Avatar"
       try {
-        const photosRes = await fetch(`${graduationConfig.googleScriptUrl}?action=getPhotos&sheet=AnhKyNiem`, {
-          method: "GET",
-          headers: { Accept: "application/json" },
-          cache: "no-store",
-          next: { revalidate: 0 },
-        });
+        const avatarRes = await fetch(
+          `${graduationConfig.googleScriptUrl}?action=getAvatar&sheet=Avatar&_t=${now}`,
+          {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+            next: { revalidate: 0 },
+          }
+        );
 
-        if (photosRes.ok) {
-          const photosList = await photosRes.json();
-          if (Array.isArray(photosList) && photosList.length > 0) {
-            const avatarRows = photosList.filter((item: Record<string, unknown>) => {
-              const cat = String(
-                item.category || item.Category || item["Chủ Đề"] || item["Chủ đề"] || item.chuDe || ""
-              ).trim();
-              return cat === "Ảnh đại diện";
-            });
+        if (avatarRes.ok) {
+          const avatarRows = await avatarRes.json();
+          if (Array.isArray(avatarRows) && avatarRows.length > 0) {
+            // Tìm dòng có đánh dấu đang sử dụng (isActive: true)
+            const activeRow = avatarRows.slice().reverse().find((item: Record<string, unknown>) => isRowActive(item));
+            
+            // Nếu có dòng active thì lấy dòng đó, nếu không thì lấy dòng mới nhất (dòng cuối cùng)
+            const chosenRow = activeRow || avatarRows[avatarRows.length - 1];
+            const url = extractPhotoUrl(chosenRow);
 
-            if (avatarRows.length > 0) {
-              const lastAvatarRow = avatarRows[avatarRows.length - 1];
-              const rawUrl =
-                lastAvatarRow.photoUrl ||
-                lastAvatarRow.PhotoUrl ||
-                lastAvatarRow["Link Ảnh Cloudinary"] ||
-                lastAvatarRow["Link Ảnh"] ||
-                lastAvatarRow.url ||
-                lastAvatarRow.photo ||
-                lastAvatarRow.specialPhoto;
-              if (rawUrl && typeof rawUrl === "string" && rawUrl.trim().startsWith("http")) {
-                cachedAvatarUrl = rawUrl.trim();
-                return NextResponse.json({ avatarUrl: cachedAvatarUrl });
-              }
+            if (url) {
+              cachedAvatarUrl = url;
+              lastFetchTime = now;
+              return NextResponse.json(
+                { avatarUrl: cachedAvatarUrl },
+                {
+                  headers: {
+                    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+                  },
+                }
+              );
             }
           }
         }
       } catch (err) {
-        console.warn("[Avatar Route] Could not fetch photos from Sheet AnhKyNiem:", err);
+        console.warn("[Avatar Route] Could not fetch from Sheet Avatar:", err);
       }
 
       // 2. Dự phòng: Kiểm tra sheet KhachMoi với slug = "phuongnha"
       try {
-        const res = await fetch(`${graduationConfig.googleScriptUrl}?action=getGuests&sheet=KhachMoi`, {
-          method: "GET",
-          headers: { Accept: "application/json" },
-          cache: "no-store",
-          next: { revalidate: 0 },
-        });
+        const res = await fetch(
+          `${graduationConfig.googleScriptUrl}?action=getGuests&sheet=KhachMoi&_t=${now}`,
+          {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+            next: { revalidate: 0 },
+          }
+        );
 
         if (res.ok) {
           const rawList = await res.json();
@@ -76,18 +138,18 @@ export async function GET() {
             });
 
             if (ownerRow) {
-              const photo =
-                ownerRow.specialPhoto ||
-                ownerRow.SpecialPhoto ||
-                ownerRow.photoUrl ||
-                ownerRow.PhotoUrl ||
-                ownerRow.avatar ||
-                ownerRow.Avatar ||
-                ownerRow.photo ||
-                ownerRow.Photo;
-              if (photo && typeof photo === "string" && photo.trim().startsWith("http")) {
-                cachedAvatarUrl = photo.trim();
-                return NextResponse.json({ avatarUrl: cachedAvatarUrl });
+              const photo = extractPhotoUrl(ownerRow);
+              if (photo) {
+                cachedAvatarUrl = photo;
+                lastFetchTime = now;
+                return NextResponse.json(
+                  { avatarUrl: cachedAvatarUrl },
+                  {
+                    headers: {
+                      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+                    },
+                  }
+                );
               }
             }
           }
@@ -97,10 +159,24 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({ avatarUrl: cachedAvatarUrl });
+    return NextResponse.json(
+      { avatarUrl: cachedAvatarUrl || graduationConfig.avatarUrl },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   } catch (err) {
     console.error("[Avatar Route] GET error:", err);
-    return NextResponse.json({ avatarUrl: null });
+    return NextResponse.json(
+      { avatarUrl: graduationConfig.avatarUrl },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   }
 }
 
@@ -120,37 +196,40 @@ export async function POST(request: Request) {
 
     const cleanUrl = avatarUrl.trim();
     cachedAvatarUrl = cleanUrl;
+    lastFetchTime = Date.now();
 
     if (graduationConfig.googleScriptUrl) {
-      // 1. Ghi dòng mới vào sheet AnhKyNiem với Chủ Đề = "Ảnh đại diện"
-      const payloadAnhKyNiem = {
-        type: "PHOTO_UPLOAD",
-        action: "PHOTO_UPLOAD",
-        sheet: "AnhKyNiem",
-        name: "Phương Nhã",
-        caption: "Ảnh đại diện bìa thiệp tốt nghiệp",
-        category: "Ảnh đại diện",
-        "Chủ Đề": "Ảnh đại diện",
-        photoUrl: cleanUrl,
-        sourceType: "file",
-        timestamp: new Date().toLocaleString("vi-VN"),
-        priority: 1,
-        "Mức độ ưu tiên": 1,
-        "Ưu tiên": 1,
-        "Thứ tự": 1,
+      const timestampStr = new Date().toLocaleString("vi-VN");
+
+      // 1. Ghi dòng mới vào sheet chuyên dụng "Avatar" (không dùng AnhKyNiem nữa)
+      const payloadAvatar = {
+        type: "AVATAR_UPLOAD",
+        action: "AVATAR_UPLOAD",
+        sheet: "Avatar",
+        "Thời Gian": timestampStr,
+        "Link Ảnh Cloudinary": cleanUrl,
+        "photoUrl": cleanUrl,
+        "url": cleanUrl,
+        "Tên": "Phương Nhã",
+        "name": "Phương Nhã",
+        "Đang Sử Dụng": "true",
+        "isActive": "true",
+        "Ghi Chú": "Ảnh đại diện bìa thiệp tốt nghiệp",
+        "caption": "Ảnh đại diện bìa thiệp tốt nghiệp",
+        timestamp: timestampStr,
       };
 
       try {
         await fetch(graduationConfig.googleScriptUrl, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payloadAnhKyNiem),
+          body: JSON.stringify(payloadAvatar),
         });
       } catch (err) {
-        console.warn("[Avatar Route] Google Sheet AnhKyNiem sync error:", err);
+        console.warn("[Avatar Route] Google Sheet Avatar sync error:", err);
       }
 
-      // 2. Cập nhật dòng của phuongnha trong sheet KhachMoi
+      // 2. Cập nhật đồng bộ vào dòng của phuongnha trong sheet KhachMoi
       try {
         await fetch(graduationConfig.googleScriptUrl, {
           method: "POST",
@@ -162,7 +241,7 @@ export async function POST(request: Request) {
             slug: "phuongnha",
             specialPhoto: cleanUrl,
             photoUrl: cleanUrl,
-            timestamp: new Date().toLocaleString("vi-VN"),
+            timestamp: timestampStr,
           }),
         });
       } catch (err) {
