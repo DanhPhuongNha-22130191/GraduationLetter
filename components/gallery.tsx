@@ -208,30 +208,17 @@ export const GallerySection: React.FC = () => {
         setCloudPhotos(cleanedRemote);
         setFailedPhotoUrls(new Set());
 
-        // Gửi các ảnh cục bộ chưa đồng bộ (nếu có) thông qua server endpoint /api/photos/upload theo hàng đợi duy nhất
+        // Dọn dẹp LocalStorage theo Cloud: Nếu ảnh trên Cloud/Sheet đã bị xóa, tự động dọn sạch khỏi máy, tuyệt đối KHÔNG tự tải lại
         try {
           const cloudSrcs = new Set(cleanedRemote.map((p) => normalizePhotoKey(p.src)));
           const savedRaw = localStorage.getItem("graduation_user_photos");
           if (savedRaw) {
             const savedItems: GalleryItem[] = JSON.parse(savedRaw);
-            const unsynced = savedItems.filter(
-              (p) => p && p.src && !cloudSrcs.has(normalizePhotoKey(p.src)) && !p.src.startsWith("blob:")
+            const remaining = savedItems.filter(
+              (p) => p && p.src && cloudSrcs.has(normalizePhotoKey(p.src))
             );
-            if (unsynced.length > 0) {
-              fetch("/api/photos/upload", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  photos: unsynced.map((item) => ({
-                    name: guestName || "Khách mời",
-                    caption: item.title || "Ảnh kỷ niệm cùng Nhã",
-                    category: item.category || "Kỷ Niệm",
-                    photoUrl: item.src,
-                    sourceType: "file",
-                  })),
-                }),
-              }).catch(() => {});
-            }
+            localStorage.setItem("graduation_user_photos", JSON.stringify(remaining));
+            setUserPhotos(remaining);
           }
         } catch {
           // ignore
