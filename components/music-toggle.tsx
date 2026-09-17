@@ -29,6 +29,12 @@ export const playBackgroundMusic = () => {
   }
 };
 
+export const pauseBackgroundMusic = () => {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("PAUSE_BACKGROUND_MUSIC"));
+  }
+};
+
 export const MusicToggle: React.FC = () => {
   const { isOwner, audioUrl, setAudioUrl } = useGuest();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -136,6 +142,14 @@ export const MusicToggle: React.FC = () => {
       startPlayback(true);
     };
 
+    const handleCustomPauseSignal = () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setIsPlaying(false);
+      isManuallyPausedRef.current = true;
+    };
+
     const handleAudioUrlChanged = (e: Event) => {
       const customEvt = e as CustomEvent<string>;
       const newUrl = customEvt.detail || audioUrl;
@@ -149,13 +163,36 @@ export const MusicToggle: React.FC = () => {
     };
 
     window.addEventListener("PLAY_BACKGROUND_MUSIC", handleCustomPlaySignal);
+    window.addEventListener("PAUSE_BACKGROUND_MUSIC", handleCustomPauseSignal);
+    window.addEventListener("CLOSE_ENVELOPE", handleCustomPauseSignal);
     window.addEventListener("AUDIO_URL_CHANGED", handleAudioUrlChanged);
 
     return () => {
       window.removeEventListener("PLAY_BACKGROUND_MUSIC", handleCustomPlaySignal);
+      window.removeEventListener("PAUSE_BACKGROUND_MUSIC", handleCustomPauseSignal);
+      window.removeEventListener("CLOSE_ENVELOPE", handleCustomPauseSignal);
       window.removeEventListener("AUDIO_URL_CHANGED", handleAudioUrlChanged);
     };
   }, [audioUrl, isPlaying]);
+
+  // Lock body scroll and handle Escape key for Music Settings Modal
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isModalOpen]);
 
   // Cập nhật lại audio element khi audioUrl thay đổi
   useEffect(() => {

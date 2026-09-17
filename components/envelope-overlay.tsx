@@ -208,42 +208,51 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
 
               {/* Wax Seal Button */}
               <motion.div
+                role="button"
+                tabIndex={0}
+                aria-label="Con dấu sáp - Mở thiệp"
                 animate={isOpening ? { scale: [1, 1.25, 0], rotate: [0, 15, 45] } : { scale: [1, 1.04, 1] }}
                 transition={isOpening ? { duration: 0.6 } : { repeat: Infinity, duration: 4, ease: "easeInOut" }}
                 onClick={handleOpenEnvelope}
-                className="rounded-full wax-seal border border-gold-200/60 flex flex-col items-center justify-center text-ivory-50 mb-5 cursor-pointer shadow-xl relative group touch-manipulation flex-shrink-0"
-                style={{ width: 104, height: 104 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleOpenEnvelope(e as unknown as React.MouseEvent);
+                  }
+                }}
+                className="rounded-full wax-seal border border-gold-200/60 flex flex-col items-center justify-center text-ivory-50 mb-4 sm:mb-5 cursor-pointer shadow-xl relative group touch-manipulation flex-shrink-0 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
+                style={{ width: 96, height: 96 }}
               >
                 <div className="absolute inset-1 rounded-full border border-gold-500/30 pointer-events-none" />
-                <GraduationCap className="w-10 h-10 text-gold-200" />
+                <GraduationCap className="w-9 h-9 sm:w-10 sm:h-10 text-gold-200" />
                 <span className="text-[8px] font-sans font-bold tracking-widest text-gold-200 uppercase mt-0.5">SEAL</span>
               </motion.div>
 
-              <h1 className="font-serif text-2xl sm:text-3xl uppercase tracking-[0.18em] text-gold-200 font-bold mb-1.5 leading-tight">
+              <h1 className="font-serif text-xl sm:text-2xl md:text-3xl uppercase tracking-[0.16em] text-gold-200 font-bold mb-1 leading-tight">
                 LỄ TỐT NGHIỆP 2026
               </h1>
 
-              <h2 className="font-serif text-xl sm:text-2xl font-medium text-ivory-50 tracking-normal mb-3">
+              <h2 className="font-serif text-lg sm:text-xl font-medium text-ivory-50 tracking-normal mb-2.5">
                 {graduationConfig.name}
               </h2>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/10 text-gold-200 font-sans text-[11px] sm:text-xs tracking-wider uppercase mb-3 font-medium border border-gold-500/30">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/10 text-gold-200 font-sans text-[10px] sm:text-xs tracking-wider uppercase mb-2.5 font-medium border border-gold-500/30">
                 <Award className="w-3.5 h-3.5 text-gold-500" />
                 <span>{graduationConfig.major}</span>
               </div>
 
               {/* Personalized Recipient Badge on Envelope */}
               {hasCustomGuest ? (
-                <div className="w-full my-2.5 py-2.5 px-3 rounded-2xl bg-white/[0.04] border border-gold-500/30 text-center">
+                <div className="w-full my-2 py-2 px-3 rounded-2xl bg-white/[0.04] border border-gold-500/30 text-center">
                   <span className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold-500 font-bold mb-0.5">
                     ✦ {getGreetingPrefix(lang).toUpperCase()} ✦
                   </span>
-                  <span className="font-serif text-base sm:text-lg font-bold text-ivory-50 line-clamp-2">
+                  <span className="font-serif text-base sm:text-lg font-bold text-ivory-50 line-clamp-2 break-words overflow-wrap-anywhere">
                     {guestName}
                   </span>
                 </div>
               ) : (
-                <div className="my-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-gold-500/20 text-center">
+                <div className="my-1.5 px-4 py-1.5 rounded-full bg-white/[0.04] border border-gold-500/20 text-center">
                   <span className="text-xs font-sans uppercase tracking-[0.25em] text-gold-200 font-medium">
                     ✦ {t.invitation.guestEyebrow.toUpperCase()} ✦
                   </span>
@@ -255,7 +264,8 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleOpenEnvelope}
-                className="w-full mt-2 py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-xs sm:text-sm tracking-widest uppercase shadow-md flex items-center justify-center gap-2 border border-gold-200/50 hover:brightness-105 transition-all touch-manipulation cursor-pointer"
+                aria-label={t.hero.openBtn}
+                className="w-full mt-2 py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-xs sm:text-sm tracking-widest uppercase shadow-md flex items-center justify-center gap-2 border border-gold-200/50 hover:brightness-105 transition-all touch-manipulation cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
               >
                 <MailOpen className="w-4 h-4 stroke-[2]" />
                 <span>{t.hero.openBtn}</span>

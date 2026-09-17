@@ -106,8 +106,9 @@ export const GraduationInfoSection: React.FC = () => {
                 {item.copyable && (
                   <button
                     onClick={handleCopyAddress}
-                    title="Copy address"
-                    className="p-2 sm:px-3 sm:py-2 rounded-xl bg-gold-500/15 hover:bg-gold-500/25 text-gold-700 text-xs transition-colors shrink-0 flex items-center gap-1.5 active:scale-95 touch-manipulation border border-gold-500/30 cursor-pointer"
+                    aria-label={copied ? t.details.copied : t.details.copy}
+                    title={copied ? t.details.copied : t.details.copy}
+                    className="p-2 sm:px-3 sm:py-2 rounded-xl bg-gold-500/15 hover:bg-gold-500/25 text-gold-700 text-xs transition-colors shrink-0 flex items-center gap-1.5 active:scale-95 touch-manipulation border border-gold-500/30 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
                   >
                     {copied ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4" />}
                     <span className="hidden sm:inline font-sans font-semibold">{copied ? t.details.copied : t.details.copy}</span>

@@ -86,7 +86,8 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
           <div className="flex flex-wrap items-center justify-center gap-3 my-6">
             <a
               href={`tel:${graduationConfig.phone.replace(/\s+/g, "")}`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 text-xs font-sans text-gold-200 font-semibold transition-all active:scale-95 touch-manipulation shadow-soft-xs"
+              aria-label={`Gọi điện thoại: ${graduationConfig.phone}`}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 text-xs font-sans text-gold-200 font-semibold transition-all active:scale-95 touch-manipulation shadow-soft-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
             >
               <Phone className="w-3.5 h-3.5 stroke-[2]" />
               <span>{graduationConfig.phone}</span>
@@ -94,7 +95,8 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
 
             <a
               href={`mailto:${graduationConfig.email}`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 text-xs font-sans text-gold-200 font-semibold transition-all active:scale-95 touch-manipulation shadow-soft-xs"
+              aria-label={`Gửi email: ${graduationConfig.email}`}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 text-xs font-sans text-gold-200 font-semibold transition-all active:scale-95 touch-manipulation shadow-soft-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
             >
               <Mail className="w-3.5 h-3.5 stroke-[2]" />
               <span>{graduationConfig.email}</span>
@@ -102,7 +104,8 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
 
             <button
               onClick={handleShare}
-              className="w-full py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-sm tracking-wider uppercase hover:brightness-105 transition-all flex items-center justify-center gap-2 border border-gold-200/50 active:scale-95 touch-manipulation cursor-pointer shadow-gold-glow"
+              aria-label="Chia sẻ thư mời lễ tốt nghiệp"
+              className="w-full py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-sm tracking-wider uppercase hover:brightness-105 transition-all flex items-center justify-center gap-2 border border-gold-200/50 active:scale-95 touch-manipulation cursor-pointer shadow-gold-glow focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
             >
               {copiedLink ? (
                 <>
@@ -120,7 +123,8 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
             {onReopenEnvelope && (
               <button
                 onClick={onReopenEnvelope}
-                className="w-full py-3 px-4 rounded-full bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/35 text-xs font-serif font-semibold text-gold-200 uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 touch-manipulation cursor-pointer shadow-soft-xs group"
+                aria-label={t.nav.backToEnvelope}
+                className="w-full py-3 px-4 rounded-full bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/35 text-xs font-serif font-semibold text-gold-200 uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 touch-manipulation cursor-pointer shadow-soft-xs group focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
               >
                 <ArrowLeft className="w-4 h-4 text-gold-500 group-hover:-translate-x-1 transition-transform" />
                 <span>{t.nav.backToEnvelope}</span>

@@ -26,7 +26,7 @@ export const RsvpSection: React.FC = () => {
     if (guestName && !fullName) {
       setFullName(guestName);
     }
-  }, [guestName]);
+  }, [guestName, fullName]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);

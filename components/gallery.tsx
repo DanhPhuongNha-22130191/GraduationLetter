@@ -22,6 +22,8 @@ import {
   FileImage,
   Images,
   RotateCw,
+  SlidersHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
@@ -29,14 +31,14 @@ import { graduationConfig, GalleryItem } from "@/config/graduation";
 import { fetchPhotosFromSheet } from "@/config/guests";
 import { Lock, ShieldCheck } from "lucide-react";
 
-function getOptimizedImageUrl(src: string, width = 1200): string {
+function getOptimizedImageUrl(src: string, width = 800): string {
   if (!src || typeof src !== "string") return "";
   const clean = src.trim();
   if (clean.includes("res.cloudinary.com") && clean.includes("/image/upload/")) {
     if (!clean.includes("/image/upload/f_auto") && !clean.includes("/image/upload/w_") && !clean.includes("/image/upload/q_")) {
       return clean.replace(
         "/image/upload/",
-        `/image/upload/f_auto,q_auto:best,dpr_auto,w_${width},c_limit/`
+        `/image/upload/f_auto,q_auto:good,dpr_auto,w_${width},c_limit/`
       );
     }
   }
@@ -166,6 +168,7 @@ export const GallerySection: React.FC = () => {
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
   const [uploadPriority, setUploadPriority] = useState("1");
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgressText, setUploadProgressText] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -499,17 +502,50 @@ export const GallerySection: React.FC = () => {
     setSelectedIndex(null);
   };
 
-  const handlePrev = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handlePrev = React.useCallback((e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (selectedIndex === null) return;
     setSelectedIndex((prev) => (prev === 0 ? filteredItems.length - 1 : (prev ?? 0) - 1));
-  };
+  }, [selectedIndex, filteredItems.length]);
 
-  const handleNext = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleNext = React.useCallback((e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (selectedIndex === null) return;
     setSelectedIndex((prev) => (prev === filteredItems.length - 1 ? 0 : (prev ?? 0) + 1));
-  };
+  }, [selectedIndex, filteredItems.length]);
+
+  // Keyboard navigation for Lightbox and Upload Modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (selectedIndex !== null) {
+          handleCloseLightbox();
+        } else if (isUploadOpen) {
+          setIsUploadOpen(false);
+        }
+      } else if (selectedIndex !== null) {
+        if (e.key === "ArrowLeft") {
+          handlePrev();
+        } else if (e.key === "ArrowRight") {
+          handleNext();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedIndex, isUploadOpen, handlePrev, handleNext]);
+
+  // Lock body scroll when Modal or Lightbox is open
+  useEffect(() => {
+    if (isUploadOpen || selectedIndex !== null) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isUploadOpen, selectedIndex]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -849,7 +885,8 @@ export const GallerySection: React.FC = () => {
               handleResetUploadForm();
               setIsUploadOpen(true);
             }}
-            className="group relative px-6 py-3 sm:py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-xs sm:text-sm tracking-wide shadow-gold-glow hover:brightness-105 active:scale-98 transition-all flex items-center gap-2.5 cursor-pointer border border-gold-200/50 touch-manipulation"
+            aria-label={t.gallery.uploadBtn}
+            className="group relative px-6 py-3 sm:py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-xs sm:text-sm tracking-wide shadow-gold-glow hover:brightness-105 active:scale-98 transition-all flex items-center gap-2.5 cursor-pointer border border-gold-200/50 touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
           >
             <Camera className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-12 group-hover:scale-110" />
             <span className="text-center">{t.gallery.uploadBtn}</span>
@@ -859,8 +896,9 @@ export const GallerySection: React.FC = () => {
             type="button"
             onClick={() => syncPhotos(true)}
             disabled={isSyncing}
+            aria-label="Đồng bộ lại kho ảnh"
             title="Đồng bộ lại kho ảnh"
-            className="p-3 sm:p-3.5 rounded-full bg-white hover:bg-gold-500/10 text-emerald-950 border border-gold-500/30 shadow-soft-xs hover:border-gold-500 transition-all cursor-pointer active:scale-95 touch-manipulation disabled:opacity-50 flex items-center justify-center"
+            className="p-3 sm:p-3.5 rounded-full bg-white hover:bg-gold-500/10 text-emerald-950 border border-gold-500/30 shadow-soft-xs hover:border-gold-500 transition-all cursor-pointer active:scale-95 touch-manipulation disabled:opacity-50 flex items-center justify-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
           >
             <RotateCw className={`w-4 h-4 sm:w-4.5 sm:h-4.5 text-gold-700 ${isSyncing ? "animate-spin" : ""}`} />
           </button>
@@ -974,13 +1012,13 @@ export const GallerySection: React.FC = () => {
                       onClick={() => handleOpenLightbox(globalIdx)}
                       className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer border border-gold-500/20 shadow-soft-sm bg-emerald-900/5 transition-all duration-500 hover:scale-[1.02] hover:shadow-soft-xl hover:border-gold-500/40 active:scale-98 touch-manipulation transform-gpu"
                     >
-                      {/* Crystal Clear High-Resolution Image */}
+                      {/* Optimized Crystal Clear Image */}
                       <Image
-                        src={getOptimizedImageUrl(photo.src, 1200)}
-                        alt={photo.alt}
+                        src={getOptimizedImageUrl(photo.src, 800)}
+                        alt={photo.alt || photo.title || "Kỷ niệm lễ tốt nghiệp"}
                         fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        quality={100}
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        quality={80}
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                         loading={localIdx < 4 ? "eager" : "lazy"}
                         priority={currentPage === 1 && localIdx < 2}
@@ -1170,6 +1208,24 @@ export const GallerySection: React.FC = () => {
                     <p className="font-sans text-xs text-ivory-100/70 mt-1 max-w-sm mx-auto">
                       {t.gallery.uploadModalDesc}
                     </p>
+
+                    {/* 3-Step Visual Progress Indicator */}
+                    <div className="flex items-center justify-center gap-2 mt-4 mb-1 text-[11px] font-sans">
+                      <span className="flex items-center gap-1 text-gold-300 font-semibold">
+                        <span className="w-5 h-5 rounded-full bg-gold-500 text-emerald-950 flex items-center justify-center font-bold text-[10px]">1</span>
+                        Chọn ảnh
+                      </span>
+                      <span className="w-4 h-px bg-gold-500/30" />
+                      <span className="flex items-center gap-1 text-ivory-100/70">
+                        <span className="w-5 h-5 rounded-full bg-white/10 text-gold-300 flex items-center justify-center font-bold text-[10px]">2</span>
+                        Thông tin
+                      </span>
+                      <span className="w-4 h-px bg-gold-500/30" />
+                      <span className="flex items-center gap-1 text-ivory-100/70">
+                        <span className="w-5 h-5 rounded-full bg-white/10 text-gold-300 flex items-center justify-center font-bold text-[10px]">3</span>
+                        Gửi
+                      </span>
+                    </div>
                   </div>
 
                   <form onSubmit={handleUploadPhoto} className="space-y-4">
@@ -1511,29 +1567,48 @@ export const GallerySection: React.FC = () => {
                       />
                     </div>
 
-                    {/* Priority Order Input */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-300 font-semibold">
-                          Thứ tự ưu tiên (Tùy chọn):
-                        </label>
-                        <span className="text-[10px] text-ivory-100/50 font-sans">
-                          Số càng nhỏ xếp càng trước (1, 2, 3...)
-                        </span>
-                      </div>
-                      <input
-                        type="number"
-                        min="1"
-                        max="999"
-                        step="1"
-                        value={uploadPriority}
-                        onChange={(e) => setUploadPriority(e.target.value)}
-                        placeholder="Mặc định là 1"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-gold-500/30 text-ivory-100 placeholder-ivory-100/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-all"
-                      />
-                      <p className="text-[10px] text-ivory-100/50 mt-1 pl-1">
-                        💡 Mức độ ưu tiên mặc định là 1. Số càng nhỏ (1, 2, 3...) sẽ được ưu tiên hiển thị ở các phân trang đầu tiên.
-                      </p>
+                    {/* Progressive Disclosure: Tùy chọn nâng cao */}
+                    <div className="pt-1 border-t border-gold-500/15">
+                      <button
+                        type="button"
+                        onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                        className="inline-flex items-center gap-1.5 text-xs font-sans text-gold-300 hover:text-gold-200 transition-colors cursor-pointer py-1"
+                      >
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-gold-400" />
+                        <span>Tùy chọn hiển thị nâng cao</span>
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showAdvancedOptions ? "rotate-180" : ""}`} />
+                      </button>
+
+                      {showAdvancedOptions && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="space-y-1.5 pt-2"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-sans uppercase tracking-wider text-gold-300 font-semibold">
+                              Thứ tự ưu tiên:
+                            </label>
+                            <span className="text-[10px] text-ivory-100/50 font-sans">
+                              (Mặc định là 1)
+                            </span>
+                          </div>
+                          <input
+                            type="number"
+                            min="1"
+                            max="999"
+                            step="1"
+                            value={uploadPriority}
+                            onChange={(e) => setUploadPriority(e.target.value)}
+                            placeholder="Mặc định là 1"
+                            className="w-full px-3.5 py-2 rounded-xl bg-white/10 border border-gold-500/30 text-ivory-100 placeholder-ivory-100/40 text-xs font-sans focus:outline-hidden focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-all"
+                          />
+                          <p className="text-[10px] text-ivory-100/50 pl-1">
+                            Số càng nhỏ (1, 2, 3...) sẽ được ưu tiên hiển thị ở các trang đầu tiên.
+                          </p>
+                        </motion.div>
+                      )}
                     </div>
 
                     {uploadError && (
@@ -1603,7 +1678,9 @@ export const GallerySection: React.FC = () => {
                 </span>
                 <button
                   onClick={handleCloseLightbox}
-                  className="w-9 h-9 rounded-full bg-gold-500/15 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-colors touch-manipulation border border-gold-500/30"
+                  aria-label="Đóng xem ảnh (Phím Esc)"
+                  title="Đóng (Esc)"
+                  className="w-9 h-9 rounded-full bg-gold-500/15 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-colors touch-manipulation border border-gold-500/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1612,11 +1689,11 @@ export const GallerySection: React.FC = () => {
               {/* Main Image Frame with Prev/Next Controls */}
               <div className="relative aspect-[4/5] sm:aspect-[16/11] w-full bg-black flex items-center justify-center overflow-hidden">
                 <Image
-                  src={getOptimizedImageUrl(currentPhoto.src, 2400)}
-                  alt={currentPhoto.alt}
+                  src={getOptimizedImageUrl(currentPhoto.src, 1800)}
+                  alt={currentPhoto.alt || currentPhoto.title || "Kỷ niệm lễ tốt nghiệp"}
                   fill
                   sizes="100vw"
-                  quality={100}
+                  quality={85}
                   className="object-contain"
                   priority
                   onError={() => handleImageError(currentPhoto.src)}
@@ -1626,14 +1703,18 @@ export const GallerySection: React.FC = () => {
                 {/* Left/Right Arrow Navigation */}
                 <button
                   onClick={handlePrev}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-all backdrop-blur-md border border-gold-500/30 active:scale-95 touch-manipulation"
+                  aria-label="Xem ảnh trước (Phím mũi tên trái)"
+                  title="Ảnh trước (←)"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-all backdrop-blur-md border border-gold-500/30 active:scale-95 touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
 
                 <button
                   onClick={handleNext}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-all backdrop-blur-md border border-gold-500/30 active:scale-95 touch-manipulation"
+                  aria-label="Xem ảnh kế tiếp (Phím mũi tên phải)"
+                  title="Ảnh sau (→)"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-all backdrop-blur-md border border-gold-500/30 active:scale-95 touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
                 >
                   <ChevronRight className="w-6 h-6" />
                 </button>

@@ -9,13 +9,13 @@ export const MobileNav: React.FC = () => {
   const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState("hero");
 
-  const navItems = [
+  const navItems = React.useMemo(() => [
     { id: "hero", label: t.nav.home, icon: Home },
     { id: "invitation", label: t.nav.invitation, icon: BookHeart },
     { id: "details", label: t.nav.details, icon: CalendarDays },
     { id: "gallery", label: t.nav.gallery, icon: ImageIcon },
     { id: "rsvp", label: t.nav.rsvp, icon: Send },
-  ];
+  ], [t.nav.home, t.nav.invitation, t.nav.details, t.nav.gallery, t.nav.rsvp]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -34,7 +34,7 @@ export const MobileNav: React.FC = () => {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [t]);
+  }, [navItems]);
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -59,7 +59,9 @@ export const MobileNav: React.FC = () => {
             <button
               key={item.id}
               onClick={() => scrollTo(item.id)}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-full transition-all duration-300 active:scale-90 touch-manipulation cursor-pointer relative ${
+              aria-label={item.label}
+              title={item.label}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-full transition-all duration-300 active:scale-90 touch-manipulation cursor-pointer relative focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-gold-500 ${
                 isActive ? "text-gold-200 font-semibold" : "text-ivory-100/60 hover:text-ivory-100"
               }`}
             >

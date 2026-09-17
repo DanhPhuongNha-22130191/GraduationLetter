@@ -42,6 +42,7 @@ const config: Config = {
       fontFamily: {
         serif: ["var(--font-serif)", "Playfair Display", "Cormorant Garamond", "serif"],
         sans: ["var(--font-sans)", "Be Vietnam Pro", "Inter", "sans-serif"],
+        khmer: ["var(--font-khmer)", "Kantumruy Pro", "sans-serif"],
       },
       backgroundImage: {
         'gold-gradient': 'linear-gradient(135deg, #C9A96E 0%, #F4E7CE 50%, #8A682F 100%)',

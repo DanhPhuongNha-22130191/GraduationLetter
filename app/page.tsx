@@ -18,12 +18,14 @@ import { MusicToggle } from "@/components/music-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { EnvelopeOverlay } from "@/components/envelope-overlay";
 import { BackToEnvelopeButton } from "@/components/back-to-envelope-button";
+import { pauseBackgroundMusic } from "@/components/music-toggle";
 
 export default function Home() {
   const [isEnvelopeOpen, setIsEnvelopeOpen] = React.useState(false);
 
   const handleCloseEnvelope = React.useCallback(() => {
     setIsEnvelopeOpen(false);
+    pauseBackgroundMusic();
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "auto" });
     }

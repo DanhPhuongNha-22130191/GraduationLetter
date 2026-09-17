@@ -43,6 +43,21 @@
     margin: 0;
     padding: 0;
   }
+
+  html[lang="km"] {
+    font-family: var(--font-khmer), 'Kantumruy Pro', sans-serif;
+  }
+
+  html[lang="km"] .font-serif,
+  html[lang="km"] .font-sans {
+    font-family: var(--font-khmer), 'Kantumruy Pro', sans-serif !important;
+    line-height: 1.65;
+  }
+}
+
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Custom Utilities for High-end Invitation Look */

@@ -51,19 +51,19 @@ export const InvitationSection: React.FC = () => {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="my-5 py-3.5 px-6 rounded-2xl bg-gold-500/10 border border-gold-500/30 relative overflow-hidden"
+              className="my-5 py-3.5 px-4 sm:px-6 rounded-2xl bg-gold-500/10 border border-gold-500/30 relative overflow-hidden"
             >
               <span className="block text-[11px] sm:text-xs font-sans uppercase tracking-[0.2em] text-gold-200 font-semibold mb-1">
                 ✦ {getGreetingPrefix(lang).toUpperCase()} ✦
               </span>
-              <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-gold-200 italic">
+              <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-gold-200 italic break-words overflow-wrap-anywhere">
                 {guestName}
               </h3>
             </motion.div>
           )}
 
           {/* Graceful Legible Typography */}
-          <div className="space-y-5 text-base sm:text-lg text-ivory-100/90 leading-relaxed font-serif px-2 sm:px-4 tracking-wide relative z-10 text-justify sm:text-center">
+          <div className="space-y-5 text-base sm:text-lg text-ivory-100/90 leading-relaxed font-serif px-2 sm:px-4 tracking-normal relative z-10 text-center max-w-xl mx-auto">
             <p className="first-letter:text-3xl sm:first-letter:text-4xl first-letter:font-serif first-letter:font-bold first-letter:text-gold-200 first-letter:mr-1">
               {lang === "vi" ? (
                 hasCustomGuest ? (

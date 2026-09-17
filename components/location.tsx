@@ -75,7 +75,8 @@ export const LocationSection: React.FC = () => {
               href={graduationConfig.mapUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto px-9 py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-sm tracking-wider uppercase hover:brightness-105 shadow-gold-glow transition-all flex items-center justify-center gap-2 border border-gold-200/50 active:scale-95 touch-manipulation cursor-pointer"
+              aria-label={t.location.viewMap}
+              className="w-full sm:w-auto px-9 py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-sm tracking-wider uppercase hover:brightness-105 shadow-gold-glow transition-all flex items-center justify-center gap-2 border border-gold-200/50 active:scale-95 touch-manipulation cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
             >
               <Navigation className="w-4 h-4 fill-emerald-950" />
               <span>{t.location.viewMap}</span>

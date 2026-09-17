@@ -23,6 +23,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const savedLang = localStorage.getItem("graduation_lang") as Language;
       if (savedLang && (savedLang === "vi" || savedLang === "en" || savedLang === "km")) {
         setLangState(savedLang);
+        if (typeof document !== "undefined") {
+          document.documentElement.lang = savedLang;
+        }
       }
     } catch (e) {
       console.warn("Could not load saved language:", e);
@@ -31,6 +34,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const setLang = (newLang: Language) => {
     setLangState(newLang);
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = newLang;
+    }
     try {
       localStorage.setItem("graduation_lang", newLang);
     } catch (e) {

@@ -156,14 +156,15 @@ export const ParticleCanvas: React.FC<ParticleCanvasProps> = ({
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("touchmove", handleTouchMove);
 
-    // Number of particles (balanced for high performance 60fps on mobile & desktop)
-    const totalCount = isMobile ? 28 : 48;
+    // Reduced motion & mobile detection
+    const prefersReducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const totalCount = prefersReducedMotion ? 8 : (isMobile ? 22 : 40);
     const particles: Particle[] = [];
     const lightDroplets: LightDroplet[] = [];
     const gradCaps: GradCap[] = [];
 
     // Initialize Graduation Caps grouped in pairs (2 per opacity tier) with inverse size-to-clarity scaling
-    const capCount = isMobile ? 5 : 6;
+    const capCount = prefersReducedMotion ? 2 : (isMobile ? 4 : 5);
     const themes: ("royal-gold" | "rose-gold" | "emerald-gold" | "crimson-phoenix" | "platinum-silver" | "midnight-violet" | "sunfire-orange")[] = [
       "royal-gold", "rose-gold", "emerald-gold", "crimson-phoenix", "platinum-silver", "midnight-violet", "sunfire-orange", "royal-gold", "rose-gold", "emerald-gold"
     ];
@@ -745,10 +746,23 @@ export const ParticleCanvas: React.FC<ParticleCanvasProps> = ({
 
     render();
 
+    let isRunning = true;
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        isRunning = false;
+        cancelAnimationFrame(animationFrameId);
+      } else if (!isRunning) {
+        isRunning = true;
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
