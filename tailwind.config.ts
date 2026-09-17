@@ -10,18 +10,29 @@ const config: Config = {
     extend: {
       colors: {
         emerald: {
+          950: "#0B2A22",
+          900: "#123C32",
+          700: "#1F5A46",
+          400: "#6F8F7A",
           deep: "#123C32",
           DEFAULT: "#1F5A46",
           soft: "#6F8F7A",
           light: "#E3ECE6",
         },
         gold: {
+          700: "#8A682F",
+          600: "#A88345",
+          500: "#C9A96E",
+          200: "#E8D5B5",
           DEFAULT: "#C9A96E",
           light: "#E8D5B5",
-          dark: "#9E7B3B",
+          dark: "#8A682F",
           shimmer: "#F4E7CE",
         },
         ivory: {
+          50: "#FCFAF4",
+          100: "#F8F5EC",
+          200: "#EFE9DA",
           DEFAULT: "#F8F5EC",
           light: "#FCFAF4",
           card: "#FAF8F2",
@@ -33,14 +44,16 @@ const config: Config = {
         sans: ["var(--font-sans)", "Be Vietnam Pro", "Inter", "sans-serif"],
       },
       backgroundImage: {
-        'gold-gradient': 'linear-gradient(135deg, #C9A96E 0%, #F4E7CE 50%, #9E7B3B 100%)',
-        'gold-subtle': 'linear-gradient(135deg, rgba(201,169,110,0.15) 0%, rgba(244,231,206,0.05) 100%)',
-        'emerald-gradient': 'linear-gradient(180deg, #123C32 0%, #1F5A46 100%)',
+        'gold-gradient': 'linear-gradient(135deg, #C9A96E 0%, #F4E7CE 50%, #8A682F 100%)',
+        'gold-subtle': 'linear-gradient(135deg, rgba(201,169,110,0.12) 0%, rgba(244,231,206,0.04) 100%)',
+        'emerald-gradient': 'linear-gradient(180deg, #0B2A22 0%, #123C32 50%, #1F5A46 100%)',
       },
       boxShadow: {
-        'invitation': '0 10px 40px -10px rgba(18, 60, 50, 0.12), 0 0 1px 1px rgba(201, 169, 110, 0.25)',
-        'card-glow': '0 8px 30px rgba(18, 60, 50, 0.08)',
-        'gold-glow': '0 0 20px rgba(201, 169, 110, 0.3)',
+        'invitation': '0 12px 40px -12px rgba(11, 42, 34, 0.1), 0 0 0 1px rgba(201, 169, 110, 0.25)',
+        'card-soft': '0 10px 30px -10px rgba(11, 42, 34, 0.08)',
+        'card-glow': '0 8px 30px rgba(18, 60, 50, 0.06)',
+        'gold-glow': '0 0 20px rgba(201, 169, 110, 0.18)',
+        'gold-subtle': '0 4px 14px rgba(138, 104, 47, 0.12)',
       },
       keyframes: {
         shimmer: {

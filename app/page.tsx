@@ -25,7 +25,7 @@ export default function Home() {
   const handleCloseEnvelope = React.useCallback(() => {
     setIsEnvelopeOpen(false);
     if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "instant" });
+      window.scrollTo({ top: 0, behavior: "auto" });
     }
   }, []);
 

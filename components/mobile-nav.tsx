@@ -49,7 +49,7 @@ export const MobileNav: React.FC = () => {
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.8 }}
-        className="glass-emerald-card border border-gold/40 rounded-full px-2 sm:px-3 py-2 shadow-2xl flex items-center justify-around"
+        className="bg-emerald-950/90 backdrop-blur-md border border-gold-500/30 rounded-full px-2 sm:px-3 py-1.5 shadow-soft-xl flex items-center justify-around"
       >
         {navItems.map((item) => {
           const IconComp = item.icon;
@@ -60,17 +60,17 @@ export const MobileNav: React.FC = () => {
               key={item.id}
               onClick={() => scrollTo(item.id)}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-full transition-all duration-300 active:scale-90 touch-manipulation cursor-pointer relative ${
-                isActive ? "text-gold font-bold" : "text-ivory/70 hover:text-ivory"
+                isActive ? "text-gold-200 font-semibold" : "text-ivory-100/60 hover:text-ivory-100"
               }`}
             >
-              <IconComp className={`w-4 h-4 transition-transform ${isActive ? "scale-110 text-gold drop-shadow-md" : ""}`} />
+              <IconComp className={`w-4 h-4 transition-transform ${isActive ? "scale-110 text-gold-200" : ""}`} />
               <span className="text-[9px] sm:text-[10px] font-sans mt-0.5 tracking-tight font-medium">
                 {item.label}
               </span>
               {isActive && (
                 <motion.div
                   layoutId="activeIndicator"
-                  className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-gold shadow-gold-glow"
+                  className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-gold-500 shadow-soft-xs"
                   transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 />
               )}

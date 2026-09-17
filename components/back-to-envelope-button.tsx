@@ -26,9 +26,9 @@ export const BackToEnvelopeButton: React.FC<BackToEnvelopeButtonProps> = ({ isVi
           onClick={onClick}
           aria-label={t.nav.backToEnvelope}
           title={t.nav.backToEnvelope}
-          className="fixed top-4 left-[60px] sm:left-[62px] z-40 w-10 h-10 rounded-full flex items-center justify-center bg-emerald-deep/90 text-gold border border-gold/45 hover:border-gold hover:bg-gold/20 shadow-lg backdrop-blur-md transition-all duration-300 active:scale-95 touch-manipulation cursor-pointer group"
+          className="fixed top-4 left-[60px] sm:left-[62px] z-40 w-10 h-10 rounded-full flex items-center justify-center bg-emerald-950/90 text-gold-200 border border-gold-500/30 hover:border-gold-500 hover:bg-gold-500/15 shadow-soft-sm backdrop-blur-md transition-all active:scale-95 touch-manipulation cursor-pointer group"
         >
-          <ArrowLeft className="w-5 h-5 text-gold group-hover:-translate-x-0.5 transition-transform" />
+          <ArrowLeft className="w-4.5 h-4.5 text-gold-200 group-hover:-translate-x-0.5 transition-transform" />
         </motion.button>
       )}
     </AnimatePresence>

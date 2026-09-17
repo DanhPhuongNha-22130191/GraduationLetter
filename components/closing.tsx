@@ -36,8 +36,8 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
   };
 
   return (
-    <footer id="closing" className="relative bg-emerald-deep text-ivory pt-16 pb-28 sm:pb-16 px-4 overflow-hidden border-t border-gold/30">
-      <div className="absolute inset-0 gold-radial-glow opacity-30 pointer-events-none" />
+    <footer id="closing" className="relative bg-emerald-950 text-ivory-50 pt-16 pb-28 sm:pb-16 px-4 overflow-hidden border-t border-gold-500/25">
+      <div className="absolute inset-0 bg-radial from-gold-500/10 via-transparent to-transparent opacity-30 pointer-events-none" />
 
       <div className="w-full max-w-lg mx-auto text-center space-y-8 relative z-10">
         <motion.div
@@ -45,32 +45,28 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="glass-emerald-card rounded-3xl p-6 sm:p-9 shadow-2xl relative overflow-hidden"
+          className="glass-emerald-card rounded-3xl p-6 sm:p-9 shadow-soft-xl relative overflow-hidden"
         >
-          <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
-          <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
-          <div className="absolute bottom-3 left-3 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
-          <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
+          {/* Subtle inner hairline border */}
+          <div className="absolute inset-2.5 rounded-2xl border border-gold-500/15 pointer-events-none" />
 
-          <span className="text-gold font-sans text-xs uppercase tracking-[0.3em] font-semibold block mb-2 flex items-center justify-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-gold animate-pulse" />
-            <span>EXPRESSION OF GRATITUDE</span>
-            <Sparkles className="w-3.5 h-3.5 text-gold animate-pulse" />
+          <span className="text-gold-200 font-sans text-xs uppercase tracking-[0.25em] font-semibold block mb-1">
+            EXPRESSION OF GRATITUDE
           </span>
 
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-widest text-gold-shimmer mb-2 uppercase drop-shadow-md">
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-widest text-gold-200 mb-2 uppercase">
             {t.closing.thankYou}
           </h2>
 
-          <AnimatedFlourishDivider className="my-3" />
+          <AnimatedFlourishDivider className="my-2.5 text-gold-500/60" />
 
-          <p className="font-serif italic text-sm sm:text-base text-ivory/95 leading-relaxed max-w-xs mx-auto mb-6">
+          <p className="font-serif italic text-sm sm:text-base text-ivory-100/90 leading-relaxed max-w-xs mx-auto mb-6">
             &ldquo;{t.closing.message}&rdquo;
           </p>
 
           {/* Academic Profile Card with University Crest Logo */}
-          <div className="my-6 p-4 rounded-2xl bg-emerald-deep/90 border border-gold/30 flex flex-col items-center gap-2 shadow-inner">
-            <div className="relative w-14 h-14 rounded-full overflow-hidden bg-white p-1 border-2 border-gold shadow-md flex items-center justify-center animate-float-slow">
+          <div className="my-6 p-4 rounded-2xl bg-emerald-900/60 border border-gold-500/25 flex flex-col items-center gap-2">
+            <div className="relative w-14 h-14 rounded-full overflow-hidden bg-white p-1 border-2 border-gold-500 shadow-soft-xs flex items-center justify-center">
               <Image
                 src={graduationConfig.universityLogoUrl}
                 alt={graduationConfig.university}
@@ -78,10 +74,10 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
                 className="object-contain p-0.5"
               />
             </div>
-            <span className="font-serif font-bold text-sm text-gold-light tracking-wide uppercase mt-1">
+            <span className="font-serif font-bold text-sm text-gold-200 tracking-wide uppercase mt-1">
               {graduationConfig.university}
             </span>
-            <span className="font-sans text-xs text-ivory/80 font-medium">
+            <span className="font-sans text-xs text-ivory-100/75 font-medium">
               {graduationConfig.faculty} · Lớp {graduationConfig.classCode}
             </span>
           </div>
@@ -90,7 +86,7 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
           <div className="flex flex-wrap items-center justify-center gap-3 my-6">
             <a
               href={`tel:${graduationConfig.phone.replace(/\s+/g, "")}`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold/15 hover:bg-gold/30 border border-gold/40 text-xs font-sans text-gold font-semibold transition-all active:scale-95 touch-manipulation shadow-sm"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 text-xs font-sans text-gold-200 font-semibold transition-all active:scale-95 touch-manipulation shadow-soft-xs"
             >
               <Phone className="w-3.5 h-3.5 stroke-[2]" />
               <span>{graduationConfig.phone}</span>
@@ -98,7 +94,7 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
 
             <a
               href={`mailto:${graduationConfig.email}`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold/15 hover:bg-gold/30 border border-gold/40 text-xs font-sans text-gold font-semibold transition-all active:scale-95 touch-manipulation shadow-sm"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 text-xs font-sans text-gold-200 font-semibold transition-all active:scale-95 touch-manipulation shadow-soft-xs"
             >
               <Mail className="w-3.5 h-3.5 stroke-[2]" />
               <span>{graduationConfig.email}</span>
@@ -106,11 +102,11 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
 
             <button
               onClick={handleShare}
-              className="w-full py-4 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-sm tracking-wider uppercase hover:brightness-110 transition-all flex items-center justify-center gap-2 border border-ivory/60 active:scale-95 touch-manipulation cursor-pointer shadow-gold-glow shimmer-gold"
+              className="w-full py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-sm tracking-wider uppercase hover:brightness-105 transition-all flex items-center justify-center gap-2 border border-gold-200/50 active:scale-95 touch-manipulation cursor-pointer shadow-gold-glow"
             >
               {copiedLink ? (
                 <>
-                  <Check className="w-4 h-4 text-emerald-deep stroke-[2]" />
+                  <Check className="w-4 h-4 text-emerald-950 stroke-[2]" />
                   <span>Đã sao chép liên kết thư mời!</span>
                 </>
               ) : (
@@ -124,29 +120,29 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
             {onReopenEnvelope && (
               <button
                 onClick={onReopenEnvelope}
-                className="w-full py-3.5 px-4 rounded-full bg-gold/15 hover:bg-gold/25 border border-gold/45 text-xs font-serif font-bold text-gold uppercase tracking-widest hover:text-gold-light transition-all flex items-center justify-center gap-2 active:scale-95 touch-manipulation cursor-pointer shadow-sm group"
+                className="w-full py-3 px-4 rounded-full bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/35 text-xs font-serif font-semibold text-gold-200 uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 touch-manipulation cursor-pointer shadow-soft-xs group"
               >
-                <ArrowLeft className="w-4 h-4 text-gold group-hover:-translate-x-1 transition-transform" />
+                <ArrowLeft className="w-4 h-4 text-gold-500 group-hover:-translate-x-1 transition-transform" />
                 <span>{t.nav.backToEnvelope}</span>
               </button>
             )}
           </div>
 
-          <div className="pt-4 border-t border-gold/20 flex flex-col items-center">
-            <span className="font-serif italic text-2xl font-bold text-ivory mb-1">
+          <div className="pt-4 border-t border-gold-500/20 flex flex-col items-center">
+            <span className="font-serif italic text-2xl font-bold text-ivory-50 mb-1">
               {graduationConfig.name}
             </span>
-            <span className="font-sans text-[11px] text-gold uppercase tracking-[0.25em] font-semibold">
+            <span className="font-sans text-[11px] text-emerald-400 uppercase tracking-[0.25em] font-semibold">
               {t.closing.periodLabel}
             </span>
           </div>
         </motion.div>
 
-        <div className="text-center space-y-1 font-sans text-xs text-ivory/60">
-          <p className="font-bold tracking-wider text-gold-light uppercase text-xs">
+        <div className="text-center space-y-1 font-sans text-xs text-ivory-100/60">
+          <p className="font-semibold tracking-wider text-gold-200 uppercase text-xs">
             {graduationConfig.name} — IT CLASS OF {graduationConfig.year}
           </p>
-          <p className="text-[11px] flex items-center justify-center gap-1.5 mt-2 text-ivory/70 font-medium">
+          <p className="text-[11px] flex items-center justify-center gap-1.5 mt-2 text-ivory-100/70 font-medium">
             <span>{t.closing.madeWith}</span>
             <Heart className="w-3.5 h-3.5 text-red-400 fill-red-400 animate-pulse" />
           </p>

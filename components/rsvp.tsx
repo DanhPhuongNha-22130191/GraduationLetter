@@ -185,7 +185,7 @@ export const RsvpSection: React.FC = () => {
   };
 
   return (
-    <section id="rsvp" className="py-16 sm:py-24 px-4 bg-ivory text-emerald-deep relative overflow-hidden">
+    <section id="rsvp" className="py-16 sm:py-24 px-4 bg-ivory-100 text-charcoal relative overflow-hidden">
       <div className="w-full max-w-lg mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -194,29 +194,27 @@ export const RsvpSection: React.FC = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-8"
         >
-          <span className="text-gold-dark font-sans text-xs uppercase tracking-[0.35em] font-semibold block mb-2 flex items-center justify-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-gold" />
-            <span>{t.rsvp.eyebrow}</span>
-            <Sparkles className="w-3.5 h-3.5 text-gold" />
+          <span className="text-gold-700 font-sans text-xs uppercase tracking-[0.25em] font-semibold block mb-1">
+            {t.rsvp.eyebrow}
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-emerald-deep">
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-emerald-950">
             {t.rsvp.title}
           </h2>
-          <p className="font-sans text-xs sm:text-sm text-charcoal/80 mt-2 max-w-xs mx-auto font-medium">
+          <p className="font-sans text-xs sm:text-sm text-charcoal/75 mt-2 max-w-xs mx-auto font-medium">
             {t.rsvp.subtitle}
           </p>
-          <div className="w-16 h-0.5 bg-gold-gradient mx-auto mt-3 rounded-full" />
+          <div className="w-12 h-0.5 bg-gold-500 mx-auto mt-3 rounded-full" />
         </motion.div>
 
-        {/* Glassmorphic RSVP Container */}
+        {/* Refined RSVP Container */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="glass-gold-card rounded-3xl p-6 sm:p-9 border border-gold/40 shadow-2xl relative overflow-hidden"
+          className="bg-white rounded-3xl p-6 sm:p-9 border border-gold-500/25 shadow-soft-xl relative overflow-hidden"
         >
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gold-gradient" />
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gold-gradient" />
 
           <AnimatePresence mode="wait">
             {submitted ? (
@@ -226,18 +224,18 @@ export const RsvpSection: React.FC = () => {
                 exit={{ opacity: 0 }}
                 className="text-center py-8 space-y-4"
               >
-                <div className="w-16 h-16 rounded-full bg-emerald-deep text-gold flex items-center justify-center mx-auto border-2 border-gold shadow-gold-glow">
-                  <CheckCircle2 className="w-9 h-9 stroke-[2]" />
+                <div className="w-14 h-14 rounded-full bg-emerald-950 text-gold-200 flex items-center justify-center mx-auto border-2 border-gold-500/40 shadow-soft-md">
+                  <CheckCircle2 className="w-8 h-8 stroke-[2]" />
                 </div>
-                <h3 className="font-serif text-2xl font-bold text-emerald-deep">
+                <h3 className="font-serif text-2xl font-bold text-emerald-950">
                   {t.rsvp.successTitle}
                 </h3>
-                <p className="font-sans text-xs sm:text-sm text-charcoal/80 leading-relaxed max-w-xs mx-auto font-medium">
+                <p className="font-sans text-xs sm:text-sm text-charcoal/80 leading-relaxed max-w-xs mx-auto">
                   {t.rsvp.successDesc}
                 </p>
                 <button
                   onClick={handleReset}
-                  className="mt-4 px-8 py-3 rounded-full border border-gold bg-gold-gradient text-emerald-deep font-sans text-xs font-bold uppercase tracking-wider hover:brightness-110 transition-all shadow-gold-glow active:scale-95 touch-manipulation cursor-pointer"
+                  className="mt-4 px-8 py-3 rounded-full border border-gold-200/50 bg-gold-gradient text-emerald-950 font-sans text-xs font-bold uppercase tracking-wider hover:brightness-105 transition-all shadow-gold-glow active:scale-95 touch-manipulation cursor-pointer"
                 >
                   {t.rsvp.resetBtn}
                 </button>
@@ -245,8 +243,8 @@ export const RsvpSection: React.FC = () => {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label htmlFor="inputName" className="block text-xs font-sans font-bold uppercase tracking-wider text-emerald-deep mb-2 flex items-center gap-1.5">
-                    <User className="w-4 h-4 text-gold-dark" />
+                  <label htmlFor="inputName" className="block text-xs font-sans font-semibold uppercase tracking-wider text-emerald-950 mb-2 flex items-center gap-1.5">
+                    <User className="w-4 h-4 text-gold-700" />
                     <span>{t.rsvp.nameLabel}</span>
                   </label>
                   <input
@@ -256,13 +254,13 @@ export const RsvpSection: React.FC = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder={t.rsvp.namePlaceholder}
-                    className="w-full h-12 px-4 rounded-xl border border-gold/40 bg-white/70 font-sans text-sm text-charcoal focus:bg-white focus:border-gold focus:ring-2 focus:ring-gold/20 outline-none transition-all"
+                    className="w-full h-12 px-4 rounded-xl border border-gold-500/25 bg-ivory-50/70 font-sans text-base sm:text-sm text-charcoal focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="inputPhone" className="block text-xs font-sans font-bold uppercase tracking-wider text-emerald-deep mb-2 flex items-center gap-1.5">
-                    <Phone className="w-4 h-4 text-gold-dark" />
+                  <label htmlFor="inputPhone" className="block text-xs font-sans font-semibold uppercase tracking-wider text-emerald-950 mb-2 flex items-center gap-1.5">
+                    <Phone className="w-4 h-4 text-gold-700" />
                     <span>{t.rsvp.phoneLabel}</span>
                   </label>
                   <input
@@ -271,12 +269,12 @@ export const RsvpSection: React.FC = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder={t.rsvp.phonePlaceholder}
-                    className="w-full h-12 px-4 rounded-xl border border-gold/40 bg-white/70 font-sans text-sm text-charcoal focus:bg-white focus:border-gold focus:ring-2 focus:ring-gold/20 outline-none transition-all"
+                    className="w-full h-12 px-4 rounded-xl border border-gold-500/25 bg-ivory-50/70 font-sans text-base sm:text-sm text-charcoal focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-sans font-bold uppercase tracking-wider text-emerald-deep mb-2">
+                  <label className="block text-xs font-sans font-semibold uppercase tracking-wider text-emerald-950 mb-2">
                     {t.rsvp.attendLabel}
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -285,8 +283,8 @@ export const RsvpSection: React.FC = () => {
                       onClick={() => setAttending("yes")}
                       className={`h-12 px-4 rounded-xl font-sans text-xs sm:text-sm font-semibold border transition-all flex items-center justify-center gap-2 active:scale-95 touch-manipulation cursor-pointer ${
                         attending === "yes"
-                          ? "bg-emerald-deep text-gold border-gold shadow-md"
-                          : "bg-white/60 text-charcoal border-gold/30 hover:border-gold"
+                          ? "bg-emerald-900 text-gold-200 border-emerald-900 shadow-soft-sm"
+                          : "bg-ivory-50 text-charcoal border-gold-500/20 hover:border-gold-500/40"
                       }`}
                     >
                       <span>{t.rsvp.attendYes}</span>
@@ -297,8 +295,8 @@ export const RsvpSection: React.FC = () => {
                       onClick={() => setAttending("no")}
                       className={`h-12 px-4 rounded-xl font-sans text-xs sm:text-sm font-semibold border transition-all flex items-center justify-center gap-2 active:scale-95 touch-manipulation cursor-pointer ${
                         attending === "no"
-                          ? "bg-emerald-deep text-gold border-gold shadow-md"
-                          : "bg-white/60 text-charcoal border-gold/30 hover:border-gold"
+                          ? "bg-emerald-900 text-gold-200 border-emerald-900 shadow-soft-sm"
+                          : "bg-ivory-50 text-charcoal border-gold-500/20 hover:border-gold-500/40"
                       }`}
                     >
                       <span>{t.rsvp.attendNo}</span>
@@ -313,25 +311,25 @@ export const RsvpSection: React.FC = () => {
                     exit={{ opacity: 0, height: 0 }}
                     className="space-y-2 pt-1"
                   >
-                    <label className="block text-xs font-sans font-bold uppercase tracking-wider text-emerald-deep">
+                    <label className="block text-xs font-sans font-semibold uppercase tracking-wider text-emerald-950">
                       {t.rsvp.guestLabel}
                     </label>
-                    <div className="flex items-center justify-between p-2 rounded-xl bg-white/70 border border-gold/40">
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-ivory-50 border border-gold-500/25">
                       <button
                         type="button"
                         onClick={() => handleGuestChange(-1)}
-                        className="w-10 h-10 rounded-lg bg-ivory border border-gold/40 flex items-center justify-center text-emerald-deep hover:bg-gold/15 transition-colors active:scale-95 touch-manipulation cursor-pointer"
+                        className="w-10 h-10 rounded-lg bg-white border border-gold-500/30 flex items-center justify-center text-emerald-950 hover:bg-gold-500/10 transition-colors active:scale-95 touch-manipulation cursor-pointer"
                         aria-label="Decrease guests"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
-                      <div className="text-center font-serif text-xl font-bold text-emerald-deep px-4">
+                      <div className="text-center font-serif text-xl font-bold text-emerald-950 px-4">
                         {guestCount} <span className="text-xs font-sans font-normal text-charcoal/70">{t.rsvp.guestUnit}</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleGuestChange(1)}
-                        className="w-10 h-10 rounded-lg bg-ivory border border-gold/40 flex items-center justify-center text-emerald-deep hover:bg-gold/15 transition-colors active:scale-95 touch-manipulation cursor-pointer"
+                        className="w-10 h-10 rounded-lg bg-white border border-gold-500/30 flex items-center justify-center text-emerald-950 hover:bg-gold-500/10 transition-colors active:scale-95 touch-manipulation cursor-pointer"
                         aria-label="Increase guests"
                       >
                         <Plus className="w-4 h-4" />
@@ -341,8 +339,8 @@ export const RsvpSection: React.FC = () => {
                 )}
 
                 <div>
-                  <label htmlFor="inputMessage" className="block text-xs font-sans font-bold uppercase tracking-wider text-emerald-deep mb-2 flex items-center gap-1.5">
-                    <MessageSquare className="w-4 h-4 text-gold-dark" />
+                  <label htmlFor="inputMessage" className="block text-xs font-sans font-semibold uppercase tracking-wider text-emerald-950 mb-2 flex items-center gap-1.5">
+                    <MessageSquare className="w-4 h-4 text-gold-700" />
                     <span>{t.rsvp.messageLabel}</span>
                   </label>
                   <textarea
@@ -351,14 +349,14 @@ export const RsvpSection: React.FC = () => {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder={t.rsvp.messagePlaceholder}
-                    className="w-full p-4 rounded-xl border border-gold/40 bg-white/70 font-sans text-sm text-charcoal focus:bg-white focus:border-gold focus:ring-2 focus:ring-gold/20 outline-none transition-all resize-none"
+                    className="w-full p-4 rounded-xl border border-gold-500/25 bg-ivory-50/70 font-sans text-base sm:text-sm text-charcoal focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all resize-none"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-4 rounded-full bg-gold-gradient text-emerald-deep font-sans text-sm font-bold tracking-widest uppercase hover:brightness-110 transition-all duration-300 shadow-gold-glow flex items-center justify-center gap-2 border border-ivory/60 active:scale-95 touch-manipulation cursor-pointer disabled:opacity-70 shimmer-gold"
+                  className="w-full py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans text-sm font-bold tracking-wider uppercase hover:brightness-105 transition-all shadow-gold-glow flex items-center justify-center gap-2 border border-gold-200/50 active:scale-95 touch-manipulation cursor-pointer disabled:opacity-70"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center gap-2 font-sans text-xs font-bold">
@@ -381,15 +379,15 @@ export const RsvpSection: React.FC = () => {
         {/* Live Wishes Preview Wall */}
         {wishes.length > 0 && (
           <div className="mt-10 space-y-3">
-            <h4 className="font-serif text-sm font-bold uppercase tracking-widest text-emerald-deep text-center flex items-center justify-center gap-2">
-              <Heart className="w-3.5 h-3.5 text-gold fill-gold" />
+            <h4 className="font-serif text-xs font-bold uppercase tracking-widest text-gold-700 text-center flex items-center justify-center gap-2">
+              <Heart className="w-3.5 h-3.5 text-gold-600 fill-gold-600" />
               <span>LỜI CHÚC TỪ NGƯỜI THÂN YÊU</span>
-              <Heart className="w-3.5 h-3.5 text-gold fill-gold" />
+              <Heart className="w-3.5 h-3.5 text-gold-600 fill-gold-600" />
             </h4>
             <div className="space-y-2">
               {wishes.map((w, i) => (
-                <div key={i} className="p-3.5 rounded-xl bg-white/90 border border-gold/30 text-xs font-sans shadow-sm">
-                  <div className="flex items-center justify-between font-semibold text-emerald-deep mb-1">
+                <div key={i} className="p-3.5 rounded-xl bg-white border border-gold-500/20 text-xs font-sans shadow-soft-xs">
+                  <div className="flex items-center justify-between font-semibold text-emerald-950 mb-1">
                     <span>{w.name}</span>
                     <span className="text-[10px] text-charcoal/50 font-normal">{w.timestamp}</span>
                   </div>

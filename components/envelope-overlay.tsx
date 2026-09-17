@@ -70,49 +70,32 @@ const AnimatedBackground: React.FC = () => (
       />
     ))}
 
-    {/* Floating rotating botanical rings — top-left & bottom-right */}
-    <motion.div
-      className="absolute top-2 left-2 w-28 h-28 sm:w-36 sm:h-36 opacity-20 text-gold"
-      animate={{ rotate: 360 }}
-      transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-    >
-      <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1">
-        <circle cx="50" cy="50" r="44" strokeDasharray="4 4" />
-        <circle cx="50" cy="50" r="38" strokeDasharray="2 6" />
-        <path d="M50 6 A44 44 0 0 1 94 50" strokeWidth="1.6" />
-        <path d="M50 94 A44 44 0 0 1 6 50" strokeWidth="1.6" />
-        <circle cx="50" cy="6"  r="3" fill="currentColor" />
-        <circle cx="94" cy="50" r="3" fill="currentColor" />
-        <circle cx="50" cy="94" r="3" fill="currentColor" />
-        <circle cx="6"  cy="50" r="3" fill="currentColor" />
-      </svg>
-    </motion.div>
-    <motion.div
-      className="absolute bottom-2 right-2 w-28 h-28 sm:w-36 sm:h-36 opacity-20 text-gold"
-      animate={{ rotate: -360 }}
-      transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
-    >
-      <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1">
-        <circle cx="50" cy="50" r="44" strokeDasharray="4 4" />
-        <circle cx="50" cy="50" r="38" strokeDasharray="2 6" />
-        <path d="M50 6 A44 44 0 0 1 94 50" strokeWidth="1.6" />
-        <path d="M50 94 A44 44 0 0 1 6 50" strokeWidth="1.6" />
-        <circle cx="50" cy="6"  r="3" fill="currentColor" />
-        <circle cx="94" cy="50" r="3" fill="currentColor" />
-        <circle cx="50" cy="94" r="3" fill="currentColor" />
-        <circle cx="6"  cy="50" r="3" fill="currentColor" />
-      </svg>
-    </motion.div>
+    {/* Floating gold bokeh orbs */}
+    {ORBS.map((orb, i) => (
+      <motion.div
+        key={i}
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          width: orb.size, height: orb.size,
+          left: orb.x, top: orb.y,
+          background: "radial-gradient(circle, rgba(201,169,110,0.14) 0%, rgba(201,169,110,0.03) 60%, transparent 80%)",
+          filter: "blur(24px)",
+          transform: "translate(-50%, -50%)",
+        }}
+        animate={{ scale: [1, 1.15, 1], opacity: [0.35, 0.7, 0.35] }}
+        transition={{ duration: 10 + i * 2, repeat: Infinity, ease: "easeInOut", delay: orb.delay }}
+      />
+    ))}
 
-    {/* Animated diagonal shimmer line */}
+    {/* Subtle diagonal shimmer line */}
     <motion.div
-      className="absolute inset-0"
+      className="absolute inset-0 pointer-events-none"
       style={{
-        background: "linear-gradient(135deg, transparent 40%, rgba(201,169,110,0.04) 50%, transparent 60%)",
+        background: "linear-gradient(135deg, transparent 40%, rgba(201,169,110,0.03) 50%, transparent 60%)",
         backgroundSize: "400% 400%",
       }}
       animate={{ backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"] }}
-      transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+      transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
     />
   </div>
 );
@@ -173,98 +156,95 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.08 }}
+          exit={{ opacity: 0, scale: 1.06 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           onClick={handleOpenEnvelope}
-          className="fixed inset-0 z-50 bg-[#0c2b24] text-ivory flex flex-col items-center justify-between p-4 sm:p-8 cursor-pointer overflow-y-auto overflow-x-hidden select-none touch-manipulation"
+          className="fixed inset-0 z-50 bg-[#0B2A22] text-ivory-50 flex flex-col items-center justify-between p-4 sm:p-8 cursor-pointer overflow-y-auto overflow-x-hidden select-none touch-manipulation"
         >
-          <div className="absolute inset-0 paper-texture opacity-30 pointer-events-none" />
+          <div className="absolute inset-0 paper-texture opacity-25 pointer-events-none" />
 
           {/* Animated background motifs */}
           <AnimatedBackground />
 
-          {/* Luxury Filigree Corner Frames */}
-          <div className="absolute top-3 left-3 sm:top-6 sm:left-6 w-16 h-16 sm:w-24 sm:h-24 pointer-events-none opacity-40 text-gold">
-            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M 0,25 C 35,25 35,0 60,0 M 0,50 C 50,50 50,0 85,0" />
-              <circle cx="25" cy="25" r="3" fill="currentColor" />
+          {/* Subtle Corner Accents */}
+          <div className="absolute top-4 left-4 sm:top-7 sm:left-7 w-12 h-12 pointer-events-none opacity-30 text-gold-500">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1">
+              <path d="M 0,20 L 0,0 L 20,0" />
             </svg>
           </div>
-          <div className="absolute top-3 right-3 sm:top-6 sm:right-6 w-16 h-16 sm:w-24 sm:h-24 pointer-events-none opacity-40 text-gold transform rotate-90">
-            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M 0,25 C 35,25 35,0 60,0 M 0,50 C 50,50 50,0 85,0" />
-              <circle cx="25" cy="25" r="3" fill="currentColor" />
+          <div className="absolute top-4 right-4 sm:top-7 sm:right-7 w-12 h-12 pointer-events-none opacity-30 text-gold-500 transform rotate-90">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1">
+              <path d="M 0,20 L 0,0 L 20,0" />
             </svg>
           </div>
 
           {/* Top Floating Crest Badge */}
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="z-10 mt-4 sm:mt-8 text-center"
+            className="z-10 mt-4 sm:mt-6 text-center"
           >
-            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full border border-gold/60 bg-emerald-deep text-[10px] sm:text-xs font-sans tracking-[0.2em] text-gold uppercase shadow-md">
-              <Sparkles className="w-3.5 h-3.5 text-gold animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/35 bg-emerald-950/80 text-[10px] sm:text-xs font-sans tracking-[0.2em] text-gold-200 uppercase backdrop-blur-md">
+              <Sparkles className="w-3 h-3 text-gold-500" />
               <span>OFFICIAL GRADUATION INVITATION</span>
-              <Sparkles className="w-3.5 h-3.5 text-gold animate-pulse" />
+              <Sparkles className="w-3 h-3 text-gold-500" />
             </div>
           </motion.div>
 
           {/* Interactive 3D Envelope Container */}
           <div className="z-10 w-full max-w-[340px] sm:max-w-md perspective-1000 my-auto py-4">
             <motion.div
-              initial={{ scale: 0.88, y: 20 }}
-              animate={isOpening ? { scale: 1.05, y: -10 } : { scale: 1, y: 0 }}
+              initial={{ scale: 0.92, y: 15 }}
+              animate={isOpening ? { scale: 1.04, y: -10 } : { scale: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="relative w-full bg-emerald-deep rounded-3xl p-5 sm:p-9 text-center border-2 border-gold/60 shadow-2xl overflow-hidden flex flex-col items-center"
+              className="relative w-full bg-emerald-950 rounded-3xl p-6 sm:p-9 text-center border border-gold-500/35 shadow-2xl overflow-hidden flex flex-col items-center"
             >
-              {/* Inner Gold Foil Dashed Frame */}
-              <div className="absolute inset-2.5 rounded-2xl border border-gold/35 pointer-events-none" />
-              <div className="absolute inset-4 rounded-xl border border-gold/45 border-dashed pointer-events-none opacity-70" />
+              {/* Refined Single Inner Hairline Border */}
+              <div className="absolute inset-3 rounded-2xl border border-gold-500/20 pointer-events-none" />
 
               {/* Gold Top Flap Accent Line */}
-              <div className="w-20 sm:w-24 h-1 bg-gold-gradient rounded-full mb-5" />
+              <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-gold-500 to-transparent rounded-full mb-6 opacity-70" />
 
-              {/* Wax Seal Button — fixed size to prevent mobile breakage */}
+              {/* Wax Seal Button */}
               <motion.div
-                animate={isOpening ? { scale: [1, 1.3, 0], rotate: [0, 15, 45] } : { scale: [1, 1.05, 1] }}
-                transition={isOpening ? { duration: 0.6 } : { repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                animate={isOpening ? { scale: [1, 1.25, 0], rotate: [0, 15, 45] } : { scale: [1, 1.04, 1] }}
+                transition={isOpening ? { duration: 0.6 } : { repeat: Infinity, duration: 4, ease: "easeInOut" }}
                 onClick={handleOpenEnvelope}
-                className="rounded-full wax-seal border-2 border-gold-light flex flex-col items-center justify-center text-ivory mb-5 cursor-pointer shadow-xl relative group touch-manipulation flex-shrink-0"
-                style={{ width: 112, height: 112 }}
+                className="rounded-full wax-seal border border-gold-200/60 flex flex-col items-center justify-center text-ivory-50 mb-5 cursor-pointer shadow-xl relative group touch-manipulation flex-shrink-0"
+                style={{ width: 104, height: 104 }}
               >
-                <div className="absolute inset-1 rounded-full border border-gold/40 pointer-events-none" />
-                <GraduationCap className="w-11 h-11 text-gold-shimmer" />
-                <span className="text-[9px] font-sans font-bold tracking-widest text-gold-shimmer uppercase mt-1">SEAL</span>
+                <div className="absolute inset-1 rounded-full border border-gold-500/30 pointer-events-none" />
+                <GraduationCap className="w-10 h-10 text-gold-200" />
+                <span className="text-[8px] font-sans font-bold tracking-widest text-gold-200 uppercase mt-0.5">SEAL</span>
               </motion.div>
 
-              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl uppercase tracking-[0.15em] sm:tracking-[0.2em] text-gold font-bold mb-2 leading-tight drop-shadow-md">
+              <h1 className="font-serif text-2xl sm:text-3xl uppercase tracking-[0.18em] text-gold-200 font-bold mb-1.5 leading-tight">
                 LỄ TỐT NGHIỆP 2026
               </h1>
 
-              <h2 className="font-serif text-xl sm:text-2xl font-medium text-ivory tracking-normal mb-3">
+              <h2 className="font-serif text-xl sm:text-2xl font-medium text-ivory-50 tracking-normal mb-3">
                 {graduationConfig.name}
               </h2>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/15 text-gold-light font-sans text-[11px] sm:text-xs tracking-wider uppercase mb-3 font-semibold border border-gold/40">
-                <Award className="w-3.5 h-3.5 text-gold" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/10 text-gold-200 font-sans text-[11px] sm:text-xs tracking-wider uppercase mb-3 font-medium border border-gold-500/30">
+                <Award className="w-3.5 h-3.5 text-gold-500" />
                 <span>{graduationConfig.major}</span>
               </div>
 
               {/* Personalized Recipient Badge on Envelope */}
               {hasCustomGuest ? (
-                <div className="w-full my-2.5 py-2.5 px-3 rounded-2xl bg-gold/15 border border-gold/45 text-center shadow-inner">
-                  <span className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold font-bold mb-0.5">
+                <div className="w-full my-2.5 py-2.5 px-3 rounded-2xl bg-white/[0.04] border border-gold-500/30 text-center">
+                  <span className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold-500 font-bold mb-0.5">
                     ✦ {getGreetingPrefix(lang).toUpperCase()} ✦
                   </span>
-                  <span className="font-serif italic text-base sm:text-lg font-bold text-ivory drop-shadow-xs line-clamp-2">
+                  <span className="font-serif text-base sm:text-lg font-bold text-ivory-50 line-clamp-2">
                     {guestName}
                   </span>
                 </div>
               ) : (
-                <div className="my-2 px-4 py-1.5 rounded-full bg-gold/15 border border-gold/30 text-center">
-                  <span className="text-xs font-sans uppercase tracking-[0.25em] text-gold font-semibold">
+                <div className="my-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-gold-500/20 text-center">
+                  <span className="text-xs font-sans uppercase tracking-[0.25em] text-gold-200 font-medium">
                     ✦ {t.invitation.guestEyebrow.toUpperCase()} ✦
                   </span>
                 </div>
@@ -272,12 +252,12 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
 
               {/* Main Interactive Button */}
               <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={handleOpenEnvelope}
-                className="w-full py-4 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-sm tracking-widest uppercase shadow-gold-glow flex items-center justify-center gap-2 border border-ivory/60 hover:brightness-110 transition-all touch-manipulation cursor-pointer shimmer-gold"
+                className="w-full mt-2 py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-xs sm:text-sm tracking-widest uppercase shadow-md flex items-center justify-center gap-2 border border-gold-200/50 hover:brightness-105 transition-all touch-manipulation cursor-pointer"
               >
-                <MailOpen className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2]" />
+                <MailOpen className="w-4 h-4 stroke-[2]" />
                 <span>{t.hero.openBtn}</span>
               </motion.button>
             </motion.div>
@@ -285,9 +265,9 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
 
           {/* Footer instruction */}
           <motion.div
-            animate={{ opacity: [0.6, 1, 0.6] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="z-10 mb-4 sm:mb-6 text-center text-gold text-[10px] sm:text-xs font-sans tracking-widest uppercase flex items-center justify-center gap-2"
+            animate={{ opacity: [0.5, 0.9, 0.5] }}
+            transition={{ repeat: Infinity, duration: 2.5 }}
+            className="z-10 mb-4 sm:mb-6 text-center text-gold-200 text-[10px] sm:text-xs font-sans tracking-widest uppercase flex items-center justify-center gap-2"
           >
             <span>✦ Chạm để mở thiệp ✦</span>
           </motion.div>

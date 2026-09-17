@@ -755,29 +755,31 @@ export const GallerySection: React.FC = () => {
       }
 
       // 4. Gửi qua Server API Route /api/photos/upload
-      try {
-        fetch("/api/photos/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            photos: uploadedUrls.map((url, i) => ({
-              name: guestName || uploaderName || "Khách mời",
-              caption: caption.trim()
-                ? `${caption.trim()}${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`
-                : "Ảnh kỷ niệm cùng Nhã",
-              category: targetCategory,
-              photoUrl: url,
-              sourceType: uploadSourceMode,
-              timestamp: new Date().toLocaleString("vi-VN"),
-              priority: parsedPriority,
-            })),
-          }),
-        }).catch(() => {});
-      } catch {
-        // ignore
+      const uploadRes = await fetch("/api/photos/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photos: uploadedUrls.map((url, i) => ({
+            name: guestName || uploaderName || "Khách mời",
+            caption: caption.trim()
+              ? `${caption.trim()}${uploadedUrls.length > 1 ? ` (#${i + 1})` : ""}`
+              : "Ảnh kỷ niệm cùng Nhã",
+            category: targetCategory,
+            photoUrl: url,
+            sourceType: uploadSourceMode,
+            timestamp: new Date().toLocaleString("vi-VN"),
+            priority: parsedPriority,
+          })),
+        }),
+      });
+
+      const uploadData = await uploadRes.json().catch(() => null);
+
+      if (!uploadRes.ok || !uploadData?.success) {
+        throw new Error(uploadData?.error || "Không thể lưu thông tin ảnh vào Google Sheets");
       }
 
-      setUploadSuccessCount(uploadedUrls.length);
+      setUploadSuccessCount(uploadData.count || uploadedUrls.length);
       setUploadSuccess(true);
       setTimeout(() => {
         setIsUploadOpen(false);
@@ -790,8 +792,9 @@ export const GallerySection: React.FC = () => {
         syncPhotos(true);
       }, 1200);
     } catch (err) {
-      console.error(err);
-      setUploadError("Có lỗi xảy ra khi lưu ảnh. Vui lòng thử lại!");
+      console.error("[Gallery Upload Error]:", err);
+      const errMsg = err instanceof Error ? err.message : "Có lỗi xảy ra khi lưu ảnh. Vui lòng thử lại!";
+      setUploadError(errMsg);
       setIsUploading(false);
     }
   };
@@ -799,7 +802,7 @@ export const GallerySection: React.FC = () => {
   const currentPhoto = selectedIndex !== null ? filteredItems[selectedIndex] : null;
 
   return (
-    <section id="gallery" className="py-16 sm:py-24 px-4 bg-ivory text-emerald-deep relative overflow-hidden">
+    <section id="gallery" className="py-16 sm:py-24 px-4 bg-ivory-50 text-charcoal relative overflow-hidden">
       <div className="w-full max-w-5xl mx-auto relative z-10">
         {/* Section Header */}
         <motion.div
@@ -809,15 +812,13 @@ export const GallerySection: React.FC = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-8"
         >
-          <span className="text-gold-dark font-sans text-xs uppercase tracking-[0.35em] font-semibold block mb-2 flex items-center justify-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-gold" />
-            <span>{t.gallery.eyebrow}</span>
-            <Sparkles className="w-3.5 h-3.5 text-gold" />
+          <span className="text-gold-700 font-sans text-xs uppercase tracking-[0.25em] font-semibold block mb-1">
+            {t.gallery.eyebrow}
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-emerald-deep">
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-emerald-950">
             {t.gallery.title}
           </h2>
-          <div className="w-16 h-0.5 bg-gold-gradient mx-auto mt-3 rounded-full" />
+          <div className="w-12 h-0.5 bg-gold-500 mx-auto mt-3 rounded-full" />
         </motion.div>
 
         {/* Action Buttons: Upload Memory Photo & Sync */}
@@ -832,7 +833,7 @@ export const GallerySection: React.FC = () => {
               handleResetUploadForm();
               setIsUploadOpen(true);
             }}
-            className="group relative px-6 py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-gold-dark via-gold to-gold-light text-emerald-deep font-sans font-bold text-xs sm:text-sm tracking-wide shadow-gold-glow hover:shadow-2xl hover:brightness-105 active:scale-98 transition-all flex items-center gap-2.5 cursor-pointer border border-gold/40 touch-manipulation"
+            className="group relative px-6 py-3 sm:py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-xs sm:text-sm tracking-wide shadow-gold-glow hover:brightness-105 active:scale-98 transition-all flex items-center gap-2.5 cursor-pointer border border-gold-200/50 touch-manipulation"
           >
             <Camera className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-12 group-hover:scale-110" />
             <span className="text-center">{t.gallery.uploadBtn}</span>
@@ -843,9 +844,9 @@ export const GallerySection: React.FC = () => {
             onClick={() => syncPhotos(true)}
             disabled={isSyncing}
             title="Đồng bộ lại kho ảnh"
-            className="p-3 sm:p-3.5 rounded-full bg-white/80 hover:bg-gold/20 text-emerald-deep border border-gold/40 shadow-xs hover:border-gold transition-all cursor-pointer active:scale-95 touch-manipulation disabled:opacity-50 flex items-center justify-center"
+            className="p-3 sm:p-3.5 rounded-full bg-white hover:bg-gold-500/10 text-emerald-950 border border-gold-500/30 shadow-soft-xs hover:border-gold-500 transition-all cursor-pointer active:scale-95 touch-manipulation disabled:opacity-50 flex items-center justify-center"
           >
-            <RotateCw className={`w-4 h-4 sm:w-4.5 sm:h-4.5 text-gold-dark ${isSyncing ? "animate-spin" : ""}`} />
+            <RotateCw className={`w-4 h-4 sm:w-4.5 sm:h-4.5 text-gold-700 ${isSyncing ? "animate-spin" : ""}`} />
           </button>
         </motion.div>
 
@@ -862,18 +863,18 @@ export const GallerySection: React.FC = () => {
                   onClick={() => setSelectedCategory(cat)}
                   className={`group relative px-4 py-2 sm:py-2.5 rounded-full font-sans text-xs font-semibold tracking-wide transition-all duration-300 active:scale-95 touch-manipulation cursor-pointer border flex items-center gap-2 ${
                     isActive
-                      ? "bg-emerald-deep text-gold border-gold shadow-md shadow-gold/20"
-                      : "bg-white/85 text-charcoal/80 border-gold/30 hover:border-gold hover:text-emerald-deep hover:bg-white shadow-xs"
+                      ? "bg-emerald-900 text-gold-200 border-emerald-900 shadow-soft-sm"
+                      : "bg-white text-charcoal border-gold-500/20 hover:border-gold-500/40 hover:text-emerald-950 hover:bg-white shadow-soft-xs"
                   }`}
                 >
                   <span>{label}</span>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full font-bold transition-colors ${
                       isActive
-                        ? "bg-gold text-emerald-deep"
+                        ? "bg-gold-500 text-emerald-950"
                         : count > 0
-                        ? "bg-gold/25 text-emerald-deep font-semibold"
-                        : "bg-charcoal/10 text-charcoal/45"
+                        ? "bg-gold-500/15 text-gold-700 font-semibold"
+                        : "bg-charcoal/10 text-charcoal/50"
                     }`}
                   >
                     {count}
@@ -890,10 +891,10 @@ export const GallerySection: React.FC = () => {
             {[1, 2, 3, 4].map((n) => (
               <div
                 key={n}
-                className="aspect-[4/5] rounded-2xl bg-emerald-deep/10 border border-gold/25 animate-pulse relative overflow-hidden flex flex-col justify-end p-3.5"
+                className="aspect-[4/5] rounded-2xl bg-emerald-900/5 border border-gold-500/20 animate-pulse relative overflow-hidden flex flex-col justify-end p-3.5"
               >
-                <div className="w-16 h-3 bg-gold/25 rounded-full mb-2" />
-                <div className="w-28 h-4 bg-gold/35 rounded-full" />
+                <div className="w-16 h-3 bg-gold-500/20 rounded-full mb-2" />
+                <div className="w-28 h-4 bg-gold-500/30 rounded-full" />
               </div>
             ))}
           </div>
@@ -901,12 +902,12 @@ export const GallerySection: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-md mx-auto p-8 rounded-3xl bg-emerald-deep/5 border-2 border-dashed border-gold/40 text-center space-y-4 shadow-sm"
+            className="max-w-md mx-auto p-8 rounded-3xl bg-white border border-gold-500/25 text-center space-y-4 shadow-soft-sm"
           >
-            <div className="w-16 h-16 rounded-full bg-gold/15 text-gold flex items-center justify-center mx-auto shadow-gold-glow">
+            <div className="w-16 h-16 rounded-full bg-gold-500/10 text-gold-700 flex items-center justify-center mx-auto shadow-soft-xs">
               <Camera className="w-8 h-8" />
             </div>
-            <p className="font-serif text-base sm:text-lg text-emerald-deep font-semibold">
+            <p className="font-serif text-base sm:text-lg text-emerald-950 font-semibold">
               {selectedCategory === "all"
                 ? t.gallery.emptyText
                 : `Chưa có bức ảnh nào thuộc chủ đề "${selectedCategory}".`}
@@ -930,7 +931,7 @@ export const GallerySection: React.FC = () => {
                 }
                 setIsUploadOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-xs uppercase tracking-wider shadow-gold-glow hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-xs uppercase tracking-wider shadow-gold-glow hover:brightness-105 active:scale-95 transition-all cursor-pointer"
             >
               <UploadCloud className="w-4 h-4" />
               <span>
@@ -955,7 +956,7 @@ export const GallerySection: React.FC = () => {
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ duration: 0.35, delay: localIdx * 0.04 }}
                       onClick={() => handleOpenLightbox(globalIdx)}
-                      className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer border border-gold/30 shadow-card-glow bg-emerald-deep/10 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl active:scale-98 touch-manipulation transform-gpu"
+                      className="group relative aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer border border-gold-500/20 shadow-soft-sm bg-emerald-900/5 transition-all duration-500 hover:scale-[1.02] hover:shadow-soft-xl hover:border-gold-500/40 active:scale-98 touch-manipulation transform-gpu"
                     >
                       {/* Crystal Clear High-Resolution Image */}
                       <Image
@@ -972,20 +973,20 @@ export const GallerySection: React.FC = () => {
                       />
 
                       {/* Shimmer Gold Hover Border */}
-                      <div className="absolute inset-0 border-2 border-gold/0 group-hover:border-gold/60 rounded-2xl transition-colors pointer-events-none z-10" />
+                      <div className="absolute inset-0 border border-gold-500/0 group-hover:border-gold-500/50 rounded-2xl transition-colors pointer-events-none z-10" />
 
-                      {/* Compact Bottom-Only Caption Gradient (Leaves photo 100% bright, sharp & uncovered) */}
+                      {/* Compact Bottom-Only Caption Gradient */}
                       <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex flex-col justify-end p-2.5 sm:p-3 text-ivory pointer-events-none z-10">
-                        <span className="text-[10px] font-sans uppercase tracking-widest text-gold font-bold mb-0.5 line-clamp-1 drop-shadow-md">
+                        <span className="text-[10px] font-sans uppercase tracking-widest text-gold-200 font-semibold mb-0.5 line-clamp-1 drop-shadow-md">
                           {photo.category}
                         </span>
-                        <p className="font-serif text-xs sm:text-sm font-semibold line-clamp-1 drop-shadow-md text-ivory/95">
+                        <p className="font-serif text-xs sm:text-sm font-semibold line-clamp-1 drop-shadow-md text-ivory-50">
                           {photo.title}
                         </p>
                       </div>
 
                       {/* Zoom Indicator Icon */}
-                      <div className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-black/50 text-gold backdrop-blur-md opacity-80 sm:opacity-0 group-hover:opacity-100 transition-all border border-gold/30 z-20">
+                      <div className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-black/40 text-gold-200 backdrop-blur-xs opacity-80 sm:opacity-0 group-hover:opacity-100 transition-all border border-gold-500/30 z-20">
                         <ZoomIn className="w-3.5 h-3.5" />
                       </div>
                     </motion.div>
@@ -998,12 +999,12 @@ export const GallerySection: React.FC = () => {
             {filteredItems.length > ITEMS_PER_PAGE && (
               <div className="mt-10 sm:mt-12 flex flex-col items-center justify-center gap-3.5">
                 {/* Page Summary Info */}
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-deep/5 border border-gold/35 text-emerald-deep font-sans text-xs font-medium shadow-xs">
-                  <span className="text-gold-dark font-bold">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-gold-500/25 text-charcoal font-sans text-xs font-medium shadow-soft-xs">
+                  <span className="text-gold-700 font-bold">
                     {t.gallery.paginationPage} {currentPage} {t.gallery.paginationOf} {totalPages}
                   </span>
-                  <span className="text-emerald-deep/30">•</span>
-                  <span className="text-emerald-deep/80">
+                  <span className="text-charcoal/30">•</span>
+                  <span className="text-charcoal/75">
                     Hiển thị {startIndex + 1}–{endIndex} {t.gallery.paginationOf} {filteredItems.length} {t.gallery.paginationPhotos}
                   </span>
                 </div>
@@ -1016,9 +1017,9 @@ export const GallerySection: React.FC = () => {
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                     title={t.gallery.paginationPrev}
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gold/40 bg-white/90 text-emerald-deep flex items-center justify-center hover:bg-gold/20 hover:border-gold transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-xs"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gold-500/30 bg-white text-emerald-950 flex items-center justify-center hover:bg-gold-500/15 hover:border-gold-500 transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-soft-xs"
                   >
-                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-deep" />
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-950" />
                   </button>
 
                   {/* Numbered Page Buttons */}
@@ -1027,7 +1028,7 @@ export const GallerySection: React.FC = () => {
                       return (
                         <span
                           key={`ellipsis-${idx}`}
-                          className="w-7 sm:w-8 text-center text-gold-dark font-sans font-bold tracking-widest text-xs"
+                          className="w-7 sm:w-8 text-center text-gold-700 font-sans font-bold tracking-widest text-xs"
                         >
                           …
                         </span>
@@ -1042,8 +1043,8 @@ export const GallerySection: React.FC = () => {
                         onClick={() => handlePageChange(item)}
                         className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full font-sans text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer border touch-manipulation ${
                           isActive
-                            ? "bg-emerald-deep text-gold border-gold shadow-md font-bold scale-105 ring-2 ring-gold/30"
-                            : "bg-white/90 text-emerald-deep border-gold/30 hover:bg-gold/20 hover:border-gold active:scale-95"
+                            ? "bg-emerald-900 text-gold-200 border-emerald-900 shadow-soft-sm font-bold scale-105"
+                            : "bg-white text-charcoal border-gold-500/25 hover:bg-gold-500/10 hover:border-gold-500 active:scale-95"
                         }`}
                       >
                         {item}
@@ -1057,9 +1058,9 @@ export const GallerySection: React.FC = () => {
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     title={t.gallery.paginationNext}
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gold/40 bg-white/90 text-emerald-deep flex items-center justify-center hover:bg-gold/20 hover:border-gold transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-xs"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gold-500/30 bg-white text-emerald-950 flex items-center justify-center hover:bg-gold-500/15 hover:border-gold-500 transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-soft-xs"
                   >
-                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-deep" />
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-950" />
                   </button>
                 </div>
               </div>

@@ -14,10 +14,16 @@ interface PhotoPayload {
 }
 
 // Global server-side queue to serialize all Google Sheets writes across all concurrent users
-let serverWriteQueue: Promise<void> = Promise.resolve();
+let serverWriteQueue: Promise<unknown> = Promise.resolve();
 
 async function writeSinglePhotoToSheet(photo: PhotoPayload, retries = 3): Promise<boolean> {
-  if (!graduationConfig.googleScriptUrl || !photo.photoUrl) return false;
+  if (!graduationConfig.googleScriptUrl || !photo.photoUrl) {
+    console.error("[Photos Upload] Missing googleScriptUrl or photoUrl", {
+      hasScriptUrl: Boolean(graduationConfig.googleScriptUrl),
+      photoUrl: photo.photoUrl,
+    });
+    return false;
+  }
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -49,7 +55,24 @@ async function writeSinglePhotoToSheet(photo: PhotoPayload, retries = 3): Promis
       });
 
       if (res.ok) {
+        const text = await res.text();
+        if (text) {
+          try {
+            const json = JSON.parse(text);
+            if (json && (json.status === "error" || json.result === "error" || json.error)) {
+              console.warn(`[Photos Upload] Google Script returned error response for ${photo.photoUrl}:`, json);
+              continue;
+            }
+          } catch {
+            if (text.includes("Exception:") || text.includes("Error:") || text.includes("<html")) {
+              console.warn(`[Photos Upload] Google Script returned unexpected HTML/error response for ${photo.photoUrl}:`, text.slice(0, 200));
+              continue;
+            }
+          }
+        }
         return true;
+      } else {
+        console.warn(`[Photos Upload] Google Script responded with HTTP ${res.status} on attempt ${attempt}`);
       }
     } catch (err) {
       console.warn(`[Photos Upload] Attempt ${attempt} failed for ${photo.photoUrl}:`, err);
@@ -78,31 +101,64 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Không có dữ liệu ảnh" }, { status: 400 });
     }
 
-    // Serialize Google Sheets write execution and wait for completion
-    serverWriteQueue = serverWriteQueue
-      .then(async () => {
-        for (let i = 0; i < photos.length; i++) {
-          await writeSinglePhotoToSheet(photos[i]);
-          // Safe 350ms delay between consecutive rows for Google Sheets LockService
-          if (i < photos.length - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 350));
-          }
-        }
-      })
-      .catch((err) => {
-        console.error("[Photos Upload] Server queue processing error:", err);
-      });
+    // Task xử lý tuần tự cho request hiện tại
+    const processBatch = async (): Promise<{ successCount: number; failedUrls: string[] }> => {
+      let successCount = 0;
+      const failedUrls: string[] = [];
 
-    // Wait for current queue batch to finish writing to Google Sheets
-    await serverWriteQueue;
+      for (let i = 0; i < photos.length; i++) {
+        const isSuccess = await writeSinglePhotoToSheet(photos[i]);
+        if (isSuccess) {
+          successCount++;
+        } else {
+          failedUrls.push(photos[i].photoUrl);
+        }
+        // Safe 350ms delay between consecutive rows for Google Sheets LockService
+        if (i < photos.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 350));
+        }
+      }
+
+      return { successCount, failedUrls };
+    };
+
+    // Chuỗi hóa hàng đợi tuần tự để bảo vệ Google Sheets LockService
+    const queuePromise = serverWriteQueue.catch(() => {}).then(() => processBatch());
+    serverWriteQueue = queuePromise;
+
+    const { successCount, failedUrls } = await queuePromise;
+
+    if (successCount === 0) {
+      console.error("[Photos Upload] All photo writes failed to Google Sheets:", failedUrls);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Không thể lưu ảnh vào Google Sheets sau nhiều lần thử lại",
+          failedUrls,
+        },
+        { status: 502 }
+      );
+    }
+
+    if (failedUrls.length > 0) {
+      console.warn(`[Photos Upload] Partially saved: ${successCount} succeeded, ${failedUrls.length} failed`);
+      return NextResponse.json({
+        success: true,
+        partial: true,
+        count: successCount,
+        failedCount: failedUrls.length,
+        failedUrls,
+        message: `Đã lưu ${successCount}/${photos.length} ảnh vào Google Sheets (${failedUrls.length} ảnh thất bại)`,
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      count: photos.length,
-      message: `Đã lưu thành công ${photos.length} ảnh vào Google Sheets`,
+      count: successCount,
+      message: `Đã lưu thành công ${successCount} ảnh vào Google Sheets`,
     });
   } catch (err) {
     console.error("[Photos Upload] Error in POST handler:", err);
-    return NextResponse.json({ success: false, error: "Lỗi hệ thống" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Lỗi hệ thống khi lưu ảnh" }, { status: 500 });
   }
 }

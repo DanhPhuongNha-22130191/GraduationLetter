@@ -54,26 +54,24 @@ export const GraduationInfoSection: React.FC = () => {
   ];
 
   return (
-    <section id="details" className="py-14 sm:py-20 px-4 max-w-3xl mx-auto relative z-10">
-      <div className="text-center mb-8 sm:mb-12">
-        <span className="text-xs font-sans uppercase tracking-[0.25em] text-gold-dark font-semibold">
-          {t.details.eyebrow}
-        </span>
-        <h2 className="font-serif text-3xl sm:text-4xl text-emerald-deep font-bold mt-1">
-          {t.details.title}
-        </h2>
-        <div className="w-16 h-0.5 bg-gold mx-auto mt-3" />
-      </div>
+    <section id="details" className="py-16 sm:py-24 px-4 bg-ivory-100 relative z-10">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-8 sm:mb-12">
+          <span className="text-xs font-sans uppercase tracking-[0.25em] text-gold-700 font-semibold">
+            {t.details.eyebrow}
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl text-emerald-950 font-bold mt-1">
+            {t.details.title}
+          </h2>
+          <div className="w-12 h-0.5 bg-gold-500 mx-auto mt-3" />
+        </div>
 
-      <div className="relative">
-        <div className="absolute -inset-1 rounded-3xl bg-gold-gradient opacity-20 blur-sm" />
-        
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="relative bg-emerald-deep text-ivory rounded-2xl sm:rounded-3xl p-5 sm:p-8 border border-gold/40 shadow-xl space-y-4"
+          className="relative bg-white/90 rounded-2xl sm:rounded-3xl p-5 sm:p-8 border border-gold-500/25 shadow-soft-lg space-y-3.5 backdrop-blur-xs"
         >
           {items.map((item, idx) => {
             const Icon = item.icon;
@@ -82,23 +80,23 @@ export const GraduationInfoSection: React.FC = () => {
                 key={idx}
                 className={`p-3.5 sm:p-4 rounded-xl sm:rounded-2xl transition-all flex items-start justify-between gap-3 ${
                   item.highlight
-                    ? "bg-gold/15 border border-gold/40 shadow-xs"
-                    : "bg-white/5 border border-white/10 hover:border-gold/30 hover:bg-white/8"
+                    ? "bg-gold-500/10 border border-gold-500/35 shadow-soft-xs"
+                    : "bg-ivory-50/80 border border-gold-500/15 hover:border-gold-500/30"
                 }`}
               >
                 <div className="flex items-start gap-3 sm:gap-4 flex-1">
-                  <div className={`p-2.5 rounded-xl shrink-0 ${item.highlight ? "bg-gold text-emerald-deep" : "bg-gold/20 text-gold"}`}>
+                  <div className={`p-2.5 rounded-xl shrink-0 ${item.highlight ? "bg-gold-gradient text-emerald-950 shadow-soft-xs" : "bg-emerald-900/10 text-emerald-900"}`}>
                     <Icon className="w-5 h-5 stroke-[2]" />
                   </div>
                   <div>
-                    <span className="block text-[11px] sm:text-xs font-sans text-gold-light uppercase tracking-wider font-semibold">
+                    <span className="block text-[11px] sm:text-xs font-sans text-gold-700 uppercase tracking-wider font-semibold">
                       {item.label}
                     </span>
-                    <span className={`block font-serif text-sm sm:text-base ${item.highlight ? "font-bold text-gold-light text-base sm:text-lg" : "text-ivory"}`}>
+                    <span className={`block font-serif text-sm sm:text-base ${item.highlight ? "font-bold text-emerald-950 text-base sm:text-lg" : "text-charcoal"}`}>
                       {item.value}
                     </span>
                     {item.subValue && (
-                      <span className="block text-xs font-sans text-ivory/70 mt-0.5">
+                      <span className="block text-xs font-sans text-charcoal/70 mt-0.5">
                         {item.subValue}
                       </span>
                     )}
@@ -109,10 +107,10 @@ export const GraduationInfoSection: React.FC = () => {
                   <button
                     onClick={handleCopyAddress}
                     title="Copy address"
-                    className="p-2.5 rounded-xl bg-gold/15 hover:bg-gold/30 text-gold text-xs transition-colors shrink-0 flex items-center gap-1.5 active:scale-95 touch-manipulation border border-gold/30"
+                    className="p-2 sm:px-3 sm:py-2 rounded-xl bg-gold-500/15 hover:bg-gold-500/25 text-gold-700 text-xs transition-colors shrink-0 flex items-center gap-1.5 active:scale-95 touch-manipulation border border-gold-500/30 cursor-pointer"
                   >
-                    {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                    <span className="hidden sm:inline font-sans font-medium">{copied ? t.details.copied : t.details.copy}</span>
+                    {copied ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4" />}
+                    <span className="hidden sm:inline font-sans font-semibold">{copied ? t.details.copied : t.details.copy}</span>
                   </button>
                 )}
               </div>

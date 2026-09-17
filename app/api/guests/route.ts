@@ -21,7 +21,8 @@ export async function GET(request: Request) {
   }
 
   if (!graduationConfig.googleScriptUrl) {
-    return NextResponse.json([]);
+    console.warn("[Guests Route] graduationConfig.googleScriptUrl is not configured");
+    return NextResponse.json(cachedGuests || []);
   }
 
   try {
@@ -36,7 +37,13 @@ export async function GET(request: Request) {
     );
 
     if (res.ok) {
-      const data = await res.json();
+      let data: unknown;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        console.warn("[Guests Route] Failed to parse JSON response from Google Script:", parseErr);
+      }
+
       if (Array.isArray(data)) {
         cachedGuests = data;
         lastFetchTime = now;
@@ -45,11 +52,26 @@ export async function GET(request: Request) {
             "Cache-Control": "no-cache, no-store, must-revalidate",
           },
         });
+      } else {
+        console.warn("[Guests Route] Google Script returned non-array payload:", data);
       }
+    } else {
+      console.warn(`[Guests Route] Upstream Google Script responded with HTTP ${res.status}`);
     }
   } catch (err) {
-    console.warn("[Guests Route] Error fetching from Google Sheet:", err);
+    console.warn("[Guests Route] Network error fetching from Google Sheet:", err);
   }
 
-  return NextResponse.json(cachedGuests || []);
+  if (cachedGuests) {
+    console.warn("[Guests Route] Returning stale cached guests as fallback");
+    return NextResponse.json(cachedGuests, {
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "X-Data-Source": "stale-cache",
+      },
+    });
+  }
+
+  console.warn("[Guests Route] No cached guests available, returning empty list");
+  return NextResponse.json([]);
 }

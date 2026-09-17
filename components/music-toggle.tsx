@@ -183,40 +183,42 @@ export const MusicToggle: React.FC = () => {
   };
 
   const saveMusicToSheet = async (title: string, url: string, artist = "Cloudinary Upload") => {
-    try {
-      // 1. Gửi ngay lập tức qua API Route Server (0ms cập nhật RAM server, server chuyển tiếp Google Sheet)
-      const apiPromise = fetch("/api/music", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          artist: artist.trim(),
-          url: url.trim(),
-        }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && Array.isArray(data.playlist)) {
-            setSheetAudioTracks(data.playlist);
-          }
-          return data;
-        })
-        .catch(() => null);
+    const res = await fetch("/api/music", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: title.trim(),
+        artist: artist.trim(),
+        url: url.trim(),
+      }),
+    });
 
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.error || "Không thể lưu bài hát vào Google Sheets");
+    }
 
-      await apiPromise;
-    } catch {}
+    if (data && Array.isArray(data.playlist)) {
+      setSheetAudioTracks(data.playlist);
+    }
+    return data;
   };
 
   const handleSelectPreset = async (preset: AudioPreset) => {
-    setAudioUrl(preset.url);
-    setUploadSuccessMessage(`Đã chọn bài: "${preset.title}". Đang đồng bộ Google Sheets...`);
-    await saveMusicToSheet(preset.title, preset.url, preset.artist);
-    setUploadSuccessMessage(`Đã chọn bài: "${preset.title}" & đồng bộ tức thì cho tất cả thiết bị!`);
-    isManuallyPausedRef.current = false;
-    setTimeout(() => {
-      startPlayback(true);
-    }, 150);
+    try {
+      setUploadSuccessMessage(`Đang chọn bài: "${preset.title}" & đồng bộ Google Sheets...`);
+      await saveMusicToSheet(preset.title, preset.url, preset.artist);
+      setAudioUrl(preset.url);
+      setUploadSuccessMessage(`Đã chọn bài: "${preset.title}" & đồng bộ tức thì cho tất cả thiết bị!`);
+      isManuallyPausedRef.current = false;
+      setTimeout(() => {
+        startPlayback(true);
+      }, 150);
+    } catch (err) {
+      console.error("[Select Preset Error]:", err);
+      const msg = err instanceof Error ? err.message : "Không thể đồng bộ bài hát lên Google Sheets";
+      setUploadError(msg);
+    }
   };
 
   const handleApplyDirectUrl = async (e: React.FormEvent) => {
@@ -233,18 +235,24 @@ export const MusicToggle: React.FC = () => {
 
     const fileName = clean.split("/").pop()?.split("?")[0] || "Link Nhạc Trực Tiếp";
     const songTitle = decodeURIComponent(fileName);
-    addCustomTrackToPlaylist(songTitle, clean, "Link MP3 Trực Tiếp");
-    setAudioUrl(clean);
-    setUploadError(null);
-    setUploadSuccessMessage("Đang lưu bài hát vào Google Sheets...");
 
-    await saveMusicToSheet(songTitle, clean, "Link MP3 Trực Tiếp");
-    setUploadSuccessMessage("Đã cập nhật & lưu nhạc vào Google Sheet thành công!");
-    setDirectUrlInput("");
-    isManuallyPausedRef.current = false;
-    setTimeout(() => {
-      startPlayback(true);
-    }, 150);
+    try {
+      setUploadError(null);
+      setUploadSuccessMessage("Đang lưu bài hát vào Google Sheets...");
+      await saveMusicToSheet(songTitle, clean, "Link MP3 Trực Tiếp");
+      addCustomTrackToPlaylist(songTitle, clean, "Link MP3 Trực Tiếp");
+      setAudioUrl(clean);
+      setUploadSuccessMessage("Đã cập nhật & lưu nhạc vào Google Sheet thành công!");
+      setDirectUrlInput("");
+      isManuallyPausedRef.current = false;
+      setTimeout(() => {
+        startPlayback(true);
+      }, 150);
+    } catch (err) {
+      console.error("[Direct URL Error]:", err);
+      const msg = err instanceof Error ? err.message : "Không thể lưu nhạc vào Google Sheets";
+      setUploadError(msg);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -331,18 +339,24 @@ export const MusicToggle: React.FC = () => {
   };
 
   const handleResetDefault = async () => {
-    setAudioUrl(graduationConfig.audioUrl);
-    setUploadSuccessMessage("Đang khôi phục về bản nhạc mặc định & đồng bộ Google Sheets...");
-    await saveMusicToSheet(
-      "Nhạc Nền Mặc Định (Acoustic Piano)",
-      graduationConfig.audioUrl,
-      "Graduation Theme"
-    );
-    setUploadSuccessMessage("Đã khôi phục về bản nhạc nền mặc định & đồng bộ Google Sheets!");
-    isManuallyPausedRef.current = false;
-    setTimeout(() => {
-      startPlayback(true);
-    }, 150);
+    try {
+      setUploadSuccessMessage("Đang khôi phục về bản nhạc mặc định & đồng bộ Google Sheets...");
+      await saveMusicToSheet(
+        "Nhạc Nền Mặc Định (Acoustic Piano)",
+        graduationConfig.audioUrl,
+        "Graduation Theme"
+      );
+      setAudioUrl(graduationConfig.audioUrl);
+      setUploadSuccessMessage("Đã khôi phục về bản nhạc nền mặc định & đồng bộ Google Sheets!");
+      isManuallyPausedRef.current = false;
+      setTimeout(() => {
+        startPlayback(true);
+      }, 150);
+    } catch (err) {
+      console.error("[Reset Default Music Error]:", err);
+      const msg = err instanceof Error ? err.message : "Không thể khôi phục nhạc mặc định lên Google Sheets";
+      setUploadError(msg);
+    }
   };
 
   return (
@@ -356,12 +370,12 @@ export const MusicToggle: React.FC = () => {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            className="flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-emerald-deep/90 backdrop-blur-md border border-gold/50 shadow-md"
+            className="flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-emerald-950/90 backdrop-blur-md border border-gold-500/30 shadow-soft-sm"
           >
-            <div className="w-1 h-3 bg-gold rounded-full animate-bounce" style={{ animationDuration: "0.6s" }} />
-            <div className="w-1 h-4 bg-gold-shimmer rounded-full animate-bounce" style={{ animationDuration: "0.4s" }} />
-            <div className="w-1 h-2 bg-gold rounded-full animate-bounce" style={{ animationDuration: "0.8s" }} />
-            <span className="text-[9px] sm:text-[10px] font-sans font-bold text-gold uppercase tracking-wider ml-0.5 sm:ml-1">
+            <div className="w-1 h-3 bg-gold-500 rounded-full animate-bounce" style={{ animationDuration: "0.6s" }} />
+            <div className="w-1 h-4 bg-gold-200 rounded-full animate-bounce" style={{ animationDuration: "0.4s" }} />
+            <div className="w-1 h-2 bg-gold-500 rounded-full animate-bounce" style={{ animationDuration: "0.8s" }} />
+            <span className="text-[9px] sm:text-[10px] font-sans font-bold text-gold-200 uppercase tracking-wider ml-0.5 sm:ml-1">
               PLAYING
             </span>
           </motion.div>
@@ -370,8 +384,8 @@ export const MusicToggle: React.FC = () => {
         {/* Cài đặt âm nhạc (Chỉ dành riêng cho Owner - slug phuongnha) */}
         {isOwner && (
           <motion.button
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => {
               setUploadError(null);
               setUploadSuccessMessage(null);
@@ -379,22 +393,22 @@ export const MusicToggle: React.FC = () => {
             }}
             aria-label="Cài đặt nhạc nền cho thiệp"
             title="Đổi nhạc nền (Dành cho Phương Nhã)"
-            className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg border bg-gold text-emerald-deep border-gold hover:bg-gold-shimmer shadow-gold/20 transition-all duration-300 active:scale-95 touch-manipulation cursor-pointer"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center shadow-gold-glow border bg-gold-gradient text-emerald-950 border-gold-200/50 hover:brightness-105 transition-all active:scale-95 touch-manipulation cursor-pointer"
           >
-            <SlidersHorizontal className="w-5 h-5 stroke-[2.2]" />
+            <SlidersHorizontal className="w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.2]" />
           </motion.button>
         )}
 
         {/* Nút Bật / Tắt Nhạc */}
         <motion.button
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.92 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={toggleMusic}
           aria-label={isPlaying ? "Tắt nhạc nền" : "Bật nhạc nền"}
-          className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg border transition-all duration-300 active:scale-95 touch-manipulation cursor-pointer ${
+          className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center border transition-all active:scale-95 touch-manipulation cursor-pointer ${
             isPlaying
-              ? "bg-gold text-emerald-deep border-gold shadow-md"
-              : "bg-emerald-deep/90 backdrop-blur-md text-gold border-gold/50 hover:border-gold"
+              ? "bg-gold-gradient text-emerald-950 border-gold-200/50 shadow-gold-glow"
+              : "bg-emerald-950/90 backdrop-blur-md text-gold-200 border-gold-500/30 hover:border-gold-500 shadow-soft-sm"
           }`}
         >
           {isPlaying ? (

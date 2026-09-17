@@ -8,6 +8,7 @@ export async function GET(request: Request) {
   const isRefresh = searchParams.get("refresh") === "1";
 
   if (!graduationConfig.googleScriptUrl) {
+    console.warn("[Photos Route] graduationConfig.googleScriptUrl is not configured");
     return NextResponse.json([]);
   }
 
@@ -23,11 +24,20 @@ export async function GET(request: Request) {
     );
 
     if (!res.ok) {
+      console.warn(`[Photos Route] Upstream Google Script responded with HTTP ${res.status}`);
       return NextResponse.json([]);
     }
 
-    const rawList = await res.json();
+    let rawList: unknown;
+    try {
+      rawList = await res.json();
+    } catch (parseErr) {
+      console.warn("[Photos Route] Failed to parse JSON from Google Script:", parseErr);
+      return NextResponse.json([]);
+    }
+
     if (!Array.isArray(rawList)) {
+      console.warn("[Photos Route] Google Script returned non-array payload:", rawList);
       return NextResponse.json([]);
     }
 

@@ -8,7 +8,7 @@ import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { playBackgroundMusic } from "@/components/music-toggle";
-import { RotatingBotanicalCrest, AnimatedFlourishDivider } from "@/components/animated-motifs";
+import { AnimatedFlourishDivider } from "@/components/animated-motifs";
 
 async function compressAvatarFile(file: File, maxDim = 1200, quality = 0.85): Promise<Blob | File> {
   if (typeof window === "undefined" || !file.type.startsWith("image/")) return file;
@@ -183,20 +183,22 @@ export const HeroSection: React.FC = () => {
         localStorage.setItem("custom_hero_avatar_url", photoUrl);
       } catch {}
 
-
-      // 4. Lưu bền vững vào Server API route (chạy ngầm không chặn UI)
-      fetch("/api/avatar", {
+      // 4. Lưu bền vững vào Server API route
+      const avatarRes = await fetch("/api/avatar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           avatarUrl: photoUrl,
           slug: currentSlug || "phuongnha",
         }),
-      }).catch((err) => {
-        console.warn("Background /api/avatar sync error:", err);
       });
 
-      // 5. Kết thúc trạng thái đang tải ngay lập tức để người dùng không bị xoay màn hình
+      const avatarData = await avatarRes.json().catch(() => null);
+      if (!avatarRes.ok || !avatarData?.success) {
+        throw new Error(avatarData?.error || "Không thể đồng bộ ảnh đại diện lên máy chủ");
+      }
+
+      // 5. Kết thúc trạng thái đang tải sau khi đã xác nhận lưu thành công
       setUploadStatus("success");
       setUploadMessage("Đã cập nhật ảnh bìa thành công!");
       setTimeout(() => {
@@ -207,7 +209,8 @@ export const HeroSection: React.FC = () => {
     } catch (err) {
       console.error("Avatar upload error:", err);
       setUploadStatus("error");
-      setUploadMessage("Không thể tải ảnh. Vui lòng thử lại!");
+      const errMsg = err instanceof Error ? err.message : "Không thể tải ảnh. Vui lòng thử lại!";
+      setUploadMessage(errMsg);
       setTimeout(() => {
         setIsUploading(false);
         setUploadStatus("idle");
@@ -232,82 +235,67 @@ export const HeroSection: React.FC = () => {
   };
 
   return (
-    <section id="hero" className="relative min-h-[92vh] sm:min-h-screen flex flex-col justify-between items-center px-4 py-8 sm:py-12 bg-ivory text-emerald-deep overflow-hidden">
-      {/* Background Decorative Paper Grid & Gold Radial Spotlight */}
-      <div className="absolute inset-0 paper-texture opacity-70 pointer-events-none" />
-      <div className="absolute inset-0 gold-radial-glow opacity-30 pointer-events-none" />
-      
-      {/* Corner Rotating Botanical Ornaments */}
-      <div className="absolute top-2 left-2 sm:top-4 sm:left-4 pointer-events-none z-0">
-        <RotatingBotanicalCrest className="w-20 h-20 sm:w-28 sm:h-28 text-gold" />
-      </div>
-      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 pointer-events-none z-0 transform rotate-90">
-        <RotatingBotanicalCrest className="w-20 h-20 sm:w-28 sm:h-28 text-gold" />
-      </div>
+    <section id="hero" className="relative min-h-[92vh] sm:min-h-screen flex flex-col justify-between items-center px-4 py-8 sm:py-12 bg-ivory-50 text-charcoal overflow-hidden">
+      {/* Background Subtle Paper Texture & Soft Amber Radial */}
+      <div className="absolute inset-0 paper-texture opacity-60 pointer-events-none" />
+      <div className="absolute inset-0 bg-radial from-gold-500/10 via-transparent to-transparent opacity-40 pointer-events-none" />
 
       {/* Top Header Badge */}
       <motion.div
-        initial={{ opacity: 0, y: -15 }}
+        initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="z-10 text-center mt-6 sm:mt-2"
       >
-        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-gold/40 bg-gold/10 text-xs sm:text-sm font-sans tracking-widest text-emerald-deep font-semibold uppercase shadow-gold-glow backdrop-blur-md">
-          <Sparkles className="w-3.5 h-3.5 text-gold animate-pulse" />
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/30 bg-gold-500/10 text-xs font-sans tracking-widest text-emerald-900 font-semibold uppercase shadow-soft-sm backdrop-blur-xs">
+          <Sparkles className="w-3.5 h-3.5 text-gold-600" />
           <span>{t.hero.invitationCard}</span>
-          <Sparkles className="w-3.5 h-3.5 text-gold animate-pulse" />
+          <Sparkles className="w-3.5 h-3.5 text-gold-600" />
         </div>
       </motion.div>
 
       {/* Main Luxury Card Frame */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.9, delay: 0.2 }}
-        className="z-10 my-auto w-full max-w-sm sm:max-w-md glass-gold-card rounded-3xl p-6 sm:p-9 shadow-2xl relative flex flex-col items-center text-center backdrop-blur-md border-2 border-gold/40"
+        className="z-10 my-auto w-full max-w-sm sm:max-w-md glass-gold-card rounded-3xl p-6 sm:p-9 shadow-soft-xl relative flex flex-col items-center text-center border border-gold-500/25"
       >
-        {/* Dual Gold Foil Inner Borders */}
-        <div className="absolute inset-3 rounded-2xl border border-gold/30 pointer-events-none" />
-        <div className="absolute inset-5 rounded-xl border border-gold/50 border-dashed pointer-events-none opacity-50" />
+        {/* Single subtle inner hairline border */}
+        <div className="absolute inset-2.5 rounded-2xl border border-gold-500/15 pointer-events-none" />
 
-        {/* Four Corner Dots inside Card */}
-        <div className="absolute top-4 left-4 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
-        <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
-        <div className="absolute bottom-4 left-4 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
-        <div className="absolute bottom-4 right-4 w-2 h-2 rounded-full bg-gold/70 animate-pulse" />
-
-        {/* Graduate Avatar Portrait Frame with Gold Pulsing Glow */}
+        {/* Graduate Avatar Portrait Frame with Refined Gold Ring */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1.5 border-2 border-gold shadow-gold-glow mb-4 sm:mb-5 bg-gold-gradient transform hover:scale-105 transition-transform"
+          className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1 border-2 border-gold-500 shadow-soft-md mb-4 sm:mb-5 bg-gold-gradient transform hover:scale-[1.03] transition-transform"
         >
-          <div className="relative w-full h-full rounded-full overflow-hidden border border-ivory/80">
+          <div className="relative w-full h-full rounded-full overflow-hidden border border-ivory-50">
             <Image
               src={avatarUrl}
               alt={graduationConfig.name}
               fill
               priority
               sizes="(max-width: 640px) 150px, 200px"
-              quality={100}
+              quality={95}
               className="object-cover"
               unoptimized
             />
 
             {/* Upload Overlay */}
             {isUploading && (
-              <div className="absolute inset-0 bg-emerald-deep/80 backdrop-blur-xs flex flex-col items-center justify-center p-2 text-center text-ivory z-10">
+              <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-xs flex flex-col items-center justify-center p-2 text-center text-ivory-50 z-10">
                 {uploadStatus === "uploading" && (
                   <>
-                    <Loader2 className="w-6 h-6 text-gold animate-spin mb-1" />
-                    <span className="text-[9px] font-sans font-medium text-gold-light leading-tight">Đang tải...</span>
+                    <Loader2 className="w-6 h-6 text-gold-200 animate-spin mb-1" />
+                    <span className="text-[10px] font-sans font-medium text-gold-200 leading-tight">Đang tải...</span>
                   </>
                 )}
                 {uploadStatus === "success" && (
                   <>
                     <CheckCircle2 className="w-6 h-6 text-emerald-400 mb-1" />
-                    <span className="text-[9px] font-sans font-semibold text-emerald-300 leading-tight">Thành công!</span>
+                    <span className="text-[10px] font-sans font-semibold text-emerald-300 leading-tight">Thành công!</span>
                   </>
                 )}
               </div>
@@ -316,7 +304,7 @@ export const HeroSection: React.FC = () => {
 
           {/* Gold Crest Icon Badge Overlay (Default) */}
           {!isOwner && (
-            <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gold-gradient text-emerald-deep flex items-center justify-center shadow-md border-2 border-ivory animate-float-slow">
+            <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gold-gradient text-emerald-950 flex items-center justify-center shadow-soft-md border-2 border-ivory-50">
               <GraduationCap className="w-4 h-4 stroke-[2]" />
             </div>
           )}
@@ -329,7 +317,7 @@ export const HeroSection: React.FC = () => {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
                 title="Đổi ảnh bìa (Dành riêng cho Phương Nhã)"
-                className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-gold-gradient text-emerald-deep flex items-center justify-center shadow-xl border-2 border-ivory hover:scale-110 active:scale-95 transition-all cursor-pointer z-20 group"
+                className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-gold-gradient text-emerald-950 flex items-center justify-center shadow-soft-lg border-2 border-ivory-50 hover:scale-110 active:scale-95 transition-all cursor-pointer z-20 group"
               >
                 <Camera className="w-4.5 h-4.5 stroke-[2.2] group-hover:rotate-12 transition-transform" />
               </button>
@@ -351,8 +339,8 @@ export const HeroSection: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className={`text-xs font-sans font-semibold mb-2 px-3 py-1 rounded-full ${
               uploadStatus === "error"
-                ? "bg-red-100 text-red-700 border border-red-300"
-                : "bg-gold/20 text-emerald-deep border border-gold/40"
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "bg-gold-500/20 text-emerald-900 border border-gold-500/30"
             }`}
           >
             {uploadMessage}
@@ -360,42 +348,42 @@ export const HeroSection: React.FC = () => {
         )}
 
         {/* Ceremony Title */}
-        <h2 className="font-serif text-xs sm:text-sm uppercase tracking-[0.3em] text-gold-dark font-bold mb-1 flex items-center gap-2">
-          <span className="text-gold/60">✦</span>
+        <h2 className="font-serif text-xs sm:text-sm uppercase tracking-[0.25em] text-gold-700 font-bold mb-1 flex items-center gap-2">
+          <span className="text-gold-500/70">✦</span>
           <span>{t.hero.ceremony}</span>
-          <span className="text-gold/60">✦</span>
+          <span className="text-gold-500/70">✦</span>
         </h2>
 
         {/* Degree Subtitle */}
-        <span className="italic font-serif text-gold-dark text-2xl sm:text-3xl block my-1 font-semibold">
+        <span className="italic font-serif text-gold-700 text-2xl sm:text-3xl block my-1 font-semibold">
           {t.hero.degree}
         </span>
 
         {/* Student Name */}
         <motion.h1
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5 }}
-          className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-emerald-deep tracking-tight mb-1 leading-tight drop-shadow-sm"
+          className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-emerald-950 tracking-tight mb-1 leading-tight"
         >
           {graduationConfig.name}
         </motion.h1>
 
         {/* Animated Flourish Divider */}
-        <AnimatedFlourishDivider className="my-2" />
+        <AnimatedFlourishDivider className="my-2 text-gold-600" />
 
         {/* Major & Year Pill Badge */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="inline-block px-4 py-1.5 rounded-full border border-gold/40 bg-gold/10 text-emerald-deep font-sans font-bold text-xs tracking-widest uppercase my-2 shadow-inner"
+          className="inline-block px-4 py-1.5 rounded-full border border-emerald-900/15 bg-emerald-900/5 text-emerald-900 font-sans font-semibold text-xs tracking-wider uppercase my-2"
         >
           {t.hero.major}
         </motion.div>
 
         {/* Subtitle quote */}
-        <p className="font-serif italic text-sm text-emerald-soft/90 max-w-xs mb-3">
+        <p className="font-serif italic text-sm text-charcoal/85 max-w-xs mb-3">
           &ldquo;{t.hero.subTitle}&rdquo;
         </p>
 
@@ -405,12 +393,12 @@ export const HeroSection: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.7 }}
-            className="w-full my-2.5 py-2 px-3 rounded-2xl bg-gold/15 border border-gold/40 shadow-xs"
+            className="w-full my-2.5 py-2 px-3 rounded-2xl bg-gold-500/10 border border-gold-500/30 shadow-soft-xs"
           >
-            <span className="block text-[10px] font-sans uppercase tracking-[0.2em] text-gold-dark font-bold mb-0.5">
+            <span className="block text-[10px] font-sans uppercase tracking-[0.2em] text-gold-700 font-bold mb-0.5">
               ✦ {getGreetingPrefix(lang).toUpperCase()} ✦
             </span>
-            <span className="font-serif italic text-base sm:text-lg font-bold text-emerald-deep line-clamp-1">
+            <span className="font-serif italic text-base sm:text-lg font-bold text-emerald-950 line-clamp-1">
               {guestName}
             </span>
           </motion.div>
@@ -418,26 +406,26 @@ export const HeroSection: React.FC = () => {
 
         {/* Gold Gradient Action Button */}
         <motion.button
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           onClick={scrollToNext}
-          className="w-full sm:w-auto px-10 py-4 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-sm tracking-widest uppercase shadow-gold-glow flex items-center justify-center gap-2.5 border border-ivory/60 hover:brightness-110 transition-all active:scale-95 touch-manipulation cursor-pointer shimmer-gold"
+          className="w-full sm:w-auto px-9 py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-sm tracking-wider uppercase shadow-gold-glow flex items-center justify-center gap-2 border border-gold-200/50 hover:brightness-105 transition-all cursor-pointer"
         >
           <MailOpen className="w-4 h-4 stroke-[2]" />
           <span>{t.hero.openBtn}</span>
-          <ChevronDown className="w-4 h-4 text-emerald-deep animate-bounce" />
+          <ChevronDown className="w-4 h-4 text-emerald-950 animate-bounce" />
         </motion.button>
       </motion.div>
 
       {/* Swipe Down Floating Indicator */}
       <motion.div
-        animate={{ y: [0, 6, 0] }}
+        animate={{ y: [0, 5, 0] }}
         transition={{ repeat: Infinity, duration: 2 }}
-        className="z-10 text-emerald-soft/70 text-xs font-sans flex flex-col items-center gap-1 cursor-pointer"
+        className="z-10 text-charcoal/60 text-xs font-sans flex flex-col items-center gap-1 cursor-pointer hover:text-charcoal transition-colors"
         onClick={scrollToNext}
       >
         <span className="tracking-widest uppercase text-[10px]">{t.hero.swipeDown}</span>
-        <ChevronDown className="w-4 h-4 text-gold" />
+        <ChevronDown className="w-4 h-4 text-gold-600" />
       </motion.div>
     </section>
   );

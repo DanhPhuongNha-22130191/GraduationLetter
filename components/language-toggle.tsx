@@ -51,18 +51,18 @@ export const LanguageToggle: React.FC = () => {
     <div ref={containerRef} className="fixed top-4 left-4 z-40">
       {/* Globe Icon Button */}
       <motion.button
-        whileHover={{ scale: 1.06 }}
-        whileTap={{ scale: 0.94 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label="Chọn ngôn ngữ / Select language"
         aria-expanded={isOpen}
-        className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg border transition-all duration-300 active:scale-95 touch-manipulation cursor-pointer backdrop-blur-md ${
+        className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all active:scale-95 touch-manipulation cursor-pointer backdrop-blur-md ${
           isOpen
-            ? "bg-gold text-emerald-deep border-gold shadow-gold-glow"
-            : "bg-emerald-deep/90 text-gold border-gold/45 hover:border-gold hover:bg-gold/20"
+            ? "bg-gold-gradient text-emerald-950 border-gold-200/50 shadow-gold-glow"
+            : "bg-emerald-950/90 text-gold-200 border-gold-500/30 hover:border-gold-500 shadow-soft-sm"
         }`}
       >
-        <Globe className="w-5 h-5 stroke-[2]" />
+        <Globe className="w-4.5 h-4.5 stroke-[2]" />
       </motion.button>
 
       {/* Language Selection Dropdown Menu */}
@@ -73,7 +73,7 @@ export const LanguageToggle: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.92 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute top-12 left-0 min-w-[130px] p-1.5 rounded-2xl bg-emerald-deep/95 border border-gold/50 shadow-2xl backdrop-blur-lg flex flex-col gap-1 z-50"
+            className="absolute top-12 left-0 min-w-[130px] p-1.5 rounded-2xl bg-emerald-950/95 border border-gold-500/30 shadow-soft-xl backdrop-blur-lg flex flex-col gap-1 z-50"
           >
             {options.map((opt) => {
               const isActive = lang === opt.code;
@@ -83,8 +83,8 @@ export const LanguageToggle: React.FC = () => {
                   onClick={() => handleSelect(opt.code)}
                   className={`w-full px-3 py-2 rounded-xl text-xs font-sans font-semibold flex items-center justify-between transition-all duration-150 active:scale-95 touch-manipulation cursor-pointer ${
                     isActive
-                      ? "bg-gold text-emerald-deep font-bold shadow-xs"
-                      : "text-ivory/85 hover:bg-gold/15 hover:text-gold"
+                      ? "bg-gold-gradient text-emerald-950 font-bold shadow-soft-xs"
+                      : "text-ivory-100/85 hover:bg-gold-500/15 hover:text-gold-200"
                   }`}
                 >
                   <div className="flex items-center gap-2">

@@ -26,24 +26,19 @@ export const RotatingBotanicalCrest: React.FC<{ className?: string }> = ({ class
   );
 };
 
-export const AnimatedFlourishDivider: React.FC<{ className?: string }> = ({ className = "my-6" }) => {
+export const AnimatedFlourishDivider: React.FC<{ className?: string }> = ({ className = "my-4" }) => {
   return (
-    <div className={`flex items-center justify-center gap-3 w-full max-w-xs mx-auto ${className}`}>
+    <div className={`flex items-center justify-center gap-2.5 w-full max-w-xs mx-auto ${className}`}>
       <motion.div
         initial={{ width: 0 }}
         whileInView={{ width: "100%" }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="h-[1px] bg-gradient-to-r from-transparent via-gold to-gold flex-1"
+        className="h-[1px] bg-gradient-to-r from-transparent via-gold-500/40 to-gold-500/70 flex-1"
       />
       
       <div className="relative flex items-center justify-center">
-        <motion.div
-          animate={{ scale: [1, 1.25, 1], rotate: [0, 45, 90] }}
-          transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-          className="w-3 h-3 rotate-45 border-2 border-gold bg-gold/30 shadow-gold-glow"
-        />
-        <div className="absolute w-1.5 h-1.5 bg-gold-shimmer rounded-full animate-pulse" />
+        <div className="w-2.5 h-2.5 rotate-45 border border-gold-500/80 bg-gold-500/20" />
       </div>
 
       <motion.div
@@ -51,7 +46,7 @@ export const AnimatedFlourishDivider: React.FC<{ className?: string }> = ({ clas
         whileInView={{ width: "100%" }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="h-[1px] bg-gradient-to-l from-transparent via-gold to-gold flex-1"
+        className="h-[1px] bg-gradient-to-l from-transparent via-gold-500/40 to-gold-500/70 flex-1"
       />
     </div>
   );

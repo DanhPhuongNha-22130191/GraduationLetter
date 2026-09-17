@@ -124,7 +124,7 @@ export const CountdownSection: React.FC = () => {
   const displayTimeStr = effectiveTime ? formatLocalizedTime(effectiveTime, lang) : t.details.timeVal;
 
   return (
-    <section id="countdown" className="py-14 sm:py-24 px-3 sm:px-4 bg-ivory text-emerald-deep relative overflow-hidden">
+    <section id="countdown" className="py-14 sm:py-24 px-3 sm:px-4 bg-ivory-50 text-charcoal relative overflow-hidden">
       <div className="w-full max-w-lg mx-auto text-center relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -133,21 +133,21 @@ export const CountdownSection: React.FC = () => {
           transition={{ duration: 0.8 }}
           className="mb-8"
         >
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/15 text-gold-dark text-[11px] sm:text-xs font-sans font-semibold uppercase tracking-widest mb-3 border border-gold/30">
-            <Timer className="w-3.5 h-3.5 text-gold-dark" />
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gold-500/10 text-gold-700 text-[11px] sm:text-xs font-sans font-semibold uppercase tracking-widest mb-3 border border-gold-500/30">
+            <Timer className="w-3.5 h-3.5 text-gold-600" />
             <span>COUNTDOWN</span>
           </div>
 
-          <h2 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight text-emerald-deep">
+          <h2 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight text-emerald-950">
             {t.countdown.title}
           </h2>
-          <p className="font-sans text-[11px] sm:text-sm text-charcoal/70 mt-2 font-medium">
+          <p className="font-sans text-xs sm:text-sm text-charcoal/75 mt-2 font-medium">
             {displayDateStr} — {displayTimeStr}
           </p>
         </motion.div>
 
         {/* High-end Mobile-Optimized Countdown Flip Cards Grid */}
-        <div className="grid grid-cols-4 gap-1.5 sm:gap-4">
+        <div className="grid grid-cols-4 gap-2 sm:gap-4">
           {timeUnits.map((unit, idx) => (
             <motion.div
               key={unit.label}
@@ -155,15 +155,15 @@ export const CountdownSection: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: idx * 0.1 }}
-              className="bg-emerald-deep text-ivory rounded-xl sm:rounded-2xl py-3 px-1.5 sm:p-5 border border-gold/40 shadow-xl flex flex-col items-center justify-center relative overflow-hidden group hover:border-gold transition-colors"
+              className="bg-white rounded-xl sm:rounded-2xl py-3.5 px-1.5 sm:p-5 border border-gold-500/25 shadow-soft-md flex flex-col items-center justify-center relative overflow-hidden group hover:border-gold-500/40 transition-colors"
             >
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gold-gradient" />
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gold-gradient" />
 
-              <span className="font-serif text-2xl sm:text-5xl font-bold text-gold-shimmer tracking-tight leading-none mb-1 group-hover:scale-105 transition-transform drop-shadow-md">
+              <span className="font-serif text-2xl sm:text-5xl font-bold text-emerald-950 tracking-tight leading-none mb-1 group-hover:scale-[1.03] transition-transform">
                 {hasMounted ? String(unit.value).padStart(2, "0") : "00"}
               </span>
 
-              <span className="font-sans text-[9px] sm:text-xs tracking-wider uppercase text-ivory/85 font-bold">
+              <span className="font-sans text-[10px] sm:text-xs tracking-wider uppercase text-gold-700 font-semibold">
                 {unit.label}
               </span>
             </motion.div>

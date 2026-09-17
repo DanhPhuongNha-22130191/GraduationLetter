@@ -191,7 +191,13 @@ export async function GET(request: Request) {
   }
 
   if (!graduationConfig.googleScriptUrl) {
-    return NextResponse.json({ activeAudioUrl: null, playlist: [] });
+    console.warn("[Music Route GET] graduationConfig.googleScriptUrl is not configured");
+    return NextResponse.json(
+      cachedMusicData || {
+        activeAudioUrl: graduationConfig.audioUrl,
+        playlist: graduationConfig.audioPlaylist,
+      }
+    );
   }
 
   try {
@@ -206,69 +212,84 @@ export async function GET(request: Request) {
     );
 
     if (res.ok) {
-      const rawList = await res.json();
-      if (Array.isArray(rawList) && rawList.length > 0) {
-        const playlist: AudioPreset[] = [];
-        let activeAudioUrl: string | null = null;
-
-        rawList.forEach((item: Record<string, unknown>, idx: number) => {
-          const cleanUrl = extractAudioUrl(item);
-
-          if (cleanUrl) {
-            const title = extractTitle(item, cleanUrl, idx);
-            const artist = extractArtist(item);
-            const isActive = extractIsActive(item);
-
-            if (isActive) {
-              activeAudioUrl = cleanUrl;
-            }
-
-            const uploadedAt = String(
-              item.uploadTime ||
-                item.ThoiGianUp ||
-                item.thoiGianUp ||
-                item.uploadedAt ||
-                item.UploadedAt ||
-                item.thoiGian ||
-                item.timestamp ||
-                ""
-            ).trim();
-
-            playlist.push({
-              id: `sheet-music-${idx}`,
-              title,
-              artist,
-              url: cleanUrl,
-              uploadedAt: uploadedAt || undefined,
-            });
-          }
-        });
-
-        // Nếu không có bài nào có cờ active rõ ràng, chọn bài hát mới nhất (ở cuối sheet)
-        if (!activeAudioUrl && playlist.length > 0) {
-          activeAudioUrl = playlist[playlist.length - 1].url;
-        }
-
-        const resultData = {
-          activeAudioUrl: activeAudioUrl || (playlist.length > 0 ? playlist[0].url : null),
-          playlist,
-        };
-
-        cachedMusicData = resultData;
-        lastFetchTime = now;
-
-        return NextResponse.json(resultData, {
-          headers: {
-            "Cache-Control": "no-store, no-cache, must-revalidate",
-          },
-        });
+      let rawList: unknown;
+      try {
+        rawList = await res.json();
+      } catch (parseErr) {
+        console.warn("[Music Route GET] Failed to parse JSON response from Google Script:", parseErr);
       }
+
+      if (Array.isArray(rawList)) {
+        if (rawList.length > 0) {
+          const playlist: AudioPreset[] = [];
+          let activeAudioUrl: string | null = null;
+
+          rawList.forEach((item: Record<string, unknown>, idx: number) => {
+            const cleanUrl = extractAudioUrl(item);
+
+            if (cleanUrl) {
+              const title = extractTitle(item, cleanUrl, idx);
+              const artist = extractArtist(item);
+              const isActive = extractIsActive(item);
+
+              if (isActive) {
+                activeAudioUrl = cleanUrl;
+              }
+
+              const uploadedAt = String(
+                item.uploadTime ||
+                  item.ThoiGianUp ||
+                  item.thoiGianUp ||
+                  item.uploadedAt ||
+                  item.UploadedAt ||
+                  item.thoiGian ||
+                  item.timestamp ||
+                  ""
+              ).trim();
+
+              playlist.push({
+                id: `sheet-music-${idx}`,
+                title,
+                artist,
+                url: cleanUrl,
+                uploadedAt: uploadedAt || undefined,
+              });
+            }
+          });
+
+          // Nếu không có bài nào có cờ active rõ ràng, chọn bài hát mới nhất (ở cuối sheet)
+          if (!activeAudioUrl && playlist.length > 0) {
+            activeAudioUrl = playlist[playlist.length - 1].url;
+          }
+
+          const resultData = {
+            activeAudioUrl: activeAudioUrl || (playlist.length > 0 ? playlist[0].url : null),
+            playlist,
+          };
+
+          cachedMusicData = resultData;
+          lastFetchTime = now;
+
+          return NextResponse.json(resultData, {
+            headers: {
+              "Cache-Control": "no-store, no-cache, must-revalidate",
+            },
+          });
+        } else {
+          console.warn("[Music Route GET] Google Script returned empty playlist array");
+        }
+      } else {
+        console.warn("[Music Route GET] Google Script returned non-array payload:", rawList);
+      }
+    } else {
+      console.warn(`[Music Route GET] Upstream Google Script responded with HTTP ${res.status}`);
     }
   } catch (err) {
     console.warn("[Music Route GET] Error fetching from Google Sheet 'songs':", err);
   }
 
   // Fallback: Trả về cache cũ nếu có hoặc playlist từ graduationConfig
+  console.warn("[Music Route GET] Falling back to cached/default playlist");
   return NextResponse.json(
     cachedMusicData || {
       activeAudioUrl: graduationConfig.audioUrl,
@@ -277,13 +298,14 @@ export async function GET(request: Request) {
     {
       headers: {
         "Cache-Control": "no-store, no-cache, must-revalidate",
+        "X-Data-Source": "fallback",
       },
     }
   );
 }
 
 /**
- * POST /api/music: Lưu nhạc vào Google Sheet siêu tốc & Cập nhật bộ nhớ đệm server ngay tức khắc
+ * POST /api/music: Lưu nhạc vào Google Sheet siêu tốc & Cập nhật bộ nhớ đệm server
  */
 export async function POST(request: Request) {
   try {
@@ -298,6 +320,14 @@ export async function POST(request: Request) {
     }
 
     const rawUrl = url.trim();
+
+    if (!graduationConfig.googleScriptUrl) {
+      console.error("[Music POST] graduationConfig.googleScriptUrl is not configured");
+      return NextResponse.json(
+        { success: false, error: "Chưa cấu hình Google Script URL" },
+        { status: 500 }
+      );
+    }
 
     // 1. CẬP NHẬT CACHE TẠM TRÊN SERVER LẬP TỨC
     const newTrack: AudioPreset = {
@@ -316,40 +346,74 @@ export async function POST(request: Request) {
     };
     lastFetchTime = Date.now();
 
-    // 2. GỬI TỨC THỜI TỪ SERVER ĐẾN GOOGLE APPS SCRIPT
+    // 2. GỬI TỚI GOOGLE APPS SCRIPT VÀ KIỂM TRA PHẢN HỒI THỰC TẾ
     let googleSheetSaved = false;
-    if (graduationConfig.googleScriptUrl) {
-      try {
-        const sheetRes = await fetch(graduationConfig.googleScriptUrl, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            type: "SAVE_MUSIC",
-            action: "SAVE_MUSIC",
-            sheet: "songs",
-            cloudinarySongLink: rawUrl,
-            singer: artist || "Cloudinary Upload",
-            songTitle: title || "Bài hát mới",
-            status: "true",
-            uploadTime: timestamp,
-            // Backward-compatibility keys
-            title,
-            artist,
-            url: rawUrl,
-            timestamp,
-          }),
-        });
-        if (sheetRes.ok) {
+    let sheetErrorMessage: string | null = null;
+
+    try {
+      const sheetRes = await fetch(graduationConfig.googleScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          type: "SAVE_MUSIC",
+          action: "SAVE_MUSIC",
+          sheet: "songs",
+          cloudinarySongLink: rawUrl,
+          singer: artist || "Cloudinary Upload",
+          songTitle: title || "Bài hát mới",
+          status: "true",
+          uploadTime: timestamp,
+          // Backward-compatibility keys
+          title,
+          artist,
+          url: rawUrl,
+          timestamp,
+        }),
+      });
+
+      if (sheetRes.ok) {
+        const text = await sheetRes.text();
+        let isErrorResponse = false;
+        if (text) {
+          try {
+            const json = JSON.parse(text);
+            if (json && (json.status === "error" || json.result === "error" || json.error)) {
+              isErrorResponse = true;
+              sheetErrorMessage = json.message || json.error || "Google Script báo lỗi khi lưu nhạc";
+            }
+          } catch {
+            if (text.includes("Exception:") || text.includes("Error:") || text.includes("<html")) {
+              isErrorResponse = true;
+              sheetErrorMessage = "Google Script trả về phản hồi không hợp lệ";
+            }
+          }
+        }
+        if (!isErrorResponse) {
           googleSheetSaved = true;
         }
-      } catch (sheetErr) {
-        console.warn("[Music POST] Warning when forwarding to Google Apps Script:", sheetErr);
+      } else {
+        sheetErrorMessage = `Google Script phản hồi HTTP ${sheetRes.status}`;
       }
+    } catch (sheetErr) {
+      sheetErrorMessage = sheetErr instanceof Error ? sheetErr.message : "Lỗi kết nối tới Google Apps Script";
+      console.warn("[Music POST] Warning when forwarding to Google Apps Script:", sheetErr);
+    }
+
+    if (!googleSheetSaved) {
+      console.error("[Music POST] Failed to save music to Google Sheets:", sheetErrorMessage);
+      return NextResponse.json(
+        {
+          success: false,
+          error: sheetErrorMessage || "Không thể lưu bài hát vào Google Sheets",
+          googleSheetSaved: false,
+        },
+        { status: 502 }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      googleSheetSaved,
+      googleSheetSaved: true,
       activeAudioUrl: rawUrl,
       playlist: cachedMusicData.playlist,
     });

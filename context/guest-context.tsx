@@ -351,6 +351,10 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
           fetchGuestsFromSheet(true)
             .then((dynamicRegistry) => {
+              if (!dynamicRegistry || Object.keys(dynamicRegistry).length === 0) {
+                return;
+              }
+
               // Cập nhật ngày giờ sớm nhất từ danh sách Sheet
               const dynamicEarliest = getEarliestGraduationDateTime(dynamicRegistry);
               if (dynamicEarliest.earliestDate) setDefaultEarliestDate(dynamicEarliest.earliestDate);
@@ -400,8 +404,8 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 }
               }
             })
-            .catch(() => {
-              // ignore
+            .catch((err) => {
+              console.warn("[GuestContext] Error syncing guest data from sheet:", err);
             })
             .finally(() => {
               isFetchingSheetRef.current = false;
@@ -414,26 +418,33 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             cache: "no-store",
             headers: { Accept: "application/json" },
           })
-            .then((res) => res.json())
+            .then((res) => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              return res.json();
+            })
             .then((data) => {
-              if (data && data.activeAudioUrl) {
+              if (data && typeof data === "object" && typeof data.activeAudioUrl === "string") {
                 const newUrl = data.activeAudioUrl.trim();
-                setAudioUrlState((prev) => {
-                  if (prev !== newUrl) {
-                    try {
-                      localStorage.setItem("invitation_bg_audio_url", newUrl);
-                      sessionStorage.setItem("invitation_bg_audio_url", newUrl);
-                    } catch {}
-                    if (typeof window !== "undefined") {
-                      window.dispatchEvent(new CustomEvent("AUDIO_URL_CHANGED", { detail: newUrl }));
+                if (newUrl) {
+                  setAudioUrlState((prev) => {
+                    if (prev !== newUrl) {
+                      try {
+                        localStorage.setItem("invitation_bg_audio_url", newUrl);
+                        sessionStorage.setItem("invitation_bg_audio_url", newUrl);
+                      } catch {}
+                      if (typeof window !== "undefined") {
+                        window.dispatchEvent(new CustomEvent("AUDIO_URL_CHANGED", { detail: newUrl }));
+                      }
+                      return newUrl;
                     }
-                    return newUrl;
-                  }
-                  return prev;
-                });
+                    return prev;
+                  });
+                }
               }
             })
-            .catch(() => {});
+            .catch((err) => {
+              console.warn("[GuestContext] Error syncing music from sheet:", err);
+            });
         };
 
         // Chạy ngay khi vừa tải xong trang

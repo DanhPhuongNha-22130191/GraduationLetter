@@ -216,7 +216,13 @@ export async function fetchGuestsFromSheet(forceRefresh = false): Promise<Record
     });
 
     if (res.ok) {
-      const rawList = await res.json();
+      let rawList: unknown;
+      try {
+        rawList = await res.json();
+      } catch (parseErr) {
+        console.warn("[Guests fetch] Could not parse response as JSON:", parseErr);
+      }
+
       if (Array.isArray(rawList) && rawList.length > 0) {
         const registry: Record<string, GuestProfile> = {};
 
@@ -339,11 +345,33 @@ export async function fetchGuestsFromSheet(forceRefresh = false): Promise<Record
             }
           }
           return registry;
+        } else {
+          console.warn("[Guests fetch] No valid guest entries found with slug and name in payload.");
         }
+      } else if (rawList !== undefined) {
+        console.warn("[Guests fetch] Received non-array or empty payload from guests API:", rawList);
       }
+    } else {
+      console.warn(`[Guests fetch] API responded with HTTP ${res.status}`);
     }
   } catch (err) {
     console.warn("Could not fetch guests from Google Sheet:", err);
+  }
+
+  // If fetch failed or returned no entries, fallback to cached registry if available
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(cacheKey) || sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
+          console.warn("[Guests fetch] Falling back to previously cached guest registry due to fetch failure or empty response.");
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore
+    }
   }
 
   return defaultGuestRegistry;
@@ -551,10 +579,26 @@ export async function fetchPhotosFromSheet(forceRefresh = false): Promise<import
   }
 
   // 4. Cập nhật lại cache đồng bộ khi fetch thành công
-  if (fetchSucceeded && typeof window !== "undefined") {
+  if (fetchSucceeded && freshPhotos.length > 0 && typeof window !== "undefined") {
     try {
       localStorage.setItem(cacheKey, JSON.stringify(freshPhotos));
       sessionStorage.setItem(cacheKey, JSON.stringify(freshPhotos));
+    } catch {
+      // ignore
+    }
+  }
+
+  // 5. Nếu fetch không thành công hoặc trả về rỗng, fallback sang cache trước đó nếu có
+  if (!fetchSucceeded && typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(cacheKey) || sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          console.warn("[Photos fetch] Returning cached cloud photos due to fetch failure");
+          return parsed;
+        }
+      }
     } catch {
       // ignore
     }
