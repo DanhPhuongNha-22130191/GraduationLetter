@@ -26,7 +26,12 @@ function extractPhotoUrl(item: Record<string, unknown>): string | null {
     item.SpecialPhoto;
 
   if (raw && typeof raw === "string" && raw.trim().startsWith("http")) {
-    return raw.trim();
+    const trimmed = raw.trim();
+    // Bỏ qua các URL đã bị xóa hoặc không còn tồn tại trên Cloudinary
+    if (trimmed.includes("yy9as7v5ao3rokzud4yt") || trimmed.includes("ufdlvqtnsyd1oymeucfx")) {
+      return null;
+    }
+    return trimmed;
   }
   return null;
 }

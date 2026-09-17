@@ -286,6 +286,11 @@ export const HeroSection: React.FC = () => {
               quality={85}
               className="object-cover"
               unoptimized
+              onError={() => {
+                if (avatarUrl !== "/images/graduation/Avatar.jpg") {
+                  setAvatarUrl("/images/graduation/Avatar.jpg");
+                }
+              }}
             />
 
             {/* Upload Overlay */}

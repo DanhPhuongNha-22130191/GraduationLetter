@@ -35,7 +35,7 @@ export const graduationConfig = {
   subTitle: "With gratitude, pride & a new beginning.",
   
   // Hình ảnh cá nhân & Logo trường
-  avatarUrl: "https://res.cloudinary.com/ddrqfuaji/image/upload/v1789280347/graduation_avatar/ufdlvqtnsyd1oymeucfx.jpg",
+  avatarUrl: "https://res.cloudinary.com/ddrqfuaji/image/upload/v1789645386/graduation_avatar/ib9evfluyohefyazq21b.jpg",
   universityLogoUrl: "/images/graduation/Logo-Dai-Hoc-Nong-Lam-HCM-HCMUAF.webp",
 
   // Thông tin liên hệ
