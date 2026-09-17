@@ -175,15 +175,9 @@ export const HeroSection: React.FC = () => {
         setUploadMessage("Phát hiện ảnh đã có trên Cloud. Đang kích hoạt...");
       }
 
-      // 3. Cập nhật state UI lập tức
-      setAvatarUrl(photoUrl);
+      const previousAvatarUrl = avatarUrl;
 
-      // 4. Lưu bộ nhớ đệm LocalStorage
-      try {
-        localStorage.setItem("custom_hero_avatar_url", photoUrl);
-      } catch {}
-
-      // 4. Lưu bền vững vào Server API route
+      // 3. Lưu bền vững vào Server API route trước khi chốt state
       const avatarRes = await fetch("/api/avatar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -198,6 +192,12 @@ export const HeroSection: React.FC = () => {
         throw new Error(avatarData?.error || "Không thể đồng bộ ảnh đại diện lên máy chủ");
       }
 
+      // 4. Cập nhật state UI và LocalStorage sau khi máy chủ xác nhận thành công
+      setAvatarUrl(photoUrl);
+      try {
+        localStorage.setItem("custom_hero_avatar_url", photoUrl);
+      } catch {}
+
       // 5. Kết thúc trạng thái đang tải sau khi đã xác nhận lưu thành công
       setUploadStatus("success");
       setUploadMessage("Đã cập nhật ảnh bìa thành công!");
@@ -209,13 +209,18 @@ export const HeroSection: React.FC = () => {
     } catch (err) {
       console.error("Avatar upload error:", err);
       setUploadStatus("error");
-      const errMsg = err instanceof Error ? err.message : "Không thể tải ảnh. Vui lòng thử lại!";
+      const errMsg =
+        err instanceof Error
+          ? err.message
+          : typeof navigator !== "undefined" && !navigator.onLine
+          ? "Thiết bị đang ngoại tuyến. Vui lòng kiểm tra kết nối mạng!"
+          : "Không thể tải ảnh. Vui lòng thử lại!";
       setUploadMessage(errMsg);
       setTimeout(() => {
         setIsUploading(false);
         setUploadStatus("idle");
         setUploadMessage("");
-      }, 2000);
+      }, 2500);
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";

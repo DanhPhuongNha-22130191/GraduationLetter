@@ -3,13 +3,16 @@ import { graduationConfig, GalleryItem } from "@/config/graduation";
 
 export const dynamic = "force-dynamic";
 
+let cachedPhotos: GalleryItem[] | null = null;
+let lastPhotosFetchTime = 0;
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const isRefresh = searchParams.get("refresh") === "1";
 
   if (!graduationConfig.googleScriptUrl) {
     console.warn("[Photos Route] graduationConfig.googleScriptUrl is not configured");
-    return NextResponse.json([]);
+    return NextResponse.json(cachedPhotos || []);
   }
 
   try {
@@ -25,6 +28,15 @@ export async function GET(request: Request) {
 
     if (!res.ok) {
       console.warn(`[Photos Route] Upstream Google Script responded with HTTP ${res.status}`);
+      if (cachedPhotos && cachedPhotos.length > 0) {
+        console.warn("[Photos Route] Returning stale cached photos as fallback");
+        return NextResponse.json(cachedPhotos, {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "X-Data-Source": "stale-cache",
+          },
+        });
+      }
       return NextResponse.json([]);
     }
 
@@ -33,11 +45,21 @@ export async function GET(request: Request) {
       rawList = await res.json();
     } catch (parseErr) {
       console.warn("[Photos Route] Failed to parse JSON from Google Script:", parseErr);
+      if (cachedPhotos && cachedPhotos.length > 0) {
+        return NextResponse.json(cachedPhotos, {
+          headers: { "X-Data-Source": "stale-cache" },
+        });
+      }
       return NextResponse.json([]);
     }
 
     if (!Array.isArray(rawList)) {
       console.warn("[Photos Route] Google Script returned non-array payload:", rawList);
+      if (cachedPhotos && cachedPhotos.length > 0) {
+        return NextResponse.json(cachedPhotos, {
+          headers: { "X-Data-Source": "stale-cache" },
+        });
+      }
       return NextResponse.json([]);
     }
 
@@ -204,6 +226,11 @@ export async function GET(request: Request) {
       return idxB - idxA;
     });
 
+    if (validPhotos.length > 0) {
+      cachedPhotos = validPhotos;
+      lastPhotosFetchTime = Date.now();
+    }
+
     return NextResponse.json(validPhotos, {
       headers: {
         "Cache-Control": isRefresh
@@ -213,6 +240,12 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     console.error("Error in /api/photos route:", err);
+    if (cachedPhotos && cachedPhotos.length > 0) {
+      console.warn("[Photos Route] Returning cachedPhotos in error handler");
+      return NextResponse.json(cachedPhotos, {
+        headers: { "X-Data-Source": "stale-cache" },
+      });
+    }
     return NextResponse.json([]);
   }
 }

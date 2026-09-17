@@ -16,6 +16,45 @@ interface PhotoPayload {
 // Global server-side queue to serialize all Google Sheets writes across all concurrent users
 let serverWriteQueue: Promise<unknown> = Promise.resolve();
 
+/**
+ * In-Memory Sliding Rate Limiter
+ * Giới hạn: Tối đa 5 yêu cầu upload / 60 giây trên mỗi địa chỉ IP
+ * Trong môi trường production multi-instance serverless, giải pháp lý tưởng là Upstash / Redis.
+ * Với instance hiện tại, in-memory Map này bảo vệ API chống spam và cạn kiệt quota Google Apps Script.
+ */
+interface RateLimitRecord {
+  count: number;
+  resetTime: number;
+}
+const rateLimitMap = new Map<string, RateLimitRecord>();
+
+function checkRateLimit(ip: string, maxRequests = 5, windowMs = 60000): { allowed: boolean; retryAfterSeconds: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+
+  // Dọn dẹp định kỳ nếu map quá lớn (> 5000 IPs)
+  if (rateLimitMap.size > 5000) {
+    for (const [key, val] of rateLimitMap.entries()) {
+      if (now > val.resetTime) {
+        rateLimitMap.delete(key);
+      }
+    }
+  }
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+
+  if (record.count >= maxRequests) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((record.resetTime - now) / 1000));
+    return { allowed: false, retryAfterSeconds };
+  }
+
+  record.count += 1;
+  return { allowed: true, retryAfterSeconds: 0 };
+}
+
 async function writeSinglePhotoToSheet(photo: PhotoPayload, retries = 3): Promise<boolean> {
   if (!graduationConfig.googleScriptUrl || !photo.photoUrl) {
     console.error("[Photos Upload] Missing googleScriptUrl or photoUrl", {
@@ -87,19 +126,63 @@ async function writeSinglePhotoToSheet(photo: PhotoPayload, retries = 3): Promis
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    // 1. Rate Limiting Protection per Client IP
+    const clientIp =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      request.headers.get("x-real-ip") ||
+      request.headers.get("cf-connecting-ip") ||
+      "client-ip";
+
+    const { allowed, retryAfterSeconds } = checkRateLimit(clientIp, 5, 60000);
+    if (!allowed) {
+      console.warn(`[Photos Upload] Rate limit exceeded for IP: ${clientIp}`);
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Bạn đang gửi yêu cầu tải ảnh quá nhanh. Vui lòng chờ ${retryAfterSeconds} giây trước khi gửi tiếp.`,
+          retryAfter: retryAfterSeconds,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(retryAfterSeconds),
+          },
+        }
+      );
+    }
+
+    // 2. Validate payload
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ success: false, error: "Dữ liệu gửi lên không đúng định dạng JSON" }, { status: 400 });
+    }
+
     const rawPhotos: PhotoPayload[] = Array.isArray(body.photos)
-      ? body.photos
+      ? (body.photos as PhotoPayload[])
       : body.photoUrl
-      ? [body]
+      ? [body as unknown as PhotoPayload]
       : [];
 
-    // Giới hạn tối đa 12 ảnh mỗi lần gửi để đảm bảo chất lượng và tốc độ
-    const photos = rawPhotos.slice(0, 12);
+    // Giới hạn tối đa 12 ảnh mỗi lần gửi
+    const photos = rawPhotos.slice(0, 12).filter((p) => {
+      if (!p || typeof p.photoUrl !== "string") return false;
+      const url = p.photoUrl.trim();
+      return url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/");
+    });
 
     if (photos.length === 0) {
-      return NextResponse.json({ success: false, error: "Không có dữ liệu ảnh" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Không có dữ liệu ảnh hợp lệ" }, { status: 400 });
     }
+
+    // Sanitize string fields
+    photos.forEach((p) => {
+      p.name = (p.name || "Khách mời").toString().trim().slice(0, 200);
+      p.caption = (p.caption || "Ảnh kỷ niệm cùng Nhã").toString().trim().slice(0, 500);
+      p.category = (p.category || "Kỷ Niệm").toString().trim().slice(0, 100);
+      p.photoUrl = p.photoUrl.trim().slice(0, 2048);
+    });
 
     // Task xử lý tuần tự cho request hiện tại
     const processBatch = async (): Promise<{ successCount: number; failedUrls: string[] }> => {
@@ -113,7 +196,7 @@ export async function POST(request: Request) {
         } else {
           failedUrls.push(photos[i].photoUrl);
         }
-        // Safe 350ms delay between consecutive rows for Google Sheets LockService
+        // Delay 350ms giữa các dòng ghi để bảo vệ Google Sheets LockService
         if (i < photos.length - 1) {
           await new Promise((resolve) => setTimeout(resolve, 350));
         }
@@ -124,7 +207,7 @@ export async function POST(request: Request) {
 
     // Chuỗi hóa hàng đợi tuần tự để bảo vệ Google Sheets LockService
     const queuePromise = serverWriteQueue.catch(() => {}).then(() => processBatch());
-    serverWriteQueue = queuePromise;
+    serverWriteQueue = queuePromise.catch(() => {});
 
     const { successCount, failedUrls } = await queuePromise;
 

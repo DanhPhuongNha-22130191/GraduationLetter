@@ -745,16 +745,7 @@ export const GallerySection: React.FC = () => {
         };
       });
 
-      const updatedUserPhotos = [...newPhotos, ...userPhotos];
-      setUserPhotos(updatedUserPhotos);
-
-      try {
-        localStorage.setItem("graduation_user_photos", JSON.stringify(updatedUserPhotos));
-      } catch {
-        // ignore
-      }
-
-      // 4. Gửi qua Server API Route /api/photos/upload
+      // 4. Gửi qua Server API Route /api/photos/upload TRƯỚC KHI cập nhật UI client
       const uploadRes = await fetch("/api/photos/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -776,10 +767,30 @@ export const GallerySection: React.FC = () => {
       const uploadData = await uploadRes.json().catch(() => null);
 
       if (!uploadRes.ok || !uploadData?.success) {
-        throw new Error(uploadData?.error || "Không thể lưu thông tin ảnh vào Google Sheets");
+        if (uploadRes.status === 429) {
+          throw new Error(uploadData?.error || "Bạn đang gửi yêu cầu quá nhanh. Vui lòng thử lại sau giây lát.");
+        }
+        throw new Error(uploadData?.error || "Không thể lưu thông tin ảnh vào Google Sheets. Vui lòng thử lại!");
       }
 
-      setUploadSuccessCount(uploadData.count || uploadedUrls.length);
+      // 5. CHỈ cập nhật state UI và localStorage sau khi máy chủ xác nhận đã lưu thành công vào Google Sheets
+      const savedUrlsSet = new Set<string>(
+        uploadData.failedUrls && Array.isArray(uploadData.failedUrls)
+          ? uploadedUrls.filter((u) => !uploadData.failedUrls.includes(u))
+          : uploadedUrls
+      );
+
+      const confirmedNewPhotos = newPhotos.filter((p) => savedUrlsSet.has(p.src));
+      const updatedUserPhotos = [...confirmedNewPhotos, ...userPhotos];
+      setUserPhotos(updatedUserPhotos);
+
+      try {
+        localStorage.setItem("graduation_user_photos", JSON.stringify(updatedUserPhotos));
+      } catch {
+        // ignore
+      }
+
+      setUploadSuccessCount(uploadData.count || confirmedNewPhotos.length);
       setUploadSuccess(true);
       setTimeout(() => {
         setIsUploadOpen(false);
@@ -793,7 +804,12 @@ export const GallerySection: React.FC = () => {
       }, 1200);
     } catch (err) {
       console.error("[Gallery Upload Error]:", err);
-      const errMsg = err instanceof Error ? err.message : "Có lỗi xảy ra khi lưu ảnh. Vui lòng thử lại!";
+      const errMsg =
+        err instanceof Error
+          ? err.message
+          : typeof navigator !== "undefined" && !navigator.onLine
+          ? "Thiết bị đang ngoại tuyến. Vui lòng kiểm tra kết nối mạng!"
+          : "Có lỗi xảy ra khi lưu ảnh. Vui lòng thử lại!";
       setUploadError(errMsg);
       setIsUploading(false);
     }
@@ -1074,18 +1090,18 @@ export const GallerySection: React.FC = () => {
         {isUploadOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg bg-emerald-deep text-ivory rounded-3xl p-6 sm:p-8 border-2 border-gold/50 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              className="relative w-full max-w-lg bg-emerald-950 text-ivory-100 rounded-3xl p-6 sm:p-8 border border-gold-500/30 shadow-soft-lg overflow-hidden max-h-[90vh] overflow-y-auto"
             >
               {/* Gold Ambient Glow */}
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-gold/15 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-gold-500/10 rounded-full blur-3xl pointer-events-none" />
 
               {/* Close Button */}
               <button
                 onClick={() => setIsUploadOpen(false)}
-                className="absolute top-4 right-4 p-2 rounded-full text-gold/70 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer"
+                className="absolute top-4 right-4 p-2 rounded-full text-gold-400 hover:text-gold-200 hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1097,13 +1113,13 @@ export const GallerySection: React.FC = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-8 space-y-4"
                 >
-                  <div className="w-16 h-16 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center mx-auto text-gold shadow-gold-glow">
+                  <div className="w-16 h-16 rounded-full bg-gold-500/20 border border-gold-500/40 flex items-center justify-center mx-auto text-gold-300 shadow-soft-sm">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h3 className="font-serif text-2xl font-bold text-gold-shimmer">
+                  <h3 className="font-serif text-2xl font-bold text-gold-200">
                     {t.gallery.uploadSuccessTitle}
                   </h3>
-                  <p className="font-sans text-sm text-ivory/80 max-w-xs mx-auto">
+                  <p className="font-sans text-sm text-ivory-100/80 max-w-xs mx-auto">
                     {uploadSuccessCount > 1
                       ? `Đã tải lên thành công ${uploadSuccessCount} bức ảnh kỷ niệm vào bộ sưu tập của Nhã!`
                       : t.gallery.uploadSuccessDesc}
@@ -1116,16 +1132,16 @@ export const GallerySection: React.FC = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-6 sm:py-8 space-y-4"
                 >
-                  <div className="w-16 h-16 rounded-full bg-gold/15 border-2 border-gold/60 flex items-center justify-center mx-auto text-gold shadow-gold-glow">
+                  <div className="w-16 h-16 rounded-full bg-gold-500/15 border border-gold-500/40 flex items-center justify-center mx-auto text-gold-300 shadow-soft-sm">
                     <Lock className="w-7 h-7 stroke-[2]" />
                   </div>
-                  <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gold/20 text-gold text-[10px] font-sans font-bold uppercase tracking-widest border border-gold/40">
+                  <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gold-500/15 text-gold-300 text-[10px] font-sans font-bold uppercase tracking-widest border border-gold-500/30">
                     <span>QUYỀN TRUY CẬP KHÁCH MỜI</span>
                   </div>
-                  <h3 className="font-serif text-2xl font-bold text-gold-shimmer">
+                  <h3 className="font-serif text-2xl font-bold text-gold-200">
                     {t.gallery.uploadRestrictedTitle}
                   </h3>
-                  <p className="font-sans text-xs sm:text-sm text-ivory/80 max-w-sm mx-auto leading-relaxed">
+                  <p className="font-sans text-xs sm:text-sm text-ivory-100/80 max-w-sm mx-auto leading-relaxed">
                     {!isRegisteredGuest
                       ? t.gallery.uploadRestrictedDesc
                       : "Khách mời hiện chưa được cấp quyền đóng góp ảnh cho kho kỷ niệm. Vui lòng liên hệ Nhã để mở quyền nhé! 💌"}
@@ -1134,7 +1150,7 @@ export const GallerySection: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsUploadOpen(false)}
-                      className="px-6 py-2.5 rounded-full bg-gold-gradient text-emerald-deep font-sans font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all shadow-gold-glow cursor-pointer"
+                      className="px-6 py-2.5 rounded-full bg-gold-500 hover:bg-gold-600 text-emerald-950 font-sans font-bold text-xs uppercase tracking-wider active:scale-95 transition-all shadow-soft-xs cursor-pointer"
                     >
                       Đã hiểu
                     </button>
@@ -1144,14 +1160,14 @@ export const GallerySection: React.FC = () => {
                 /* Upload Form */
                 <div>
                   <div className="text-center mb-6">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/20 text-gold text-[11px] font-sans font-bold uppercase tracking-widest border border-gold/40 mb-2">
-                      <Heart className="w-3 h-3 text-gold fill-gold" />
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/15 text-gold-300 text-[11px] font-sans font-semibold uppercase tracking-widest border border-gold-500/30 mb-2">
+                      <Heart className="w-3 h-3 text-gold-400 fill-gold-400" />
                       <span>{t.gallery.uploadModalTitle}</span>
                     </div>
-                    <h3 className="font-serif text-2xl sm:text-3xl font-bold text-gold-shimmer">
+                    <h3 className="font-serif text-2xl sm:text-3xl font-bold text-gold-200">
                       Chia Sẻ Khoảnh Khắc
                     </h3>
-                    <p className="font-sans text-xs text-ivory/70 mt-1 max-w-sm mx-auto">
+                    <p className="font-sans text-xs text-ivory-100/70 mt-1 max-w-sm mx-auto">
                       {t.gallery.uploadModalDesc}
                     </p>
                   </div>
@@ -1160,10 +1176,10 @@ export const GallerySection: React.FC = () => {
                     {/* Media Source Selector Tabs: Upload File or URL */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold">
+                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-300 font-semibold">
                           Hình ảnh kỷ niệm:
                         </label>
-                        <div className="flex bg-white/10 p-0.5 rounded-lg border border-gold/30">
+                        <div className="flex bg-emerald-900/60 p-0.5 rounded-lg border border-gold-500/25">
                           <button
                             type="button"
                             onClick={() => {
@@ -1172,8 +1188,8 @@ export const GallerySection: React.FC = () => {
                             }}
                             className={`px-2.5 py-1 rounded-md text-[11px] font-sans font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                               uploadSourceMode === "file"
-                                ? "bg-gold text-emerald-deep shadow-xs"
-                                : "text-ivory/70 hover:text-ivory"
+                                ? "bg-gold-500 text-emerald-950 shadow-xs"
+                                : "text-ivory-100/70 hover:text-ivory-100"
                             }`}
                           >
                             <FileImage className="w-3 h-3" />
@@ -1187,8 +1203,8 @@ export const GallerySection: React.FC = () => {
                             }}
                             className={`px-2.5 py-1 rounded-md text-[11px] font-sans font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                               uploadSourceMode === "url"
-                                ? "bg-gold text-emerald-deep shadow-xs"
-                                : "text-ivory/70 hover:text-ivory"
+                                ? "bg-gold-500 text-emerald-950 shadow-xs"
+                                : "text-ivory-100/70 hover:text-ivory-100"
                             }`}
                           >
                             <LinkIcon className="w-3 h-3" />
@@ -1213,16 +1229,16 @@ export const GallerySection: React.FC = () => {
                             <div className="space-y-2">
                               {/* Preview Header Bar */}
                               <div className="flex items-center justify-between px-1 text-xs">
-                                <span className="font-sans font-semibold text-gold-light flex items-center gap-1">
-                                  <Images className="w-3.5 h-3.5 text-gold" />
-                                  Đã chọn <strong className="text-gold font-bold">{filePreviews.length}/{MAX_UPLOAD_PHOTOS}</strong> bức ảnh
+                                <span className="font-sans font-semibold text-gold-300 flex items-center gap-1">
+                                  <Images className="w-3.5 h-3.5 text-gold-400" />
+                                  Đã chọn <strong className="text-gold-200 font-bold">{filePreviews.length}/{MAX_UPLOAD_PHOTOS}</strong> bức ảnh
                                 </span>
                                 <div className="flex items-center gap-2">
                                   {filePreviews.length < MAX_UPLOAD_PHOTOS && (
                                     <button
                                       type="button"
                                       onClick={() => fileInputRef.current?.click()}
-                                      className="inline-flex items-center gap-1 text-[11px] text-gold hover:text-gold-light font-sans font-semibold px-2 py-0.5 rounded-full bg-gold/15 border border-gold/40 hover:bg-gold/25 transition-all cursor-pointer"
+                                      className="inline-flex items-center gap-1 text-[11px] text-gold-300 hover:text-gold-200 font-sans font-semibold px-2 py-0.5 rounded-full bg-gold-500/15 border border-gold-500/30 hover:bg-gold-500/25 transition-all cursor-pointer"
                                     >
                                       <Plus className="w-3 h-3" />
                                       <span>Thêm ảnh</span>
@@ -1242,11 +1258,11 @@ export const GallerySection: React.FC = () => {
                               </div>
 
                               {/* Multi-Photo Thumbnails Grid */}
-                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-52 overflow-y-auto p-1.5 rounded-2xl bg-black/30 border border-gold/30 scrollbar-thin">
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-52 overflow-y-auto p-1.5 rounded-2xl bg-black/30 border border-gold-500/20 scrollbar-thin">
                                 {filePreviews.map((url, idx) => (
                                   <div
                                     key={idx}
-                                    className="relative aspect-square rounded-xl overflow-hidden border border-gold/40 shadow-xs group bg-emerald-deep/40"
+                                    className="relative aspect-square rounded-xl overflow-hidden border border-gold-500/30 shadow-xs group bg-emerald-900/40"
                                   >
                                     <Image
                                       src={url}
@@ -1255,7 +1271,7 @@ export const GallerySection: React.FC = () => {
                                       className="object-cover"
                                     />
                                     {/* Index Badge */}
-                                    <span className="absolute top-1 left-1 px-1.5 py-0.2 rounded-md bg-black/70 text-[9px] font-sans font-bold text-gold border border-gold/30">
+                                    <span className="absolute top-1 left-1 px-1.5 py-0.2 rounded-md bg-black/70 text-[9px] font-sans font-bold text-gold-300 border border-gold-500/30">
                                       #{idx + 1}
                                     </span>
                                     {/* Delete Button */}
@@ -1270,15 +1286,15 @@ export const GallerySection: React.FC = () => {
                                   </div>
                                 ))}
 
-                                {/* Add More Tile in Grid (chỉ hiện khi chưa đủ 12 ảnh) */}
+                                {/* Add More Tile in Grid */}
                                 {filePreviews.length < MAX_UPLOAD_PHOTOS && (
                                   <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="aspect-square rounded-xl border-2 border-dashed border-gold/40 hover:border-gold hover:bg-gold/10 bg-white/5 transition-all flex flex-col items-center justify-center p-1 text-center cursor-pointer group"
+                                    className="aspect-square rounded-xl border-2 border-dashed border-gold-500/30 hover:border-gold-500 hover:bg-gold-500/10 bg-white/5 transition-all flex flex-col items-center justify-center p-1 text-center cursor-pointer group"
                                   >
-                                    <Plus className="w-5 h-5 text-gold group-hover:scale-110 transition-transform" />
-                                    <span className="text-[9px] text-gold-light font-sans font-semibold mt-0.5">
+                                    <Plus className="w-5 h-5 text-gold-400 group-hover:scale-110 transition-transform" />
+                                    <span className="text-[9px] text-gold-300 font-sans font-semibold mt-0.5">
                                       Thêm ảnh ({filePreviews.length}/{MAX_UPLOAD_PHOTOS})
                                     </span>
                                   </button>
@@ -1289,15 +1305,15 @@ export const GallerySection: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => fileInputRef.current?.click()}
-                              className="w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl border-2 border-dashed border-gold/40 hover:border-gold hover:bg-gold/5 bg-white/5 transition-all flex flex-col items-center justify-center p-4 text-center cursor-pointer group"
+                              className="w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl border-2 border-dashed border-gold-500/30 hover:border-gold-500 hover:bg-gold-500/10 bg-white/5 transition-all flex flex-col items-center justify-center p-4 text-center cursor-pointer group"
                             >
-                              <div className="w-12 h-12 rounded-full bg-gold/15 text-gold flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
+                              <div className="w-12 h-12 rounded-full bg-gold-500/15 text-gold-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
                                 <UploadCloud className="w-6 h-6" />
                               </div>
-                              <span className="font-sans text-xs font-semibold text-gold-light block">
+                              <span className="font-sans text-xs font-semibold text-gold-200 block">
                                 {t.gallery.uploadSelectFile}
                               </span>
-                              <span className="font-sans text-[11px] text-ivory/50 mt-1">
+                              <span className="font-sans text-[11px] text-ivory-100/60 mt-1">
                                 Hỗ trợ chọn tối đa 12 ảnh mỗi lần (PNG, JPG, JPEG, WEBP) giúp tải nhanh & bảo toàn chất lượng
                               </span>
                             </button>
@@ -1322,15 +1338,15 @@ export const GallerySection: React.FC = () => {
                                   }
                                 }}
                                 placeholder={t.gallery.uploadUrlPlaceholder}
-                                className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all"
+                                className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white/10 border border-gold-500/30 text-ivory-100 placeholder-ivory-100/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-all"
                               />
-                              <LinkIcon className="w-3.5 h-3.5 text-gold absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                              <LinkIcon className="w-3.5 h-3.5 text-gold-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                             </div>
                             <button
                               type="button"
                               onClick={handleAddUrl}
                               disabled={urlList.length >= MAX_UPLOAD_PHOTOS || !imageUrlInput.trim()}
-                              className="px-3 py-2.5 rounded-xl bg-gold text-emerald-deep font-sans font-bold text-xs hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="px-3 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-600 text-emerald-950 font-sans font-bold text-xs active:scale-95 transition-all cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               + Thêm link
                             </button>
@@ -1339,8 +1355,8 @@ export const GallerySection: React.FC = () => {
                           {urlList.length > 0 ? (
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between text-xs px-1">
-                                <span className="font-sans text-gold-light font-semibold">
-                                  Đã nhập <strong className="text-gold">{urlList.length}/{MAX_UPLOAD_PHOTOS}</strong> liên kết ảnh
+                                <span className="font-sans text-gold-300 font-semibold">
+                                  Đã nhập <strong className="text-gold-200">{urlList.length}/{MAX_UPLOAD_PHOTOS}</strong> liên kết ảnh
                                 </span>
                                 <button
                                   type="button"
@@ -1350,11 +1366,11 @@ export const GallerySection: React.FC = () => {
                                   Xóa hết
                                 </button>
                               </div>
-                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1.5 rounded-2xl bg-black/30 border border-gold/30">
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1.5 rounded-2xl bg-black/30 border border-gold-500/20">
                                 {urlList.map((url, idx) => (
                                   <div
                                     key={idx}
-                                    className="relative aspect-square rounded-xl overflow-hidden border border-gold/40 shadow-xs bg-emerald-deep/40"
+                                    className="relative aspect-square rounded-xl overflow-hidden border border-gold-500/30 shadow-xs bg-emerald-900/40"
                                   >
                                     <Image
                                       src={url}
@@ -1377,9 +1393,9 @@ export const GallerySection: React.FC = () => {
                               </div>
                             </div>
                           ) : (
-                            <div className="w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl border border-gold/20 bg-white/5 flex flex-col items-center justify-center p-4 text-center">
-                              <ImageIcon className="w-8 h-8 text-gold/40 mb-1" />
-                              <span className="text-[11px] text-ivory/60 font-sans">
+                            <div className="w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl border border-gold-500/20 bg-white/5 flex flex-col items-center justify-center p-4 text-center">
+                              <ImageIcon className="w-8 h-8 text-gold-400/40 mb-1" />
+                              <span className="text-[11px] text-ivory-100/60 font-sans">
                                 Dán liên kết ảnh trực tiếp (URL) và nhấn &quot;+ Thêm link&quot; để thêm nhiều ảnh
                               </span>
                             </div>
@@ -1391,18 +1407,18 @@ export const GallerySection: React.FC = () => {
                     {/* Uploader Name */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold">
+                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-300 font-semibold">
                           {t.gallery.uploadNameLabel}:
                         </label>
-                        <span className="inline-flex items-center gap-1 text-[10px] text-gold font-sans font-semibold">
-                          <ShieldCheck className="w-3 h-3 text-gold" /> Khách mời đã xác thực
+                        <span className="inline-flex items-center gap-1 text-[10px] text-gold-300 font-sans font-semibold">
+                          <ShieldCheck className="w-3 h-3 text-gold-400" /> Khách mời đã xác thực
                         </span>
                       </div>
                       <input
                         type="text"
                         value={guestName || uploaderName}
                         readOnly
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-gold/15 border border-gold/60 text-gold-light font-sans text-sm sm:text-xs font-bold focus:outline-hidden cursor-not-allowed"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-gold-500/10 border border-gold-500/30 text-gold-200 font-sans text-sm sm:text-xs font-semibold focus:outline-hidden cursor-not-allowed"
                         required
                       />
                     </div>
@@ -1410,11 +1426,11 @@ export const GallerySection: React.FC = () => {
                     {/* Category Selection */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold">
+                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-300 font-semibold">
                           {t.gallery.uploadCategoryLabel}:
                         </label>
                         {isCustomCategory && (
-                          <span className="text-[10px] font-sans text-gold bg-gold/15 px-2 py-0.5 rounded-full border border-gold/30">
+                          <span className="text-[10px] font-sans text-gold-200 bg-gold-500/20 px-2 py-0.5 rounded-full border border-gold-500/30">
                             Chủ đề riêng
                           </span>
                         )}
@@ -1434,8 +1450,8 @@ export const GallerySection: React.FC = () => {
                               }}
                               className={`text-[11px] sm:text-xs px-3 py-1.5 rounded-full font-sans font-semibold transition-colors duration-150 cursor-pointer border touch-manipulation active:scale-95 ${
                                 isSelected
-                                  ? "bg-gold text-emerald-deep border-gold shadow-xs"
-                                  : "bg-white/5 text-ivory/75 border-white/20 hover:border-gold/50"
+                                  ? "bg-gold-500 text-emerald-950 border-gold-500 shadow-soft-xs"
+                                  : "bg-white/5 text-ivory-100/75 border-white/20 hover:border-gold-500/50"
                               }`}
                             >
                               {cat}
@@ -1449,8 +1465,8 @@ export const GallerySection: React.FC = () => {
                           onClick={() => setIsCustomCategory(true)}
                           className={`text-[11px] sm:text-xs px-3 py-1.5 rounded-full font-sans font-semibold transition-colors duration-150 cursor-pointer border flex items-center gap-1 touch-manipulation active:scale-95 ${
                             isCustomCategory
-                              ? "bg-gold text-emerald-deep border-gold shadow-xs"
-                              : "bg-gold/10 text-gold-light border-gold/40 hover:bg-gold/20"
+                              ? "bg-gold-500 text-emerald-950 border-gold-500 shadow-soft-xs"
+                              : "bg-gold-500/10 text-gold-300 border-gold-500/30 hover:bg-gold-500/20"
                           }`}
                         >
                           <Plus className="w-3 h-3" />
@@ -1458,7 +1474,7 @@ export const GallerySection: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Custom Category Input (Clean, smooth without jerky layout shifts) */}
+                      {/* Custom Category Input */}
                       {isCustomCategory && (
                         <div className="pt-1">
                           <div className="relative">
@@ -1470,11 +1486,11 @@ export const GallerySection: React.FC = () => {
                                 setIsCustomCategory(true);
                               }}
                               placeholder={t.gallery.uploadCustomCategoryPlaceholder}
-                              className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/60 text-ivory placeholder-ivory/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all shadow-inner"
+                              className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white/10 border border-gold-500/40 text-ivory-100 placeholder-ivory-100/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-all shadow-inner"
                             />
-                            <Tag className="w-3.5 h-3.5 text-gold absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <Tag className="w-3.5 h-3.5 text-gold-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                           </div>
-                          <p className="text-[10px] text-ivory/50 mt-1 pl-1">
+                          <p className="text-[10px] text-ivory-100/50 mt-1 pl-1">
                             💡 Gợi ý: Nhập tên chủ đề bạn muốn đặt (VD: Du Lịch, Hội Bạn Thân, Kỷ Niệm Cấp 3...).
                           </p>
                         </div>
@@ -1483,7 +1499,7 @@ export const GallerySection: React.FC = () => {
 
                     {/* Caption / Story */}
                     <div>
-                      <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold mb-1">
+                      <label className="block text-xs font-sans uppercase tracking-wider text-gold-300 font-semibold mb-1">
                         {t.gallery.uploadCaptionLabel}:
                       </label>
                       <textarea
@@ -1491,17 +1507,17 @@ export const GallerySection: React.FC = () => {
                         value={caption}
                         onChange={(e) => setCaption(e.target.value)}
                         placeholder={t.gallery.uploadCaptionPlaceholder}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all resize-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-gold-500/30 text-ivory-100 placeholder-ivory-100/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-all resize-none"
                       />
                     </div>
 
                     {/* Priority Order Input */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold">
+                        <label className="block text-xs font-sans uppercase tracking-wider text-gold-300 font-semibold">
                           Thứ tự ưu tiên (Tùy chọn):
                         </label>
-                        <span className="text-[10px] text-ivory/50 font-sans">
+                        <span className="text-[10px] text-ivory-100/50 font-sans">
                           Số càng nhỏ xếp càng trước (1, 2, 3...)
                         </span>
                       </div>
@@ -1513,15 +1529,15 @@ export const GallerySection: React.FC = () => {
                         value={uploadPriority}
                         onChange={(e) => setUploadPriority(e.target.value)}
                         placeholder="Mặc định là 1"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-gold-500/30 text-ivory-100 placeholder-ivory-100/40 text-sm sm:text-xs font-sans focus:outline-hidden focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-all"
                       />
-                      <p className="text-[10px] text-ivory/50 mt-1 pl-1">
+                      <p className="text-[10px] text-ivory-100/50 mt-1 pl-1">
                         💡 Mức độ ưu tiên mặc định là 1. Số càng nhỏ (1, 2, 3...) sẽ được ưu tiên hiển thị ở các phân trang đầu tiên.
                       </p>
                     </div>
 
                     {uploadError && (
-                      <p className="text-red-400 text-xs font-sans bg-red-950/40 p-2.5 rounded-xl border border-red-500/40">
+                      <p className="text-red-300 text-xs font-sans bg-red-950/60 p-2.5 rounded-xl border border-red-500/40">
                         {uploadError}
                       </p>
                     )}
@@ -1535,7 +1551,7 @@ export const GallerySection: React.FC = () => {
                           ? selectedFiles.length === 0
                           : urlList.length === 0 && !imageUrlInput.trim())
                       }
-                      className="w-full py-3 rounded-xl bg-gold-gradient text-emerald-deep font-sans font-bold text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 hover:brightness-110 active:scale-98 transition-all cursor-pointer shadow-gold-glow disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full py-3 rounded-xl bg-gold-500 hover:bg-gold-600 text-emerald-950 font-sans font-bold text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer shadow-soft-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isUploading ? (
                         <>
@@ -1574,20 +1590,20 @@ export const GallerySection: React.FC = () => {
             className="fixed inset-0 z-50 bg-black/92 backdrop-blur-lg flex items-center justify-center p-4 sm:p-6 select-none"
           >
             <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
+              exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative max-w-2xl w-full bg-emerald-deep rounded-3xl overflow-hidden border border-gold/40 shadow-2xl flex flex-col"
+              className="relative max-w-2xl w-full bg-emerald-950 rounded-3xl overflow-hidden border border-gold-500/30 shadow-soft-lg flex flex-col"
             >
               {/* Top Bar with Counter & Close */}
-              <div className="flex items-center justify-between p-4 px-6 border-b border-gold/20 text-ivory">
-                <span className="text-xs font-sans tracking-widest uppercase text-gold font-semibold">
+              <div className="flex items-center justify-between p-4 px-6 border-b border-gold-500/20 text-ivory-100">
+                <span className="text-xs font-sans tracking-widest uppercase text-gold-300 font-semibold">
                   {selectedIndex + 1} / {filteredItems.length}
                 </span>
                 <button
                   onClick={handleCloseLightbox}
-                  className="w-9 h-9 rounded-full bg-gold/15 text-gold flex items-center justify-center hover:bg-gold hover:text-emerald-deep transition-colors touch-manipulation border border-gold/30"
+                  className="w-9 h-9 rounded-full bg-gold-500/15 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-colors touch-manipulation border border-gold-500/30"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1610,25 +1626,25 @@ export const GallerySection: React.FC = () => {
                 {/* Left/Right Arrow Navigation */}
                 <button
                   onClick={handlePrev}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 text-gold flex items-center justify-center hover:bg-gold hover:text-emerald-deep transition-all backdrop-blur-md border border-gold/30 active:scale-95 touch-manipulation"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-all backdrop-blur-md border border-gold-500/30 active:scale-95 touch-manipulation"
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
 
                 <button
                   onClick={handleNext}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 text-gold flex items-center justify-center hover:bg-gold hover:text-emerald-deep transition-all backdrop-blur-md border border-gold/30 active:scale-95 touch-manipulation"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-all backdrop-blur-md border border-gold-500/30 active:scale-95 touch-manipulation"
                 >
                   <ChevronRight className="w-6 h-6" />
                 </button>
               </div>
 
               {/* Caption Footer */}
-              <div className="p-4 sm:p-6 bg-emerald-deep text-ivory border-t border-gold/20 text-center">
-                <span className="text-xs font-sans uppercase tracking-[0.2em] text-gold font-bold block mb-1">
+              <div className="p-4 sm:p-6 bg-emerald-950 text-ivory-100 border-t border-gold-500/20 text-center">
+                <span className="text-xs font-sans uppercase tracking-[0.2em] text-gold-300 font-semibold block mb-1">
                   {currentPhoto.category}
                 </span>
-                <h3 className="font-serif text-lg sm:text-xl font-bold text-ivory">
+                <h3 className="font-serif text-lg sm:text-xl font-semibold text-ivory-50">
                   {currentPhoto.title}
                 </h3>
               </div>

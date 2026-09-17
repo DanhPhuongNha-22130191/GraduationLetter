@@ -451,28 +451,51 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         syncGuestDataFromSheet();
         syncMusicFromSheet();
 
-        // Thiết lập vòng lặp Realtime tự động quét thay đổi từ Google Sheets siêu tốc mỗi 3 giây khi Tab đang mở
+        let lastSyncTime = Date.now();
+
+        // 5. Chu kỳ đồng bộ định kỳ 45s (chỉ khi tab đang hiển thị) thay vì 3s để bảo vệ quota Google Apps Script
         const intervalId = setInterval(() => {
           if (typeof document !== "undefined" && document.visibilityState === "visible") {
+            if (typeof navigator !== "undefined" && !navigator.onLine) return;
+            lastSyncTime = Date.now();
             syncGuestDataFromSheet();
             syncMusicFromSheet();
           }
-        }, 3000);
+        }, 45000);
 
-        // Tự động quét lại ngay lập tức khi người dùng quay lại tab thiệp
+        // Tự động kiểm tra lại khi người dùng quay lại tab (với debounce tối thiểu 15s để tránh spam)
         const handleVisibilityChange = () => {
           if (document.visibilityState === "visible") {
-            syncGuestDataFromSheet();
-            syncMusicFromSheet();
+            const now = Date.now();
+            if (now - lastSyncTime > 15000) {
+              lastSyncTime = now;
+              syncGuestDataFromSheet();
+              syncMusicFromSheet();
+            }
           }
         };
         document.addEventListener("visibilitychange", handleVisibilityChange);
 
         const handleWindowFocus = () => {
-          syncGuestDataFromSheet();
-          syncMusicFromSheet();
+          const now = Date.now();
+          if (now - lastSyncTime > 15000) {
+            lastSyncTime = now;
+            syncGuestDataFromSheet();
+            syncMusicFromSheet();
+          }
         };
         window.addEventListener("focus", handleWindowFocus);
+
+        // Lắng nghe sự kiện người dùng tương tác mở modal nhạc hoặc upload thành công
+        const handleManualRefreshMusic = () => {
+          syncMusicFromSheet();
+        };
+        window.addEventListener("REFRESH_MUSIC_DATA", handleManualRefreshMusic);
+
+        const handleManualRefreshGuest = () => {
+          syncGuestDataFromSheet();
+        };
+        window.addEventListener("REFRESH_GUEST_DATA", handleManualRefreshGuest);
 
         // Đồng bộ tức thì giữa các tab khác nhau trên cùng trình duyệt (0ms)
         const handleStorageChange = (e: StorageEvent) => {
@@ -499,6 +522,8 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           clearInterval(intervalId);
           document.removeEventListener("visibilitychange", handleVisibilityChange);
           window.removeEventListener("focus", handleWindowFocus);
+          window.removeEventListener("REFRESH_MUSIC_DATA", handleManualRefreshMusic);
+          window.removeEventListener("REFRESH_GUEST_DATA", handleManualRefreshGuest);
           window.removeEventListener("storage", handleStorageChange);
         };
       }
