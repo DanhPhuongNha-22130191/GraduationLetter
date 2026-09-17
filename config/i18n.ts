@@ -280,8 +280,8 @@ export const translations: Record<Language, TranslationSchema> = {
       details: "Chi tiết",
       gallery: "Khoảnh khắc",
       rsvp: "Tham dự",
-      envelope: "Bao thiệp",
-      backToEnvelope: "Xem lại bao thiệp",
+      envelope: "Quay lại",
+      backToEnvelope: "Quay lại",
     },
     hero: {
       invitationCard: "THIỆP MỜI TỐT NGHIỆP",
@@ -437,8 +437,8 @@ export const translations: Record<Language, TranslationSchema> = {
       details: "Details",
       gallery: "Moments",
       rsvp: "RSVP",
-      envelope: "Envelope",
-      backToEnvelope: "Back to Envelope",
+      envelope: "Back",
+      backToEnvelope: "Back",
     },
     hero: {
       invitationCard: "GRADUATION INVITATION",
@@ -594,8 +594,8 @@ export const translations: Record<Language, TranslationSchema> = {
       details: "ព័ត៌មានលម្អិត",
       gallery: "អនុស្សាវរីយ៍",
       rsvp: "ការចូលរួម",
-      envelope: "ស្រោមសំបុត្រ",
-      backToEnvelope: "មើលស្រោមសំបុត្រឡើងវិញ",
+      envelope: "ត្រឡប់ក្រោយ",
+      backToEnvelope: "ត្រឡប់ក្រោយ",
     },
     hero: {
       invitationCard: "លិខិតអញ្ជើញពិធីប្រគល់សញ្ញាបត្រ",
