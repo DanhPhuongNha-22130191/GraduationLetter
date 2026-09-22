@@ -66,10 +66,10 @@ export default function Home() {
           {/* Main Single Page Sections */}
           <HeroSection />
           <InvitationSection />
+          <GallerySection />
           <GraduationInfoSection />
           <CountdownSection />
           <JourneySection />
-          <GallerySection />
           <LocationSection />
           <RsvpSection />
           <ClosingSection onReopenEnvelope={handleCloseEnvelope} />

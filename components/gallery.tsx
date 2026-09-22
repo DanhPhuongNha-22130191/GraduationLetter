@@ -119,7 +119,7 @@ async function compressImageFile(file: File, maxWidth = 1920, quality = 0.84): P
 }
 
 const PRESET_CATEGORIES = ["Kỷ Niệm", "Tình Bạn", "Kỷ Ức", "Chân Dung", "Vinh Danh"];
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 4;
 const MAX_UPLOAD_PHOTOS = 12;
 
 function getPaginationRange(current: number, total: number): (number | string)[] {

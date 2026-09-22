@@ -12,10 +12,10 @@ export const MobileNav: React.FC = () => {
   const navItems = React.useMemo(() => [
     { id: "hero", label: t.nav.home, icon: Home },
     { id: "invitation", label: t.nav.invitation, icon: BookHeart },
-    { id: "details", label: t.nav.details, icon: CalendarDays },
     { id: "gallery", label: t.nav.gallery, icon: ImageIcon },
+    { id: "details", label: t.nav.details, icon: CalendarDays },
     { id: "rsvp", label: t.nav.rsvp, icon: Send },
-  ], [t.nav.home, t.nav.invitation, t.nav.details, t.nav.gallery, t.nav.rsvp]);
+  ], [t.nav.home, t.nav.invitation, t.nav.gallery, t.nav.details, t.nav.rsvp]);
 
   useEffect(() => {
     const handleScroll = () => {
