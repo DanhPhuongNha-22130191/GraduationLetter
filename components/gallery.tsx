@@ -118,7 +118,6 @@ async function compressImageFile(file: File, maxWidth = 1920, quality = 0.84): P
   });
 }
 
-const PRESET_CATEGORIES = ["Kỷ Niệm", "Tình Bạn", "Kỷ Ức", "Chân Dung", "Vinh Danh"];
 const ITEMS_PER_PAGE = 4;
 const MAX_UPLOAD_PHOTOS = 12;
 
@@ -164,8 +163,8 @@ export const GallerySection: React.FC = () => {
   
   const [uploaderName, setUploaderName] = useState("");
   const [caption, setCaption] = useState("");
-  const [selectedUploadCat, setSelectedUploadCat] = useState("Kỷ Niệm");
-  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [selectedUploadCat, setSelectedUploadCat] = useState("");
+  const [isCustomCategory, setIsCustomCategory] = useState(true);
   const [customCategory, setCustomCategory] = useState("");
   const [uploadPriority, setUploadPriority] = useState("1");
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
@@ -185,7 +184,7 @@ export const GallerySection: React.FC = () => {
         const cleanedRemote: GalleryItem[] = remotePhotos
           .map((p) => {
             if (!p || !p.src) return null;
-            let cat = (p.category || "Kỷ Niệm").trim();
+            let cat = (p.category || "").trim();
             const lowerCat = cat.toLowerCase();
             if (
               lowerCat === "ảnh đại diện" ||
@@ -196,7 +195,7 @@ export const GallerySection: React.FC = () => {
               return null;
             }
             if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
-              cat = "Kỷ Niệm";
+              cat = "";
             }
             const priority = typeof p.priority === "number" && !isNaN(p.priority) ? p.priority : undefined;
             const item: GalleryItem = {
@@ -260,9 +259,9 @@ export const GallerySection: React.FC = () => {
           const cleaned: GalleryItem[] = parsed
             .map((p: GalleryItem) => {
               if (!p || !p.src) return null;
-              let cat = (p.category || "Kỷ Niệm").trim();
+              let cat = (p.category || "").trim();
               if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
-                cat = "Kỷ Niệm";
+                cat = "";
               }
               const priority = typeof p.priority === "number" && !isNaN(p.priority) ? p.priority : undefined;
               const item: GalleryItem = {
@@ -290,9 +289,9 @@ export const GallerySection: React.FC = () => {
           const cleaned: GalleryItem[] = parsed
             .map((p: GalleryItem) => {
               if (!p || !p.src) return null;
-              let cat = (p.category || "Kỷ Niệm").trim();
+              let cat = (p.category || "").trim();
               if (cat.startsWith("http://") || cat.startsWith("https://") || cat.includes("://") || cat.includes("facebook.com") || cat.length > 40) {
-                cat = "Kỷ Niệm";
+                cat = "";
               }
               const priority = typeof p.priority === "number" && !isNaN(p.priority) ? p.priority : undefined;
               const item: GalleryItem = {
@@ -418,14 +417,15 @@ export const GallerySection: React.FC = () => {
   const categoryCounts = React.useMemo(() => {
     const counts: Record<string, number> = { all: items.length };
     items.forEach((item) => {
-      const cat = item.category?.trim() || "Kỷ Niệm";
-      counts[cat] = (counts[cat] || 0) + 1;
+      const cat = item.category?.trim();
+      if (cat) {
+        counts[cat] = (counts[cat] || 0) + 1;
+      }
     });
     return counts;
   }, [items]);
 
-  // Tự động tính toán lại danh sách chủ đề DUY NHẤT:
-  // Kết hợp chủ đề thực tế từ ảnh + các chủ đề mặc định của hệ thống
+  // Tự động tính toán lại danh sách chủ đề DUY NHẤT từ ảnh thực tế
   const cleanCategories = React.useMemo(() => {
     const photoCategories = Array.from(
       new Set(
@@ -435,21 +435,16 @@ export const GallerySection: React.FC = () => {
       )
     );
 
-    const combined = Array.from(new Set([...photoCategories, ...PRESET_CATEGORIES]));
-
     // Sắp xếp ưu tiên:
-    // 1. Các chủ đề có ảnh đưa lên đầu (sắp xếp giảm dần theo số lượng ảnh)
-    // 2. Các chủ đề chưa có ảnh xếp sau
-    combined.sort((a, b) => {
+    // Sắp xếp giảm dần theo số lượng ảnh thực tế, sau đó theo thứ tự chữ cái tiếng Việt
+    photoCategories.sort((a, b) => {
       const countA = categoryCounts[a] || 0;
       const countB = categoryCounts[b] || 0;
-      if (countA > 0 && countB === 0) return -1;
-      if (countA === 0 && countB > 0) return 1;
       if (countA !== countB) return countB - countA;
       return a.localeCompare(b, "vi");
     });
 
-    return combined;
+    return photoCategories;
   }, [items, categoryCounts]);
 
   const categories = React.useMemo(() => ["all", ...cleanCategories], [cleanCategories]);
@@ -620,8 +615,8 @@ export const GallerySection: React.FC = () => {
     setUrlList([]);
     setUploadSourceMode("file");
     setCaption("");
-    setSelectedUploadCat("Kỷ Niệm");
-    setIsCustomCategory(false);
+    setSelectedUploadCat(cleanCategories[0] || "");
+    setIsCustomCategory(cleanCategories.length === 0);
     setCustomCategory("");
     setUploadPriority("1");
     setIsUploading(false);
@@ -644,7 +639,7 @@ export const GallerySection: React.FC = () => {
     const targetCategory =
       isCustomCategory && customCategory.trim()
         ? customCategory.trim()
-        : selectedUploadCat || "Kỷ Niệm";
+        : selectedUploadCat.trim() || customCategory.trim() || "";
 
     const uploadedUrls: string[] = [];
 
@@ -975,7 +970,7 @@ export const GallerySection: React.FC = () => {
               onClick={() => {
                 handleResetUploadForm();
                 if (selectedCategory !== "all") {
-                  if (PRESET_CATEGORIES.includes(selectedCategory)) {
+                  if (cleanCategories.includes(selectedCategory)) {
                     setSelectedUploadCat(selectedCategory);
                     setIsCustomCategory(false);
                   } else {
@@ -1485,53 +1480,55 @@ export const GallerySection: React.FC = () => {
                         <label className="block text-xs font-sans uppercase tracking-wider text-gold-300 font-semibold">
                           {t.gallery.uploadCategoryLabel}:
                         </label>
-                        {isCustomCategory && (
+                        {isCustomCategory && cleanCategories.length > 0 && (
                           <span className="text-[10px] font-sans text-gold-200 bg-gold-500/20 px-2 py-0.5 rounded-full border border-gold-500/30">
-                            Chủ đề riêng
+                            Chủ đề mới
                           </span>
                         )}
                       </div>
 
-                      {/* Preset Pills + Custom Button */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {PRESET_CATEGORIES.map((cat) => {
-                          const isSelected = !isCustomCategory && selectedUploadCat === cat;
-                          return (
-                            <button
-                              key={cat}
-                              type="button"
-                              onClick={() => {
-                                setSelectedUploadCat(cat);
-                                setIsCustomCategory(false);
-                              }}
-                              className={`text-[11px] sm:text-xs px-3 py-1.5 rounded-full font-sans font-semibold transition-colors duration-150 cursor-pointer border touch-manipulation active:scale-95 ${
-                                isSelected
-                                  ? "bg-gold-500 text-emerald-950 border-gold-500 shadow-soft-xs"
-                                  : "bg-white/5 text-ivory-100/75 border-white/20 hover:border-gold-500/50"
-                              }`}
-                            >
-                              {cat}
-                            </button>
-                          );
-                        })}
+                      {/* Existing Category Pills + Custom Button (if any exist) */}
+                      {cleanCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {cleanCategories.map((cat) => {
+                            const isSelected = !isCustomCategory && selectedUploadCat === cat;
+                            return (
+                              <button
+                                key={cat}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedUploadCat(cat);
+                                  setIsCustomCategory(false);
+                                }}
+                                className={`text-[11px] sm:text-xs px-3 py-1.5 rounded-full font-sans font-semibold transition-colors duration-150 cursor-pointer border touch-manipulation active:scale-95 ${
+                                  isSelected
+                                    ? "bg-gold-500 text-emerald-950 border-gold-500 shadow-soft-xs"
+                                    : "bg-white/5 text-ivory-100/75 border-white/20 hover:border-gold-500/50"
+                                }`}
+                              >
+                                {cat}
+                              </button>
+                            );
+                          })}
 
-                        {/* + Chủ đề khác button */}
-                        <button
-                          type="button"
-                          onClick={() => setIsCustomCategory(true)}
-                          className={`text-[11px] sm:text-xs px-3 py-1.5 rounded-full font-sans font-semibold transition-colors duration-150 cursor-pointer border flex items-center gap-1 touch-manipulation active:scale-95 ${
-                            isCustomCategory
-                              ? "bg-gold-500 text-emerald-950 border-gold-500 shadow-soft-xs"
-                              : "bg-gold-500/10 text-gold-300 border-gold-500/30 hover:bg-gold-500/20"
-                          }`}
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>{t.gallery.uploadOtherCategoryBtn}</span>
-                        </button>
-                      </div>
+                          {/* + Chủ đề khác button */}
+                          <button
+                            type="button"
+                            onClick={() => setIsCustomCategory(true)}
+                            className={`text-[11px] sm:text-xs px-3 py-1.5 rounded-full font-sans font-semibold transition-colors duration-150 cursor-pointer border flex items-center gap-1 touch-manipulation active:scale-95 ${
+                              isCustomCategory
+                                ? "bg-gold-500 text-emerald-950 border-gold-500 shadow-soft-xs"
+                                : "bg-gold-500/10 text-gold-300 border-gold-500/30 hover:bg-gold-500/20"
+                            }`}
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>{t.gallery.uploadOtherCategoryBtn}</span>
+                          </button>
+                        </div>
+                      )}
 
                       {/* Custom Category Input */}
-                      {isCustomCategory && (
+                      {(isCustomCategory || cleanCategories.length === 0) && (
                         <div className="pt-1">
                           <div className="relative">
                             <input

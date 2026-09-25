@@ -125,7 +125,7 @@ export async function GET(request: Request) {
               item["Chủ đề"] ||
               item.chuDe ||
               item.ChuDe ||
-              "Kỷ Niệm"
+              ""
           ).trim();
 
           // Bỏ qua ảnh thuộc chủ đề "Ảnh đại diện" hoặc "Avatar" (không hiển thị ở phần Kỷ niệm)
@@ -169,7 +169,7 @@ export async function GET(request: Request) {
             item,
             cleanUrl,
             rawCaption,
-            category: category || "Kỷ Niệm",
+            category: category || "",
             priority,
             idx,
           });
@@ -203,10 +203,10 @@ export async function GET(request: Request) {
           const filename = c.cleanUrl.split("/").pop()?.replace(/[^a-zA-Z0-9_-]/g, "") || c.idx;
           validPhotos.push({
             id: `cloud-${c.idx}-${filename}`,
-            title: c.rawCaption || c.category || "Ảnh kỷ niệm",
+            title: c.rawCaption || c.category || "Khoảnh khắc",
             category: c.category,
             src: c.cleanUrl,
-            alt: c.rawCaption || `Ảnh kỷ niệm [${c.category}]`,
+            alt: c.rawCaption || (c.category ? `Ảnh [${c.category}]` : "Khoảnh khắc tốt nghiệp"),
             priority: c.priority ?? 1,
             uploadIdx: c.idx,
           });

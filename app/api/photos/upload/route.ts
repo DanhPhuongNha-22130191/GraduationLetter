@@ -75,14 +75,14 @@ async function writeSinglePhotoToSheet(photo: PhotoPayload, retries = 3): Promis
           sheet: "photos",
           uploadTime: photo.timestamp || new Date().toLocaleString("vi-VN"),
           uploader: photo.name || "Khách mời",
-          topic: photo.category || "Kỷ Niệm",
+          topic: photo.category || "",
           label: photo.caption || "Ảnh kỷ niệm cùng Nhã",
           cloudinaryImageLink: photo.photoUrl,
           priorityLevel: typeof photo.priority === "number" && !isNaN(photo.priority) ? photo.priority : 1,
           // Backward-compatibility keys
           name: photo.name || "Khách mời",
           caption: photo.caption || "Ảnh kỷ niệm cùng Nhã",
-          category: photo.category || "Kỷ Niệm",
+          category: photo.category || "",
           photoUrl: photo.photoUrl,
           sourceType: photo.sourceType || "file",
           timestamp: photo.timestamp || new Date().toLocaleString("vi-VN"),
@@ -180,7 +180,7 @@ export async function POST(request: Request) {
     photos.forEach((p) => {
       p.name = (p.name || "Khách mời").toString().trim().slice(0, 200);
       p.caption = (p.caption || "Ảnh kỷ niệm cùng Nhã").toString().trim().slice(0, 500);
-      p.category = (p.category || "Kỷ Niệm").toString().trim().slice(0, 100);
+      p.category = (p.category || "").toString().trim().slice(0, 100);
       p.photoUrl = p.photoUrl.trim().slice(0, 2048);
     });
 
