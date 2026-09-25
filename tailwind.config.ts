@@ -10,13 +10,13 @@ const config: Config = {
     extend: {
       colors: {
         emerald: {
-          950: "#0B2A22",
-          900: "#123C32",
-          700: "#1F5A46",
-          400: "#6F8F7A",
-          deep: "#123C32",
-          DEFAULT: "#1F5A46",
-          soft: "#6F8F7A",
+          950: "#114438",
+          900: "#185849",
+          700: "#257C67",
+          400: "#7FB6A7",
+          deep: "#185849",
+          DEFAULT: "#257C67",
+          soft: "#7FB6A7",
           light: "#E3ECE6",
         },
         gold: {
@@ -47,7 +47,7 @@ const config: Config = {
       backgroundImage: {
         'gold-gradient': 'linear-gradient(135deg, #C9A96E 0%, #F4E7CE 50%, #8A682F 100%)',
         'gold-subtle': 'linear-gradient(135deg, rgba(201,169,110,0.12) 0%, rgba(244,231,206,0.04) 100%)',
-        'emerald-gradient': 'linear-gradient(180deg, #0B2A22 0%, #123C32 50%, #1F5A46 100%)',
+        'emerald-gradient': 'linear-gradient(180deg, #185E4E 0%, #12493C 50%, #0E3B30 100%)',
       },
       boxShadow: {
         'invitation': '0 12px 40px -12px rgba(11, 42, 34, 0.1), 0 0 0 1px rgba(201, 169, 110, 0.25)',

@@ -4,10 +4,10 @@
 
 @layer base {
   :root {
-    --color-emerald-950: #0B2A22;
-    --color-emerald-900: #123C32;
-    --color-emerald-700: #1F5A46;
-    --color-emerald-400: #6F8F7A;
+    --color-emerald-950: #114438;
+    --color-emerald-900: #185849;
+    --color-emerald-700: #257C67;
+    --color-emerald-400: #7FB6A7;
 
     --color-gold-700: #8A682F;
     --color-gold-600: #A88345;
@@ -80,7 +80,7 @@
 }
 
 .emerald-gradient-bg {
-  background: linear-gradient(180deg, #0B2A22 0%, #123C32 50%, #1F5A46 100%);
+  background: linear-gradient(180deg, #185E4E 0%, #12493C 50%, #0E3B30 100%);
 }
 
 .card-ivory {
@@ -108,7 +108,7 @@
 }
 
 .glass-emerald-card {
-  background: #0B2A22;
+  background: #12493C;
   border: 1px solid rgba(201, 169, 110, 0.24);
   box-shadow: 0 16px 45px -12px rgba(0, 0, 0, 0.55);
 }
