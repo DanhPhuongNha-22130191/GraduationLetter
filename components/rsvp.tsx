@@ -116,6 +116,8 @@ export const RsvpSection: React.FC = () => {
 
     setIsSubmitting(true);
 
+    const totalQuantity = attending === "yes" ? 1 + guestCount : 0;
+
     const payload = {
       type: "RSVP",
       action: "RSVP",
@@ -124,15 +126,16 @@ export const RsvpSection: React.FC = () => {
       fullName: fullName.trim(),
       phone: phone.trim(),
       attendStatus: attending === "yes" ? "Có" : "Không",
-      quantity: attending === "yes" ? guestCount : 0,
+      quantity: totalQuantity,
       message: message.trim(),
       // Fallback compatibility keys
       guestName: fullName.trim(),
       phoneNumber: phone.trim(),
       attending: attending === "yes" ? "Có" : "Không",
-      guestCount: attending === "yes" ? guestCount : 0,
+      guestCount: totalQuantity,
+      accompanyingGuests: guestCount,
       name: fullName.trim(),
-      guests: attending === "yes" ? guestCount : 0,
+      guests: totalQuantity,
       timestamp: new Date().toLocaleString(lang === "vi" ? "vi-VN" : "en-US"),
     };
 
