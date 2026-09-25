@@ -18,38 +18,38 @@ const ORBS = [
 
 const AnimatedBackground: React.FC = () => (
   <div className="absolute inset-0 pointer-events-none overflow-hidden">
-    {/* Smoke gradient clouds with luminous emerald aura */}
+    {/* Smoke gradient clouds */}
     <motion.div
       className="absolute rounded-full"
       style={{
-        width: 520, height: 360,
+        width: 480, height: 320,
         top: "-10%", left: "-15%",
-        background: "radial-gradient(ellipse, rgba(42,157,130,0.45) 0%, rgba(24,88,73,0.2) 50%, transparent 75%)",
+        background: "radial-gradient(ellipse, rgba(30,58,138,0.35) 0%, transparent 70%)",
         filter: "blur(40px)",
       }}
-      animate={{ x: [0, 30, 0], y: [0, 20, 0], opacity: [0.7, 1, 0.7] }}
+      animate={{ x: [0, 30, 0], y: [0, 20, 0], opacity: [0.6, 1, 0.6] }}
       transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
     />
     <motion.div
       className="absolute rounded-full"
       style={{
-        width: 440, height: 320,
+        width: 400, height: 280,
         bottom: "-8%", right: "-12%",
-        background: "radial-gradient(ellipse, rgba(201,169,110,0.28) 0%, rgba(37,124,103,0.25) 50%, transparent 75%)",
+        background: "radial-gradient(ellipse, rgba(201,169,110,0.22) 0%, transparent 70%)",
         filter: "blur(50px)",
       }}
-      animate={{ x: [0, -25, 0], y: [0, -18, 0], opacity: [0.6, 0.95, 0.6] }}
+      animate={{ x: [0, -25, 0], y: [0, -18, 0], opacity: [0.5, 0.9, 0.5] }}
       transition={{ duration: 22, repeat: Infinity, ease: "easeInOut", delay: 3 }}
     />
     <motion.div
       className="absolute rounded-full"
       style={{
-        width: 360, height: 360,
-        top: "25%", left: "35%",
-        background: "radial-gradient(ellipse, rgba(31,114,94,0.4) 0%, transparent 70%)",
-        filter: "blur(55px)",
+        width: 300, height: 300,
+        top: "30%", left: "40%",
+        background: "radial-gradient(ellipse, rgba(15,23,42,0.5) 0%, transparent 70%)",
+        filter: "blur(60px)",
       }}
-      animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.85, 0.5] }}
+      animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.7, 0.4] }}
       transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 6 }}
     />
 
@@ -159,7 +159,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
           exit={{ opacity: 0, scale: 1.06 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           onClick={handleOpenEnvelope}
-          className="fixed inset-0 z-50 bg-gradient-to-br from-[#165646] via-[#114437] to-[#0D362C] text-ivory-50 flex flex-col items-center justify-between p-4 sm:p-8 cursor-pointer overflow-y-auto overflow-x-hidden select-none touch-manipulation"
+          className="fixed inset-0 z-50 bg-[#0B2A22] text-ivory-50 flex flex-col items-center justify-between p-4 sm:p-8 cursor-pointer overflow-y-auto overflow-x-hidden select-none touch-manipulation"
         >
           <div className="absolute inset-0 paper-texture opacity-25 pointer-events-none" />
 
@@ -185,7 +185,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
             transition={{ duration: 0.8 }}
             className="z-10 mt-4 sm:mt-6 text-center"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/35 bg-emerald-900/80 text-[10px] sm:text-xs font-sans tracking-[0.2em] text-gold-200 uppercase backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/35 bg-emerald-950/80 text-[10px] sm:text-xs font-sans tracking-[0.2em] text-gold-200 uppercase backdrop-blur-md">
               <Sparkles className="w-3 h-3 text-gold-500" />
               <span>OFFICIAL GRADUATION INVITATION</span>
               <Sparkles className="w-3 h-3 text-gold-500" />
@@ -198,7 +198,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
               initial={{ scale: 0.92, y: 15 }}
               animate={isOpening ? { scale: 1.04, y: -10 } : { scale: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="relative w-full bg-gradient-to-b from-[#185848] to-[#103D32] rounded-3xl p-6 sm:p-9 text-center border border-gold-500/35 shadow-2xl overflow-hidden flex flex-col items-center"
+              className="relative w-full bg-emerald-950 rounded-3xl p-6 sm:p-9 text-center border border-gold-500/35 shadow-2xl overflow-hidden flex flex-col items-center"
             >
               {/* Refined Single Inner Hairline Border */}
               <div className="absolute inset-3 rounded-2xl border border-gold-500/20 pointer-events-none" />
