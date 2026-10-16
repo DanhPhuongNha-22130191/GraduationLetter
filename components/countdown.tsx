@@ -27,8 +27,9 @@ function parseCustomTargetDate(customDate?: string, customTime?: string): Date {
   let minutes = defaultTarget.getMinutes();
 
   // 1. Phân tích customDate (hỗ trợ DD/MM/YYYY, YYYY-MM-DD, DD-MM-YYYY)
+  // Google Sheets có thể trả về dạng "30/10/2026 00:00:00" — strip phần giờ thừa
   if (customDate && customDate.trim()) {
-    const trimmedDate = customDate.trim();
+    const trimmedDate = customDate.trim().replace(/\s+\d{1,2}:\d{2}(:\d{2})?$/, "").trim();
     const matchDMY = trimmedDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
     const matchYMD = trimmedDate.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
     const matchDM = trimmedDate.match(/^(\d{1,2})[\/\-](\d{1,2})$/);

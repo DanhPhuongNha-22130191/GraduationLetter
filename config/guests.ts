@@ -302,7 +302,8 @@ export function parseDateTimeToTimestamp(dateStr?: string, timeStr?: string): nu
   let minutes = defaultTarget.getMinutes();
 
   if (dateStr && dateStr.trim()) {
-    const trimmed = dateStr.trim();
+    // Google Sheets có thể trả về dạng "30/10/2026 00:00:00" — strip phần giờ thừa
+    const trimmed = dateStr.trim().replace(/\s+\d{1,2}:\d{2}(:\d{2})?$/, "").trim();
     const matchDMY = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
     const matchYMD = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
     const matchDM = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})$/);

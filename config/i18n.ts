@@ -77,12 +77,13 @@ export function formatLocalizedDate(dateStr?: string, lang: Language = "vi"): st
 
   let d = 0, m = 0, y = 0;
 
-  // Format DD/MM/YYYY or DD-MM-YYYY
-  const matchDMY = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  // Format DD/MM/YYYY or DD-MM-YYYY (và "DD/MM/YYYY HH:MM:SS" từ Google Sheets)
+  const cleanedDate = trimmed.replace(/\s+\d{1,2}:\d{2}(:\d{2})?$/, "").trim();
+  const matchDMY = cleanedDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   // Format YYYY-MM-DD
-  const matchYMD = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  const matchYMD = cleanedDate.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
   // Format DD/MM
-  const matchDM = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+  const matchDM = cleanedDate.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
 
   if (matchDMY) {
     d = parseInt(matchDMY[1], 10);
