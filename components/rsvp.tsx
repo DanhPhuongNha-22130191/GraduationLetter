@@ -1,8 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, CheckCircle2, User, Phone, MessageSquare, Plus, Minus, Sparkles, Heart } from "lucide-react";
+import {
+  Send,
+  CheckCircle2,
+  User,
+  Phone,
+  MessageSquare,
+  Plus,
+  Minus,
+  Sparkles,
+  Heart,
+  UserCheck,
+  RotateCcw,
+} from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
@@ -15,18 +27,22 @@ interface WishItem {
 
 export const RsvpSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { guestName } = useGuest();
+  const { guestName, setGuestName } = useGuest();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [attending, setAttending] = useState<"yes" | "no">("yes");
   const [guestCount, setGuestCount] = useState(0);
   const [message, setMessage] = useState("");
+  const [isNameManuallyEdited, setIsNameManuallyEdited] = useState(false);
+  const initialSyncRef = useRef(false);
 
+  // Chỉ đồng bộ tên từ guestName lúc khởi tạo ban đầu, không tự động ghi đè khi user xóa/đổi tên
   useEffect(() => {
-    if (guestName && !fullName) {
+    if (guestName && !initialSyncRef.current && !isNameManuallyEdited) {
       setFullName(guestName);
+      initialSyncRef.current = true;
     }
-  }, [guestName, fullName]);
+  }, [guestName, isNameManuallyEdited]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -112,7 +128,8 @@ export const RsvpSection: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim()) return;
+    const cleanFullName = fullName.trim();
+    if (!cleanFullName) return;
 
     setIsSubmitting(true);
 
@@ -123,18 +140,18 @@ export const RsvpSection: React.FC = () => {
       action: "RSVP",
       sheet: "confirms",
       confirmTime: new Date().toLocaleString(lang === "vi" ? "vi-VN" : "en-US"),
-      fullName: fullName.trim(),
+      fullName: cleanFullName,
       phone: phone.trim(),
       attendStatus: attending === "yes" ? "Có" : "Không",
       quantity: totalQuantity,
       message: message.trim(),
       // Fallback compatibility keys
-      guestName: fullName.trim(),
+      guestName: cleanFullName,
       phoneNumber: phone.trim(),
       attending: attending === "yes" ? "Có" : "Không",
       guestCount: totalQuantity,
       accompanyingGuests: guestCount,
-      name: fullName.trim(),
+      name: cleanFullName,
       guests: totalQuantity,
       timestamp: new Date().toLocaleString(lang === "vi" ? "vi-VN" : "en-US"),
     };
@@ -167,6 +184,11 @@ export const RsvpSection: React.FC = () => {
         new Promise((resolve) => setTimeout(resolve, 1200)),
       ]);
 
+      // Đồng bộ tên người tham dự mới vào guest context để toàn bộ thiệp phản ánh đúng tên
+      if (cleanFullName && cleanFullName !== guestName && setGuestName) {
+        setGuestName(cleanFullName);
+      }
+
       triggerConfetti();
       setSubmitted(true);
     } catch (err) {
@@ -180,7 +202,8 @@ export const RsvpSection: React.FC = () => {
 
   const handleReset = () => {
     setSubmitted(false);
-    setFullName("");
+    setFullName(guestName || "");
+    setIsNameManuallyEdited(false);
     setPhone("");
     setAttending("yes");
     setGuestCount(0);
@@ -236,29 +259,141 @@ export const RsvpSection: React.FC = () => {
                 <p className="font-sans text-xs sm:text-sm text-charcoal/80 leading-relaxed max-w-xs mx-auto">
                   {t.rsvp.successDesc}
                 </p>
-                <button
-                  onClick={handleReset}
-                  className="mt-4 px-8 py-3 rounded-full border border-gold-200/50 bg-gold-gradient text-emerald-950 font-sans text-xs font-bold uppercase tracking-wider hover:brightness-105 transition-all shadow-gold-glow active:scale-95 touch-manipulation cursor-pointer"
-                >
-                  {t.rsvp.resetBtn}
-                </button>
+                {fullName.trim() && (
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-900/10 border border-gold-500/30 text-emerald-950 text-xs font-sans">
+                    <span className="text-charcoal/70">
+                      {lang === "vi" ? "Người tham dự:" : lang === "km" ? "អ្នកចូលរួម៖" : "Attendee:"}
+                    </span>
+                    <strong className="text-emerald-950 font-bold">{fullName.trim()}</strong>
+                  </div>
+                )}
+                <div>
+                  <button
+                    onClick={handleReset}
+                    className="mt-4 px-8 py-3 rounded-full border border-gold-200/50 bg-gold-gradient text-emerald-950 font-sans text-xs font-bold uppercase tracking-wider hover:brightness-105 transition-all shadow-gold-glow active:scale-95 touch-manipulation cursor-pointer"
+                  >
+                    {t.rsvp.resetBtn}
+                  </button>
+                </div>
               </motion.div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label htmlFor="inputName" className="block text-xs font-sans font-semibold uppercase tracking-wider text-emerald-950 mb-2 flex items-center gap-1.5">
-                    <User className="w-4 h-4 text-gold-700" />
-                    <span>{t.rsvp.nameLabel}</span>
-                  </label>
-                  <input
-                    id="inputName"
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder={t.rsvp.namePlaceholder}
-                    className="w-full h-12 px-4 rounded-xl border border-gold-500/25 bg-ivory-50/70 font-sans text-base sm:text-sm text-charcoal focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
-                  />
+                  <div className="flex items-center justify-between mb-2">
+                    <label
+                      htmlFor="inputName"
+                      className="text-xs font-sans font-semibold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5"
+                    >
+                      <User className="w-4 h-4 text-gold-700" />
+                      <span>{t.rsvp.nameLabel}</span>
+                    </label>
+
+                    {/* Nút hành động đổi tên / khôi phục tên */}
+                    {guestName && (
+                      <div className="flex items-center gap-2">
+                        {fullName.trim() === guestName ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFullName("");
+                              setIsNameManuallyEdited(true);
+                              document.getElementById("inputName")?.focus();
+                            }}
+                            className="text-[11px] font-sans text-gold-700 hover:text-emerald-950 font-semibold underline underline-offset-2 flex items-center gap-1 cursor-pointer transition-colors"
+                            title="Đổi tên người tham dự khác"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                            <span>
+                              {lang === "vi"
+                                ? "Đổi tên khác"
+                                : lang === "km"
+                                ? "ប្តូរឈ្មោះ"
+                                : "Change name"}
+                            </span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFullName(guestName);
+                              setIsNameManuallyEdited(false);
+                            }}
+                            className="text-[11px] font-sans text-gold-700 hover:text-emerald-950 font-semibold underline underline-offset-2 flex items-center gap-1 cursor-pointer transition-colors"
+                            title={`Dùng lại tên trên thiệp (${guestName})`}
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span>
+                              {lang === "vi"
+                                ? `Khôi phục (${guestName})`
+                                : lang === "km"
+                                ? `ឈ្មោះដើម (${guestName})`
+                                : `Restore (${guestName})`}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      id="inputName"
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => {
+                        setFullName(e.target.value);
+                        setIsNameManuallyEdited(true);
+                      }}
+                      placeholder={t.rsvp.namePlaceholder}
+                      className="w-full h-12 pl-4 pr-10 rounded-xl border border-gold-500/25 bg-ivory-50/70 font-sans text-base sm:text-sm text-charcoal focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
+                    />
+                    {fullName && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFullName("");
+                          setIsNameManuallyEdited(true);
+                          document.getElementById("inputName")?.focus();
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-charcoal/40 hover:text-charcoal p-1 text-xs cursor-pointer transition-colors"
+                        title="Xóa tên để nhập tên mới"
+                        aria-label="Xóa tên người tham dự"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Thông tin phản hồi trực quan khi đổi tên */}
+                  {guestName && fullName.trim() && fullName.trim() !== guestName && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-1.5 text-[11px] font-sans text-charcoal/70 flex items-center gap-1.5 px-1"
+                    >
+                      <span className="text-gold-600 font-bold">✦</span>
+                      <span>
+                        {lang === "vi" ? (
+                          <>
+                            Xác nhận tham dự với tên:{" "}
+                            <strong className="text-emerald-950 font-semibold">
+                              {fullName.trim()}
+                            </strong>{" "}
+                            (Tên ban đầu trên thiệp: <em>{guestName}</em>)
+                          </>
+                        ) : (
+                          <>
+                            Attending as:{" "}
+                            <strong className="text-emerald-950 font-semibold">
+                              {fullName.trim()}
+                            </strong>{" "}
+                            (Original invite name: <em>{guestName}</em>)
+                          </>
+                        )}
+                      </span>
+                    </motion.p>
+                  )}
                 </div>
 
                 <div>
