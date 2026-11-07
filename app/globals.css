@@ -6,28 +6,28 @@
   /* =====================================================================
      DESIGN TOKENS — đổi theme nhanh: chỉ sửa khối :root này.
      Màu lưu dạng "R G B" để Tailwind dùng được alpha (vd bg-gold-500/20).
-     Đang dùng bảng màu C: Forest Green + Brass Gold + Warm White.
+     Đang dùng bảng "Xanh NLU trầm": xanh lấy từ logo Nông Lâm + vàng bông lúa.
      Bảng A (Ivory + Navy) để sẵn dạng comment bên dưới.
      ===================================================================== */
   :root {
-    --c-emerald-950: 20 40 31;     /* #14281F  nền tối sâu */
-    --c-emerald-900: 30 58 47;     /* #1E3A2F  Forest Green chủ đạo */
-    --c-emerald-700: 47 90 71;
-    --c-emerald-400: 127 154 139;
-    --c-emerald-light: 228 235 229;
+    --c-emerald-950: 15 46 32;     /* #0F2E20  nền tối sâu */
+    --c-emerald-900: 23 61 43;     /* #173D2B  xanh NLU trầm */
+    --c-emerald-700: 47 107 63;   /* #2F6B3F  gần xanh logo */
+    --c-emerald-400: 127 164 135;
+    --c-emerald-light: 227 238 223;
 
-    --c-gold-700: 117 94 38;       /* chữ vàng trên nền sáng (đạt AA) */
-    --c-gold-600: 150 120 58;
-    --c-gold-500: 184 155 94;      /* #B89B5E  Brass Gold — chỉ điểm nhấn */
-    --c-gold-200: 230 216 184;
-    --c-gold-shimmer: 241 232 210;
+    --c-gold-700: 138 109 18;      /* chữ vàng trên nền sáng */
+    --c-gold-600: 168 134 20;
+    --c-gold-500: 201 162 39;      /* #C9A227  vàng bông lúa (logo NLU) */
+    --c-gold-200: 235 220 160;
+    --c-gold-shimmer: 243 234 196;
 
-    --c-ivory-50: 251 249 243;
-    --c-ivory-100: 247 243 234;    /* #F7F3EA  Warm White */
-    --c-ivory-200: 237 230 214;
-    --c-ivory-card: 250 247 239;
+    --c-ivory-50: 250 249 241;
+    --c-ivory-100: 246 244 234;    /* #F6F4EA  kem ngả xanh */
+    --c-ivory-200: 233 232 215;
+    --c-ivory-card: 249 247 238;
 
-    --c-charcoal: 31 38 34;
+    --c-charcoal: 28 38 31;
 
     /* Motion & spacing */
     --ease-lux: cubic-bezier(.22, .61, .36, 1);
@@ -52,7 +52,7 @@
   body {
     background-color: rgb(var(--c-ivory-100));
     color: rgb(var(--c-charcoal));
-    font-family: var(--font-sans), 'Inter', system-ui, sans-serif;
+    font-family: var(--font-sans), 'Be Vietnam Pro', system-ui, sans-serif;
     overflow-x: hidden;
     margin: 0;
     padding: 0;

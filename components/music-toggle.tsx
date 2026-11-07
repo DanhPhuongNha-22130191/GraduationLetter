@@ -467,15 +467,15 @@ export const MusicToggle: React.FC = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg bg-[#0D2E26] border-2 border-gold/60 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden text-white text-left"
+              className="relative w-full max-w-lg bg-[#0F2E20] border-2 border-gold/60 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden text-white text-left"
             >
               {/* Header Modal */}
-              <div className="relative px-6 py-5 border-b border-gold/30 bg-[#081F1A] flex items-center justify-between gap-2">
+              <div className="relative px-6 py-5 border-b border-gold/30 bg-[#0A2216] flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setIsModalOpen(false)}
                     title="Quay lại thiệp"
-                    className="px-2.5 py-1.5 rounded-xl bg-gold/15 hover:bg-gold text-gold hover:text-[#0D2E26] border border-gold/40 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                    className="px-2.5 py-1.5 rounded-xl bg-gold/15 hover:bg-gold text-gold hover:text-[#0F2E20] border border-gold/40 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span className="hidden sm:inline">Quay lại</span>
@@ -486,7 +486,7 @@ export const MusicToggle: React.FC = () => {
                   <div>
                     <h3 className="font-serif text-lg font-bold text-gold tracking-wide flex items-center gap-2">
                       Quản Lý Nhạc Nền Thiệp
-                      <span className="text-[10px] uppercase font-sans font-extrabold px-2.5 py-0.5 rounded-full bg-gold text-[#0D2E26]">
+                      <span className="text-[10px] uppercase font-sans font-extrabold px-2.5 py-0.5 rounded-full bg-gold text-[#0F2E20]">
                         Owner
                       </span>
                     </h3>
@@ -496,20 +496,20 @@ export const MusicToggle: React.FC = () => {
                 <button
                   onClick={() => setIsModalOpen(false)}
                   title="Đóng cửa sổ"
-                  className="w-8 h-8 rounded-full bg-gold/20 hover:bg-gold text-gold hover:text-[#0D2E26] flex items-center justify-center transition-all cursor-pointer shrink-0"
+                  className="w-8 h-8 rounded-full bg-gold/20 hover:bg-gold text-gold hover:text-[#0F2E20] flex items-center justify-center transition-all cursor-pointer shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Tabs Navigation */}
-              <div className="flex border-b border-gold/30 bg-[#061713] p-1.5 gap-1.5">
+              <div className="flex border-b border-gold/30 bg-[#07170F] p-1.5 gap-1.5">
                 <button
                   onClick={() => setActiveTab("upload")}
                   className={`flex-1 py-2.5 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     activeTab === "upload"
-                      ? "bg-gold text-[#0D2E26] font-extrabold shadow-md border border-gold-shimmer"
-                      : "bg-[#123C32] text-white hover:text-gold hover:bg-[#1A4D41] border border-gold/30"
+                      ? "bg-gold text-[#0F2E20] font-extrabold shadow-md border border-gold-shimmer"
+                      : "bg-[#173D2B] text-white hover:text-gold hover:bg-[#245A38] border border-gold/30"
                   }`}
                 >
                   <UploadCloud className="w-4 h-4" />
@@ -520,8 +520,8 @@ export const MusicToggle: React.FC = () => {
                   onClick={() => setActiveTab("playlist")}
                   className={`flex-1 py-2.5 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     activeTab === "playlist"
-                      ? "bg-gold text-[#0D2E26] font-extrabold shadow-md border border-gold-shimmer"
-                      : "bg-[#123C32] text-white hover:text-gold hover:bg-[#1A4D41] border border-gold/30"
+                      ? "bg-gold text-[#0F2E20] font-extrabold shadow-md border border-gold-shimmer"
+                      : "bg-[#173D2B] text-white hover:text-gold hover:bg-[#245A38] border border-gold/30"
                   }`}
                 >
                   <Radio className="w-4 h-4" />
@@ -532,8 +532,8 @@ export const MusicToggle: React.FC = () => {
                   onClick={() => setActiveTab("url")}
                   className={`flex-1 py-2.5 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     activeTab === "url"
-                      ? "bg-gold text-[#0D2E26] font-extrabold shadow-md border border-gold-shimmer"
-                      : "bg-[#123C32] text-white hover:text-gold hover:bg-[#1A4D41] border border-gold/30"
+                      ? "bg-gold text-[#0F2E20] font-extrabold shadow-md border border-gold-shimmer"
+                      : "bg-[#173D2B] text-white hover:text-gold hover:bg-[#245A38] border border-gold/30"
                   }`}
                 >
                   <Link2 className="w-4 h-4" />
@@ -561,7 +561,7 @@ export const MusicToggle: React.FC = () => {
                 {/* TAB 1: UPLOAD ĐẾN CLOUDINARY */}
                 {activeTab === "upload" && (
                   <form onSubmit={handleUploadToCloudinary} className="space-y-4">
-                    <div className="p-5 rounded-xl border-2 border-dashed border-gold/50 bg-[#081F1A] text-center transition-colors hover:border-gold">
+                    <div className="p-5 rounded-xl border-2 border-dashed border-gold/50 bg-[#0A2216] text-center transition-colors hover:border-gold">
                       <input
                         ref={audioFileInputRef}
                         type="file"
@@ -583,7 +583,7 @@ export const MusicToggle: React.FC = () => {
                           </p>
                         </div>
                         {selectedAudioFile && (
-                          <span className="inline-block text-xs font-mono font-bold px-3 py-1 rounded-full bg-gold text-[#0D2E26] shadow-sm">
+                          <span className="inline-block text-xs font-mono font-bold px-3 py-1 rounded-full bg-gold text-[#0F2E20] shadow-sm">
                             {(selectedAudioFile.size / (1024 * 1024)).toFixed(2)} MB
                           </span>
                         )}
@@ -605,7 +605,7 @@ export const MusicToggle: React.FC = () => {
                         className={`flex-1 py-3 px-4 rounded-xl font-extrabold text-sm shadow-lg transition-all flex items-center justify-center gap-2 ${
                           isUploading || !selectedAudioFile
                             ? "bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-700"
-                            : "bg-gold text-[#0D2E26] hover:bg-gold-shimmer active:scale-[0.99] cursor-pointer"
+                            : "bg-gold text-[#0F2E20] hover:bg-gold-shimmer active:scale-[0.99] cursor-pointer"
                         }`}
                       >
                         {isUploading ? (
@@ -645,13 +645,13 @@ export const MusicToggle: React.FC = () => {
                           className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
                             isCurrent
                               ? "bg-gold/25 border-2 border-gold shadow-md text-gold"
-                              : "bg-[#081F1A] border border-gold/30 hover:border-gold text-white"
+                              : "bg-[#0A2216] border border-gold/30 hover:border-gold text-white"
                           }`}
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div
                               className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                                isCurrent ? "bg-gold text-[#0D2E26] font-bold" : "bg-gold/20 text-gold"
+                                isCurrent ? "bg-gold text-[#0F2E20] font-bold" : "bg-gold/20 text-gold"
                               }`}
                             >
                               <Music className="w-4 h-4" />
@@ -670,7 +670,7 @@ export const MusicToggle: React.FC = () => {
 
                           <div className="flex items-center gap-2 shrink-0">
                             {isCurrent && (
-                              <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-gold text-[#0D2E26] flex items-center gap-1 shadow-sm">
+                              <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-gold text-[#0F2E20] flex items-center gap-1 shadow-sm">
                                 <Sparkles className="w-3 h-3" /> ĐANG PHÁT
                               </span>
                             )}
@@ -711,7 +711,7 @@ export const MusicToggle: React.FC = () => {
                         value={directUrlInput}
                         onChange={(e) => setDirectUrlInput(e.target.value)}
                         placeholder="https://res.cloudinary.com/.../music.mp3"
-                        className="w-full px-3.5 py-3 rounded-xl bg-[#061713] border-2 border-gold/50 text-white placeholder:text-white/40 text-xs font-medium focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30 shadow-inner"
+                        className="w-full px-3.5 py-3 rounded-xl bg-[#07170F] border-2 border-gold/50 text-white placeholder:text-white/40 text-xs font-medium focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30 shadow-inner"
                       />
                     </div>
                     <div className="flex gap-2">
@@ -725,7 +725,7 @@ export const MusicToggle: React.FC = () => {
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 py-3 px-4 rounded-xl bg-gold text-[#0D2E26] font-extrabold text-xs hover:bg-gold-shimmer transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg border border-gold-shimmer"
+                        className="flex-1 py-3 px-4 rounded-xl bg-gold text-[#0F2E20] font-extrabold text-xs hover:bg-gold-shimmer transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg border border-gold-shimmer"
                       >
                         <Check className="w-4 h-4 stroke-[3]" />
                         <span>Áp Dụng Bản Nhạc Này</span>

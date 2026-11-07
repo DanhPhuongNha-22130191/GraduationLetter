@@ -90,7 +90,7 @@ export const InvitationSection: React.FC = () => {
           </Reveal>
         )}
 
-        <Reveal delay={0.1} className="space-y-6 font-serif text-lg sm:text-xl leading-[1.85] text-charcoal/90 max-w-xl mx-auto">
+        <Reveal delay={0.1} className="space-y-6 font-serif font-medium text-lg sm:text-xl leading-[1.85] text-charcoal/90 max-w-xl mx-auto">
           <p>{para1}</p>
           <p>{para2}</p>
         </Reveal>
@@ -104,7 +104,7 @@ export const InvitationSection: React.FC = () => {
 
         <Reveal className="mt-14">
           <AnimatedFlourishDivider className="mb-5" />
-          <p className="font-script text-4xl sm:text-5xl text-gold-700">{graduationConfig.name}</p>
+          <p className="font-serif italic font-medium text-4xl sm:text-5xl text-gold-700">{graduationConfig.name}</p>
           <p className="eyebrow mt-2">
             IT · {x.classOf} {graduationConfig.year}
           </p>

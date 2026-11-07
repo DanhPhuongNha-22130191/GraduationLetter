@@ -10,7 +10,7 @@ import {
   SectionHeading,
   AnimatedFlourishDivider,
   SealCrest,
-  LaurelBranch,
+  WheatBranch,
 } from "@/components/animated-motifs";
 
 interface ClosingSectionProps {
@@ -69,10 +69,10 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
 
         {/* Chữ ký + hashtag */}
         <Reveal className="text-center mt-16 relative">
-          <LaurelBranch className="hidden sm:block absolute left-4 top-1/2 -translate-y-1/2 w-12 h-24 text-gold-500/40" />
-          <LaurelBranch flip className="hidden sm:block absolute right-4 top-1/2 -translate-y-1/2 w-12 h-24 text-gold-500/40" />
+          <WheatBranch className="hidden sm:block absolute left-4 top-1/2 -translate-y-1/2 w-12 h-24 text-gold-500/40" />
+          <WheatBranch flip className="hidden sm:block absolute right-4 top-1/2 -translate-y-1/2 w-12 h-24 text-gold-500/40" />
           <SealCrest className="w-16 h-16 mx-auto text-gold-500 mb-4" label={graduationConfig.year} />
-          <p className="font-script text-5xl sm:text-6xl text-ivory-50">{graduationConfig.name}</p>
+          <p className="font-serif italic font-medium text-5xl sm:text-6xl text-ivory-50">{graduationConfig.name}</p>
           <p className="eyebrow eyebrow-on-dark mt-3">{t.closing.periodLabel}</p>
           <p className="font-serif text-lg tracking-[0.2em] text-gold-200 mt-4">{extras.hashtag}</p>
         </Reveal>

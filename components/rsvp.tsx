@@ -81,7 +81,7 @@ export const RsvpSection: React.FC = () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const colors = ["#C9A96E", "#F4E7CE", "#123C32", "#E5C78B", "#FFD700"];
+    const colors = ["#C9A227", "#F3EAC4", "#173D2B", "#E2C766", "#FFD700"];
     const particles: { x: number; y: number; vx: number; vy: number; color: string; size: number; alpha: number }[] = [];
 
     for (let i = 0; i < 80; i++) {

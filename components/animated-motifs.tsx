@@ -141,3 +141,17 @@ export const AnimatedFlourishDivider: React.FC<{ className?: string }> = ({ clas
 };
 
 export const FloatingSparklesBadge: React.FC = () => null;
+
+/** Bông lúa — biểu tượng của Trường ĐH Nông Lâm (line-art) */
+export const WheatBranch: React.FC<IconProps & { flip?: boolean }> = ({ className = "w-16 h-24", flip }) => (
+  <svg viewBox="0 0 48 96" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className={className} style={flip ? { transform: "scaleX(-1)" } : undefined} aria-hidden="true">
+    <path d="M24 94V22" />
+    <path d="M24 6c-4 3-5 8-4 12 4-1 6-6 4-12Z" />
+    {[22, 36, 50, 64].map((y) => (
+      <g key={y}>
+        <path d={`M24 ${y + 6}c-7-1-11-6-11-12 7 0 11 5 11 12Z`} />
+        <path d={`M24 ${y + 6}c7-1 11-6 11-12-7 0-11 5-11 12Z`} />
+      </g>
+    ))}
+  </svg>
+);

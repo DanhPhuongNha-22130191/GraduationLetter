@@ -44,8 +44,8 @@ const config: Config = {
       },
       fontFamily: {
         serif: ["var(--font-serif)", "Cormorant Garamond", "Georgia", "serif"],
-        sans: ["var(--font-sans)", "Inter", "system-ui", "sans-serif"],
-        script: ["var(--font-script)", "Pinyon Script", "cursive"],
+        sans: ["var(--font-sans)", "Be Vietnam Pro", "system-ui", "sans-serif"],
+        script: ["var(--font-serif)", "Georgia", "serif"],
         khmer: ["var(--font-khmer)", "Kantumruy Pro", "sans-serif"],
       },
       transitionTimingFunction: {

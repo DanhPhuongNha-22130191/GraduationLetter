@@ -8,7 +8,7 @@ import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { playBackgroundMusic } from "@/components/music-toggle";
-import { AnimatedFlourishDivider, LaurelBranch, EASE_LUX } from "@/components/animated-motifs";
+import { AnimatedFlourishDivider, WheatBranch, EASE_LUX } from "@/components/animated-motifs";
 import { extrasCopy } from "@/config/extras";
 
 async function compressAvatarFile(file: File, maxDim = 1200, quality = 0.85): Promise<Blob | File> {
@@ -259,8 +259,8 @@ export const HeroSection: React.FC = () => {
         className="absolute left-1/2 top-[18%] -translate-x-1/2 w-[130vw] max-w-[900px] aspect-square rounded-full bg-radial from-emerald-700/40 via-emerald-900/10 to-transparent pointer-events-none"
       />
       {/* Cành nguyệt quế hai bên (ẩn trên mobile hẹp để thoáng) */}
-      <LaurelBranch className="hidden md:block absolute left-[6%] top-1/2 -translate-y-1/2 w-20 h-40 text-gold-500/50" />
-      <LaurelBranch flip className="hidden md:block absolute right-[6%] top-1/2 -translate-y-1/2 w-20 h-40 text-gold-500/50" />
+      <WheatBranch className="hidden md:block absolute left-[6%] top-1/2 -translate-y-1/2 w-16 h-32 text-gold-500/50" />
+      <WheatBranch flip className="hidden md:block absolute right-[6%] top-1/2 -translate-y-1/2 w-16 h-32 text-gold-500/50" />
 
       <div className="relative z-10 w-full max-w-md flex flex-col items-center text-center">
         <motion.p
@@ -361,7 +361,7 @@ export const HeroSection: React.FC = () => {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.5, ease: EASE_LUX }}
-          className="font-script text-[3.25rem] sm:text-7xl leading-[1.1] text-ivory-50 mt-9 mb-1"
+          className="font-serif italic font-medium text-[2.75rem] sm:text-6xl leading-[1.15] text-ivory-50 mt-9 mb-1"
         >
           {graduationConfig.name}
         </motion.h1>

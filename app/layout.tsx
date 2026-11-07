@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Inter, Pinyon_Script, Kantumruy_Pro } from "next/font/google";
+import { Cormorant_Garamond, Be_Vietnam_Pro, Kantumruy_Pro } from "next/font/google";
 import "./globals.css";
 
 // Tiêu đề: serif thanh lịch
@@ -12,21 +12,12 @@ const fontSerif = Cormorant_Garamond({
 });
 
 // Nội dung: sans-serif sạch, hỗ trợ đủ dấu tiếng Việt
-const fontSans = Inter({
+const fontSans = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
   weight: ["300", "400", "500", "600"],
   variable: "--font-sans",
   display: "swap",
 });
-
-// Chữ viết tay: chỉ dùng tiết chế cho tên người tốt nghiệp
-const fontScript = Pinyon_Script({
-  subsets: ["latin", "vietnamese"],
-  weight: "400",
-  variable: "--font-script",
-  display: "swap",
-});
-
 const fontKhmer = Kantumruy_Pro({
   subsets: ["khmer"],
   weight: ["400", "500", "600"],
@@ -53,7 +44,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#1E3A2F",
+  themeColor: "#173D2B",
 };
 
 export default function RootLayout({
@@ -64,7 +55,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`scroll-smooth ${fontSerif.variable} ${fontSans.variable} ${fontScript.variable} ${fontKhmer.variable}`}
+      className={`scroll-smooth ${fontSerif.variable} ${fontSans.variable} ${fontKhmer.variable}`}
       suppressHydrationWarning
     >
       <body className="bg-ivory text-charcoal antialiased selection:bg-gold selection:text-emerald-950 min-h-screen" suppressHydrationWarning>
