@@ -386,19 +386,6 @@ export const HeroSection: React.FC<{ revealed?: boolean }> = ({ revealed = true 
           </span>
         </motion.div>
 
-        <motion.button
-          type="button"
-          initial={{ opacity: 0, y: 10 }}
-          animate={revealed ? { opacity: 1, y: 0 } : undefined}
-          transition={{ duration: 0.8, delay: 0.9, ease: EASE_LUX }}
-          onClick={scrollToNext}
-          aria-label={x.scrollCta}
-          className="btn-gold mt-6"
-        >
-          <span>{x.scrollCta}</span>
-          <ChevronDown className="w-4 h-4" strokeWidth={1.75} />
-        </motion.button>
-
         <AnimatedFlourishDivider className="my-7" />
 
         <p className="font-serif italic text-base text-ivory-100/80 max-w-xs leading-relaxed">
@@ -418,10 +405,30 @@ export const HeroSection: React.FC<{ revealed?: boolean }> = ({ revealed = true 
         )}
       </div>
 
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-1 text-gold-200/60" aria-hidden="true">
-        <span className="eyebrow eyebrow-on-dark !text-[0.6rem] opacity-70">{x.scrollHint}</span>
-        <div className="w-px h-8 bg-gradient-to-b from-gold-500/70 to-transparent" />
-      </div>
+      {/* Nút tròn bên phải, chữ nhấp nháy — nằm trên thanh nav */}
+      <motion.button
+        type="button"
+        initial={{ opacity: 0, x: 12 }}
+        animate={revealed ? { opacity: 1, x: 0 } : undefined}
+        transition={{ duration: 0.8, delay: 1, ease: EASE_LUX }}
+        onClick={scrollToNext}
+        aria-label={x.scrollCta}
+        className="absolute right-4 bottom-28 sm:bottom-10 z-20 w-16 h-16 rounded-full bg-gold-500 text-emerald-950 border border-ivory-50/60 shadow-soft-lg flex flex-col items-center justify-center gap-0.5 cursor-pointer touch-manipulation active:scale-95 transition-transform"
+      >
+        <motion.span
+          animate={reduceMotion ? undefined : { opacity: [1, 0.25, 1] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          className="text-[9px] font-sans font-bold uppercase tracking-wide leading-none text-center"
+        >
+          {x.scrollHint}
+        </motion.span>
+        <motion.span
+          animate={reduceMotion ? undefined : { y: [0, 3, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <ChevronDown className="w-4 h-4" strokeWidth={2} />
+        </motion.span>
+      </motion.button>
     </section>
   );
 };
