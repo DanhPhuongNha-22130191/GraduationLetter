@@ -250,7 +250,7 @@ export const HeroSection: React.FC<{ revealed?: boolean }> = ({ revealed = true 
     <section
       id="hero"
       ref={sectionRef}
-      className="relative min-h-[100svh] flex flex-col items-center justify-center px-5 pt-16 pb-44 sm:py-20 bg-emerald-950 text-ivory-50 overflow-hidden"
+      className="relative min-h-[100svh] flex flex-col items-center justify-center px-5 pt-16 pb-28 sm:py-20 bg-emerald-950 text-ivory-50 overflow-hidden"
     >
       {/* Halo mờ — parallax chậm hơn nội dung */}
       <motion.div
@@ -386,7 +386,20 @@ export const HeroSection: React.FC<{ revealed?: boolean }> = ({ revealed = true 
           </span>
         </motion.div>
 
-        <AnimatedFlourishDivider className="my-6" />
+        <motion.button
+          type="button"
+          initial={{ opacity: 0, y: 10 }}
+          animate={revealed ? { opacity: 1, y: 0 } : undefined}
+          transition={{ duration: 0.8, delay: 0.9, ease: EASE_LUX }}
+          onClick={scrollToNext}
+          aria-label={x.scrollCta}
+          className="btn-gold mt-6"
+        >
+          <span>{x.scrollCta}</span>
+          <ChevronDown className="w-4 h-4" strokeWidth={1.75} />
+        </motion.button>
+
+        <AnimatedFlourishDivider className="my-7" />
 
         <p className="font-serif italic text-base text-ivory-100/80 max-w-xs leading-relaxed">
           &ldquo;{t.hero.subTitle}&rdquo;
@@ -403,19 +416,6 @@ export const HeroSection: React.FC<{ revealed?: boolean }> = ({ revealed = true 
             <span className="font-serif italic text-2xl text-ivory-50 break-words overflow-wrap-anywhere">{guestName}</span>
           </motion.div>
         )}
-
-        <motion.button
-          type="button"
-          initial={{ opacity: 0, y: 10 }}
-          animate={revealed ? { opacity: 1, y: 0 } : undefined}
-          transition={{ duration: 0.8, delay: 1, ease: EASE_LUX }}
-          onClick={scrollToNext}
-          aria-label={x.scrollCta}
-          className="btn-gold mt-9"
-        >
-          <span>{x.scrollCta}</span>
-          <ChevronDown className="w-4 h-4" strokeWidth={1.75} />
-        </motion.button>
       </div>
 
       <div className="absolute bottom-5 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-1 text-gold-200/60" aria-hidden="true">
