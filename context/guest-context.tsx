@@ -590,7 +590,14 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return `${origin}?${paramKey}=${encodeURIComponent(clean)}`;
   };
 
-  const effectiveDate = customDate || defaultEarliestDate;
+  // Ngày từ DB (Google Sheet) lỗi/sai định dạng -> bỏ qua để dùng ngày mặc định 04/12/2026 (graduationConfig)
+  const isValidDateStr = (s?: string): s is string =>
+    !!s && /^(\d{1,2}[/-]\d{1,2}([/-]\d{4})?|\d{4}[/-]\d{1,2}[/-]\d{1,2})/.test(s.trim());
+  const effectiveDate = isValidDateStr(customDate)
+    ? customDate
+    : isValidDateStr(defaultEarliestDate)
+      ? defaultEarliestDate
+      : undefined;
   const effectiveTime = customTime || defaultEarliestTime;
 
   const cleanSlug = (currentSlug || "").trim().toLowerCase().replace(/[-_]/g, "");

@@ -18,7 +18,7 @@ interface TimeLeft {
  * Phân tích ngày giờ tùy chỉnh (customDate + customTime) thành đối tượng Date mục tiêu
  */
 export function parseCustomTargetDate(customDate?: string, customTime?: string): Date {
-  const defaultTarget = new Date(graduationConfig.graduationDate); // Mặc định 2026-10-21T08:00:00
+  const defaultTarget = new Date(graduationConfig.graduationDate); // Mặc định 2026-12-04T08:00:00
   let year = defaultTarget.getFullYear();
   let month = defaultTarget.getMonth();
   let day = defaultTarget.getDate();

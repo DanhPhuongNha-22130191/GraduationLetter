@@ -250,7 +250,7 @@ export const HeroSection: React.FC = () => {
     <section
       id="hero"
       ref={sectionRef}
-      className="relative min-h-[100svh] flex flex-col items-center justify-center px-5 py-16 sm:py-20 bg-emerald-950 text-ivory-50 overflow-hidden"
+      className="relative min-h-[100svh] flex flex-col items-center justify-center px-5 pt-16 pb-36 sm:py-20 bg-emerald-950 text-ivory-50 overflow-hidden"
     >
       {/* Halo mờ — parallax chậm hơn nội dung */}
       <motion.div

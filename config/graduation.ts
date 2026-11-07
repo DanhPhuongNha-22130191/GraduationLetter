@@ -51,14 +51,14 @@ export const graduationConfig = {
   cloudinaryUploadPreset: "graduation_guest",
 
   // Thông tin ngày lễ
-  date: "Thứ Tư, Ngày 21 Tháng 10 Năm 2026",
+  date: "Thứ Sáu, Ngày 04 Tháng 12 Năm 2026",
   time: "08:00 - 11:30 AM",
   venue: "Hội trường Phượng Vĩ P100 — Trường ĐH Nông Lâm TP.HCM",
   address: "Khu Phố 6, P. Linh Trung, TP. Thủ Đức, TP. Hồ Chí Minh",
   mapUrl: "https://maps.google.com/?q=Hoi+truong+Phuong+Vi+Truong+Dai+Hoc+Nong+Lam+TP.HCM",
 
   // Ngày đếm ngược (ISO format YYYY-MM-DDTHH:mm:ss)
-  graduationDate: "2026-10-21T08:00:00",
+  graduationDate: "2026-12-04T08:00:00",
 
   // Lời mời & Thông điệp
   invitationTitle: "THÂN MỜI",

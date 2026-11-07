@@ -10,7 +10,7 @@ export const extras = {
   // Lễ tốt nghiệp: lấy từ graduationConfig (date/time/venue/address/mapUrl)
 
 
-  ceremonyEnd: "2026-10-21T11:30:00",
+  ceremonyEnd: "2026-12-04T11:30:00",
 
   // [PLACEHOLDER] Danh sách ảnh album mẫu (dùng khi chưa có ảnh thật). Thay bằng ảnh trong /public.
   albumPlaceholder: true,
