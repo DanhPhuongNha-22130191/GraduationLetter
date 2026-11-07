@@ -363,8 +363,10 @@ export function getEarliestGraduationDateTime(
       // ignore
     }
   }
-  if (!targetRegistry) {
-    targetRegistry = defaultGuestRegistry;
+  // Chưa có dữ liệu từ Sheet (khách vào lần đầu): KHÔNG dùng danh sách mẫu cứng (30/10/2026)
+  // -> trả về rỗng để giao diện dùng ngày mặc định trong graduationConfig (04/12/2026).
+  if (!targetRegistry || targetRegistry === defaultGuestRegistry) {
+    return {};
   }
 
   let minTimestamp = Infinity;
