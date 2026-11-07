@@ -116,12 +116,26 @@ const EventCard: React.FC<EventCardProps> = (p) => (
 
 export const GraduationInfoSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { effectiveDate, effectiveTime } = useGuest();
+  const { effectiveDate, effectiveTime, guestName, hasCustomGuest, pronounMode, getSelfPronoun } = useGuest();
   const [copied, setCopied] = useState(false);
   const x = extrasCopy[lang];
 
   const dateText = effectiveDate ? formatLocalizedDate(effectiveDate, lang) : t.details.dateVal;
   const timeText = effectiveTime ? formatLocalizedTime(effectiveTime, lang) : t.details.timeVal;
+
+  // Dress code: xưng hô theo từng khách (cùng logic với lời mời)
+  const dressText = (() => {
+    if (!hasCustomGuest || !guestName) return x.dressCeremony;
+    if (lang === "vi") {
+      const me = getSelfPronoun();
+      const tail = "cứ mặc bộ nào khiến mình đẹp nhất và tự tin nhất";
+      if (pronounMode === "elder") return `Con mong ${guestName} ${tail} ạ!`;
+      if (pronounMode === "friend") return `${guestName} ${tail} nhé!`;
+      return `${me.charAt(0).toUpperCase()}${me.slice(1)} mong ${guestName} ${tail} nhé!`;
+    }
+    if (lang === "en") return `${guestName}, wear whatever makes you look and feel your best and most confident!`;
+    return x.dressCeremony;
+  })();
 
   const handleCopyAddress = () => {
     navigator.clipboard?.writeText(`${t.details.venueVal} - ${t.details.addressVal}`);
@@ -159,7 +173,7 @@ export const GraduationInfoSection: React.FC = () => {
               time={timeText}
               venue={t.details.venueVal}
               address={t.details.addressVal}
-              dress={x.dressCeremony}
+              dress={dressText}
               dressLabel={x.dressCode}
               mapUrl={graduationConfig.mapUrl}
               directionsLabel={x.directions}
