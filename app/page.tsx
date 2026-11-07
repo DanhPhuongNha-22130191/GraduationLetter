@@ -64,7 +64,7 @@ export default function Home() {
           <MusicToggle />
 
           {/* Main Single Page Sections */}
-          <HeroSection />
+          <HeroSection revealed={isEnvelopeOpen} />
           <InvitationSection />
           <JourneySection />
           <CountdownSection />

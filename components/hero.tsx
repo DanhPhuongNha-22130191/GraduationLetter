@@ -54,7 +54,7 @@ async function compressAvatarFile(file: File, maxDim = 1200, quality = 0.85): Pr
   });
 }
 
-export const HeroSection: React.FC = () => {
+export const HeroSection: React.FC<{ revealed?: boolean }> = ({ revealed = true }) => {
   const { t, lang } = useLanguage();
   const { guestName, hasCustomGuest, getGreetingPrefix, isOwner, currentSlug } = useGuest();
   const [avatarUrl, setAvatarUrl] = useState<string>(graduationConfig.avatarUrl);
@@ -250,7 +250,7 @@ export const HeroSection: React.FC = () => {
     <section
       id="hero"
       ref={sectionRef}
-      className="relative min-h-[100svh] flex flex-col items-center justify-center px-5 pt-16 pb-36 sm:py-20 bg-emerald-950 text-ivory-50 overflow-hidden"
+      className="relative min-h-[100svh] flex flex-col items-center justify-center px-5 pt-16 pb-44 sm:py-20 bg-emerald-950 text-ivory-50 overflow-hidden"
     >
       {/* Halo mờ — parallax chậm hơn nội dung */}
       <motion.div
@@ -265,7 +265,7 @@ export const HeroSection: React.FC = () => {
       <div className="relative z-10 w-full max-w-md flex flex-col items-center text-center">
         <motion.p
           initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={revealed ? { opacity: 1, y: 0 } : undefined}
           transition={{ duration: 0.8, ease: EASE_LUX }}
           className="eyebrow eyebrow-on-dark mb-2"
         >
@@ -273,7 +273,7 @@ export const HeroSection: React.FC = () => {
         </motion.p>
         <motion.p
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={revealed ? { opacity: 1 } : undefined}
           transition={{ duration: 0.9, delay: 0.15, ease: EASE_LUX }}
           className="font-serif italic text-gold-200 text-lg tracking-[0.2em] mb-7"
         >
@@ -284,7 +284,7 @@ export const HeroSection: React.FC = () => {
         <motion.div
           style={{ y: portraitY }}
           initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
+          animate={revealed ? { opacity: 1, scale: 1 } : undefined}
           transition={{ duration: 1, delay: 0.25, ease: EASE_LUX }}
           className="relative w-[14.5rem] sm:w-64"
         >
@@ -359,21 +359,32 @@ export const HeroSection: React.FC = () => {
         {/* Tên — chữ viết tay tiết chế, chỉ dùng cho tên */}
         <motion.h1
           initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={revealed ? { opacity: 1, y: 0 } : undefined}
           transition={{ duration: 0.9, delay: 0.5, ease: EASE_LUX }}
           className="font-serif italic font-medium text-[2.75rem] sm:text-6xl leading-[1.15] text-ivory-50 mt-9 mb-1"
         >
           {graduationConfig.name}
         </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.9, delay: 0.7 }}
-          className="font-serif text-[0.8rem] sm:text-sm uppercase tracking-[0.3em] text-gold-200 mt-2"
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={revealed ? { opacity: 1, y: 0 } : undefined}
+          transition={{ duration: 0.9, delay: 0.7, ease: EASE_LUX }}
+          className="font-serif text-[0.8rem] sm:text-sm uppercase tracking-[0.2em] text-gold-200 mt-2 flex flex-col items-center gap-1"
         >
-          {t.hero.degree} · {t.hero.major}
-        </motion.p>
+          <span className="whitespace-nowrap">{t.hero.degree}</span>
+          <span>
+            {(() => {
+              const [name, year] = t.hero.major.split(/\s—\s/);
+              return (
+                <>
+                  {name}
+                  {year && <span className="whitespace-nowrap"> — {year}</span>}
+                </>
+              );
+            })()}
+          </span>
+        </motion.div>
 
         <AnimatedFlourishDivider className="my-6" />
 
@@ -384,7 +395,7 @@ export const HeroSection: React.FC = () => {
         {hasCustomGuest && (
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={revealed ? { opacity: 1 } : undefined}
             transition={{ duration: 0.8, delay: 0.9 }}
             className="mt-7 w-full border-y border-gold-500/30 py-3"
           >
@@ -396,7 +407,7 @@ export const HeroSection: React.FC = () => {
         <motion.button
           type="button"
           initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={revealed ? { opacity: 1, y: 0 } : undefined}
           transition={{ duration: 0.8, delay: 1, ease: EASE_LUX }}
           onClick={scrollToNext}
           aria-label={x.scrollCta}

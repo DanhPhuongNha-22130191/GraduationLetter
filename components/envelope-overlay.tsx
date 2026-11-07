@@ -71,23 +71,6 @@ const AnimatedBackground: React.FC = () => (
       />
     ))}
 
-    {/* Floating gold bokeh orbs */}
-    {ORBS.map((orb, i) => (
-      <motion.div
-        key={i}
-        className="absolute rounded-full pointer-events-none"
-        style={{
-          width: orb.size, height: orb.size,
-          left: orb.x, top: orb.y,
-          background: "radial-gradient(circle, rgba(201,169,110,0.14) 0%, rgba(201,169,110,0.03) 60%, transparent 80%)",
-          filter: "blur(24px)",
-          transform: "translate(-50%, -50%)",
-        }}
-        animate={{ scale: [1, 1.15, 1], opacity: [0.35, 0.7, 0.35] }}
-        transition={{ duration: 10 + i * 2, repeat: Infinity, ease: "easeInOut", delay: orb.delay }}
-      />
-    ))}
-
     {/* Subtle diagonal shimmer line */}
     <motion.div
       className="absolute inset-0 pointer-events-none"
@@ -159,7 +142,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
       onOpen?.();
       // Sau khi mở thiệp: đứng ở đầu trang (hero/avatar), không cuộn xuống
       window.scrollTo({ top: 0, behavior: "auto" });
-    }, 700);
+    }, 450);
   };
 
   return (
@@ -168,7 +151,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.06 }}
+          exit={{ opacity: 0, scale: 1.04, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           onClick={handleOpenEnvelope}
           className="fixed inset-0 z-50 bg-[#0B2A22] text-ivory-50 flex flex-col items-center justify-between p-4 sm:p-8 cursor-pointer overflow-y-auto overflow-x-hidden select-none touch-manipulation"
