@@ -7,6 +7,7 @@ import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { formatLocalizedTime, formatLocalizedDate } from "@/config/i18n";
 import { extrasCopy } from "@/config/extras";
+import { uiCopy } from "@/config/ui-copy";
 import { Reveal, SectionHeading, GradCapIcon } from "@/components/animated-motifs";
 import { parseCustomTargetDate } from "@/components/countdown";
 
@@ -44,6 +45,8 @@ function downloadIcs(opts: { title: string; start: Date; end: Date; location: st
 
 interface EventCardProps {
   index: string;
+  srDate: string;
+  srVenue: string;
   title: string;
   date: string;
   time: string;
@@ -66,13 +69,13 @@ const EventCard: React.FC<EventCardProps> = (p) => (
 
     <dl className="space-y-4 text-sm flex-1">
       <div>
-        <dt className="sr-only">Ngày</dt>
+        <dt className="sr-only">{p.srDate}</dt>
         <dd className="font-serif text-lg text-emerald-900">{p.date}</dd>
         <dd className="text-charcoal/75 mt-0.5 tabular-nums">{p.time}</dd>
       </div>
       <div className="w-8 h-px bg-gold-500/60 mx-auto" aria-hidden="true" />
       <div>
-        <dt className="sr-only">Địa điểm</dt>
+        <dt className="sr-only">{p.srVenue}</dt>
         <dd className="font-serif text-lg text-emerald-900 leading-snug">{p.venue}</dd>
         <dd className="text-charcoal/75 mt-1 leading-relaxed">{p.address}</dd>
         {p.copy && (
@@ -133,8 +136,7 @@ export const GraduationInfoSection: React.FC = () => {
       if (pronounMode === "friend") return `${guestName} ${tail} nhé!`;
       return `${me.charAt(0).toUpperCase()}${me.slice(1)} mong ${guestName} ${tail} nhé!`;
     }
-    if (lang === "en") return `${guestName}, wear whatever makes you look and feel your best and most confident!`;
-    return x.dressCeremony;
+    return uiCopy[lang].details.dressFor(guestName);
   })();
 
   const handleCopyAddress = () => {
@@ -151,7 +153,7 @@ export const GraduationInfoSection: React.FC = () => {
       start,
       end,
       location: `${t.details.venueVal}, ${t.details.addressVal}`,
-      description: `${graduationConfig.name} · ${graduationConfig.major}`,
+      description: `${graduationConfig.name} · ${t.hero.major}`,
     });
   };
 
@@ -167,6 +169,8 @@ export const GraduationInfoSection: React.FC = () => {
         <div className="max-w-xl mx-auto">
           <Reveal className="h-full">
             <EventCard
+              srDate={uiCopy[lang].details.srDate}
+              srVenue={uiCopy[lang].details.srVenue}
               index=""
               title={x.ceremony}
               date={dateText}

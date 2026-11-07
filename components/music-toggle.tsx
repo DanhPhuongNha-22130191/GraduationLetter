@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { graduationConfig, AudioPreset } from "@/config/graduation";
 import { useGuest } from "@/context/guest-context";
+import { useLanguage } from "@/context/language-context";
+import { uiCopy } from "@/config/ui-copy";
 
 export const playBackgroundMusic = () => {
   if (typeof window !== "undefined") {
@@ -37,6 +39,8 @@ export const pauseBackgroundMusic = () => {
 
 export const MusicToggle: React.FC = () => {
   const { isOwner, audioUrl, setAudioUrl } = useGuest();
+  const { lang } = useLanguage();
+  const um = uiCopy[lang].music;
   const [isPlaying, setIsPlaying] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"upload" | "playlist" | "url">("upload");
@@ -441,7 +445,8 @@ export const MusicToggle: React.FC = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={toggleMusic}
-          aria-label={isPlaying ? "Tắt nhạc nền" : "Bật nhạc nền"}
+          aria-label={isPlaying ? um.off : um.on}
+          title={isPlaying ? um.off : um.on}
           className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center border transition-all active:scale-95 touch-manipulation cursor-pointer ${
             isPlaying
               ? "bg-gold-gradient text-emerald-950 border-gold-200/50 shadow-gold-glow"

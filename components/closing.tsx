@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Phone, Mail, Share2, Check, ArrowUp } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
+import { uiCopy } from "@/config/ui-copy";
 import { extras, extrasCopy } from "@/config/extras";
 import {
   Reveal,
@@ -20,14 +21,15 @@ interface ClosingSectionProps {
 export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope }) => {
   const { t, lang } = useLanguage();
   const x = extrasCopy[lang];
+  const u = uiCopy[lang].closing;
   const [copiedLink, setCopiedLink] = useState(false);
 
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Lễ Tốt Nghiệp — ${graduationConfig.name}`,
-          text: `Thân mời bạn đến tham dự Lễ Tốt Nghiệp của ${graduationConfig.name}!`,
+          title: u.shareTitle(graduationConfig.name),
+          text: u.shareText(graduationConfig.name),
           url: window.location.href,
         });
         return;
@@ -96,7 +98,7 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
           <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
             <button type="button" onClick={handleShare} className="btn-gold">
               {copiedLink ? <Check className="w-4 h-4" strokeWidth={1.75} /> : <Share2 className="w-4 h-4" strokeWidth={1.75} />}
-              <span>{copiedLink ? "Đã sao chép liên kết" : "Chia sẻ thiệp"}</span>
+              <span>{copiedLink ? u.linkCopied : u.share}</span>
             </button>
             {onReopenEnvelope && (
               <button type="button" onClick={onReopenEnvelope} className="btn-outline btn-outline-on-dark">
@@ -108,7 +110,7 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
         </Reveal>
 
         <p className="text-center text-[0.7rem] tracking-[0.2em] uppercase text-ivory-100/50 mt-14">
-          {graduationConfig.university} · {x.classOf} {graduationConfig.year}
+          {uiCopy[lang].profile.university} · {x.classOf} {graduationConfig.year}
         </p>
       </div>
     </footer>

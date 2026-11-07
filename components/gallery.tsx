@@ -26,6 +26,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useLanguage } from "@/context/language-context";
+import { uiCopy } from "@/config/ui-copy";
 import { useGuest } from "@/context/guest-context";
 import { graduationConfig, GalleryItem } from "@/config/graduation";
 import { fetchPhotosFromSheet } from "@/config/guests";
@@ -136,7 +137,8 @@ function getPaginationRange(current: number, total: number): (number | string)[]
 }
 
 export const GallerySection: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const ug = uiCopy[lang].gallery;
   const { guestName, isRegisteredGuest, canUpload } = useGuest();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -548,12 +550,12 @@ export const GallerySection: React.FC = () => {
     if (files.length > 0) {
       const validFiles = files.filter((f) => f.type.startsWith("image/"));
       if (validFiles.length === 0) {
-        setUploadError("Vui lòng chọn các tệp hình ảnh hợp lệ (PNG, JPG, JPEG, WEBP)");
+        setUploadError(ug.invalidFiles);
         return;
       }
 
       if (selectedFiles.length >= MAX_UPLOAD_PHOTOS) {
-        setUploadError(`Mỗi lần gửi tối đa ${MAX_UPLOAD_PHOTOS} ảnh để đảm bảo chất lượng và tốc độ cao nhất.`);
+        setUploadError(ug.maxPerUpload(MAX_UPLOAD_PHOTOS));
         return;
       }
 
@@ -563,7 +565,7 @@ export const GallerySection: React.FC = () => {
 
       if (validFiles.length > availableSlots) {
         filesToAdd = validFiles.slice(0, availableSlots);
-        limitNotice = `Hệ thống đã chọn ${filesToAdd.length} ảnh đầu tiên (giới hạn tối đa ${MAX_UPLOAD_PHOTOS} ảnh mỗi lần gửi để đảm bảo tốc độ và chất lượng tốt nhất).`;
+        limitNotice = ug.limitNotice(filesToAdd.length, MAX_UPLOAD_PHOTOS);
       }
 
       const combinedFiles = [...selectedFiles, ...filesToAdd];
@@ -591,11 +593,11 @@ export const GallerySection: React.FC = () => {
     const trimmed = imageUrlInput.trim();
     if (!trimmed) return;
     if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://") && !trimmed.startsWith("/")) {
-      setUploadError("Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://");
+      setUploadError(ug.urlProtocol);
       return;
     }
     if (urlList.length >= MAX_UPLOAD_PHOTOS) {
-      setUploadError(`Mỗi lần gửi tối đa ${MAX_UPLOAD_PHOTOS} ảnh để đảm bảo chất lượng và tốc độ cao nhất.`);
+      setUploadError(ug.maxPerUpload(MAX_UPLOAD_PHOTOS));
       return;
     }
     if (!urlList.includes(trimmed)) {
@@ -633,7 +635,7 @@ export const GallerySection: React.FC = () => {
   const handleUploadPhoto = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isRegisteredGuest || !canUpload) {
-      setUploadError("Bạn không có quyền tải ảnh lên kho kỷ niệm.");
+      setUploadError(ug.noUploadRight);
       return;
     }
 
@@ -646,11 +648,11 @@ export const GallerySection: React.FC = () => {
 
     if (uploadSourceMode === "file") {
       if (selectedFiles.length === 0) {
-        setUploadError("Vui lòng chọn ít nhất 1 bức ảnh từ thiết bị để tải lên");
+        setUploadError(ug.pickAtLeastOne);
         return;
       }
       if (selectedFiles.length > MAX_UPLOAD_PHOTOS) {
-        setUploadError(`Mỗi lần gửi tối đa ${MAX_UPLOAD_PHOTOS} ảnh để đảm bảo chất lượng và tốc độ.`);
+        setUploadError(ug.maxPerUpload(MAX_UPLOAD_PHOTOS));
         return;
       }
 
@@ -660,7 +662,7 @@ export const GallerySection: React.FC = () => {
       try {
         const total = selectedFiles.length;
         let completed = 0;
-        setUploadProgressText(total > 1 ? `Đang tối ưu & nén (${total} ảnh)...` : "Đang xử lý ảnh...");
+        setUploadProgressText(total > 1 ? ug.optimizing(total) : ug.processing);
 
         // Nén song song trước khi tải lên (giảm dung lượng ~90% giúp tải nhanh gấp 10 lần)
         const preparedBlobs: Array<{ blob: Blob | File; filename: string }> = await Promise.all(
@@ -681,8 +683,8 @@ export const GallerySection: React.FC = () => {
 
             setUploadProgressText(
               total > 1
-                ? `Đang tải ảnh (${completed + 1}/${total}) lên Cloud...`
-                : "Đang tải ảnh lên Cloud..."
+                ? ug.uploadingN(completed + 1, total)
+                : ug.uploadingOne
             );
 
             const formData = new FormData();
@@ -711,7 +713,7 @@ export const GallerySection: React.FC = () => {
               uploadedUrls.push(photoUrl);
             }
             completed++;
-            setUploadProgressText(`Đã tải xong (${completed}/${total}) ảnh`);
+            setUploadProgressText(ug.uploadedN(completed, total));
           }
         };
 
@@ -721,7 +723,7 @@ export const GallerySection: React.FC = () => {
         await Promise.all(workers);
       } catch (err) {
         console.error(err);
-        setUploadError("Có lỗi xảy ra khi tải ảnh lên Cloud. Vui lòng kiểm tra kết nối và thử lại!");
+        setUploadError(ug.cloudError);
         setIsUploading(false);
         return;
       }
@@ -736,11 +738,11 @@ export const GallerySection: React.FC = () => {
       }
 
       if (combinedUrls.length === 0) {
-        setUploadError("Vui lòng nhập ít nhất 1 đường dẫn (link) ảnh hợp lệ");
+        setUploadError(ug.needOneUrl);
         return;
       }
       if (combinedUrls.length > MAX_UPLOAD_PHOTOS) {
-        setUploadError(`Mỗi lần gửi tối đa ${MAX_UPLOAD_PHOTOS} ảnh để đảm bảo chất lượng và tốc độ.`);
+        setUploadError(ug.maxPerUpload(MAX_UPLOAD_PHOTOS));
         return;
       }
 
@@ -750,7 +752,7 @@ export const GallerySection: React.FC = () => {
     }
 
     if (uploadedUrls.length === 0) {
-      setUploadError("Không có ảnh nào để tải lên.");
+      setUploadError(ug.nothingToUpload);
       setIsUploading(false);
       return;
     }
@@ -800,9 +802,9 @@ export const GallerySection: React.FC = () => {
 
       if (!uploadRes.ok || !uploadData?.success) {
         if (uploadRes.status === 429) {
-          throw new Error(uploadData?.error || "Bạn đang gửi yêu cầu quá nhanh. Vui lòng thử lại sau giây lát.");
+          throw new Error(uploadData?.error || ug.tooFast);
         }
-        throw new Error(uploadData?.error || "Không thể lưu thông tin ảnh vào Google Sheets. Vui lòng thử lại!");
+        throw new Error(uploadData?.error || ug.saveSheetError);
       }
 
       // 5. CHỈ cập nhật state UI và localStorage sau khi máy chủ xác nhận đã lưu thành công vào Google Sheets
@@ -840,8 +842,8 @@ export const GallerySection: React.FC = () => {
         err instanceof Error
           ? err.message
           : typeof navigator !== "undefined" && !navigator.onLine
-          ? "Thiết bị đang ngoại tuyến. Vui lòng kiểm tra kết nối mạng!"
-          : "Có lỗi xảy ra khi lưu ảnh. Vui lòng thử lại!";
+          ? ug.offline
+          : ug.saveError;
       setUploadError(errMsg);
       setIsUploading(false);
     }
@@ -878,8 +880,8 @@ export const GallerySection: React.FC = () => {
             type="button"
             onClick={() => syncPhotos(true)}
             disabled={isSyncing}
-            aria-label="Đồng bộ lại kho ảnh"
-            title="Đồng bộ lại kho ảnh"
+            aria-label={ug.sync}
+            title={ug.sync}
             className="p-3 sm:p-3.5 rounded-full bg-white hover:bg-gold-500/10 text-emerald-950 border border-gold-500/30 shadow-soft-xs hover:border-gold-500 transition-all cursor-pointer active:scale-95 touch-manipulation disabled:opacity-50 flex items-center justify-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
           >
             <RotateCw className={`w-4 h-4 sm:w-4.5 sm:h-4.5 text-gold-700 ${isSyncing ? "animate-spin" : ""}`} />
@@ -946,11 +948,11 @@ export const GallerySection: React.FC = () => {
             <p className="font-serif text-base sm:text-lg text-emerald-950 font-semibold">
               {selectedCategory === "all"
                 ? t.gallery.emptyText
-                : `Chưa có bức ảnh nào thuộc chủ đề "${selectedCategory}".`}
+                : ug.emptyCategory(selectedCategory)}
             </p>
             {selectedCategory !== "all" && (
               <p className="font-sans text-xs text-charcoal/70 max-w-sm mx-auto">
-                Hãy là người đầu tiên chia sẻ khoảnh khắc đẹp trong chủ đề này cùng Nhã nhé! ✨
+                {ug.emptyCategoryHint}
               </p>
             )}
             <button
@@ -972,8 +974,8 @@ export const GallerySection: React.FC = () => {
               <UploadCloud className="w-4 h-4" />
               <span>
                 {selectedCategory === "all"
-                  ? "Đóng góp ảnh ngay"
-                  : `Đóng góp ảnh cho "${selectedCategory}" ngay`}
+                  ? ug.contributeNow
+                  : ug.contributeTo(selectedCategory)}
               </span>
             </button>
           </motion.div>
@@ -997,7 +999,7 @@ export const GallerySection: React.FC = () => {
                       {/* Optimized Crystal Clear Image */}
                       <Image
                         src={getOptimizedImageUrl(photo.src, 800)}
-                        alt={photo.alt || photo.title || "Kỷ niệm lễ tốt nghiệp"}
+                        alt={photo.alt || photo.title || ug.photoAlt}
                         fill
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         quality={80}
@@ -1041,7 +1043,7 @@ export const GallerySection: React.FC = () => {
                   </span>
                   <span className="text-charcoal/30">•</span>
                   <span className="text-charcoal/75">
-                    Hiển thị {startIndex + 1}–{endIndex} {t.gallery.paginationOf} {filteredItems.length} {t.gallery.paginationPhotos}
+                    {ug.showing(startIndex + 1, endIndex, filteredItems.length)}
                   </span>
                 </div>
 
@@ -1141,7 +1143,7 @@ export const GallerySection: React.FC = () => {
                   </h3>
                   <p className="font-sans text-sm text-ivory-100/80 max-w-xs mx-auto">
                     {uploadSuccessCount > 1
-                      ? `Đã tải lên thành công ${uploadSuccessCount} bức ảnh kỷ niệm vào bộ sưu tập của Nhã!`
+                      ? ug.successMany(uploadSuccessCount)
                       : t.gallery.uploadSuccessDesc}
                   </p>
                 </motion.div>
@@ -1156,7 +1158,7 @@ export const GallerySection: React.FC = () => {
                     <Lock className="w-7 h-7 stroke-[2]" />
                   </div>
                   <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gold-500/15 text-gold-300 text-[10px] font-sans font-bold uppercase tracking-widest border border-gold-500/30">
-                    <span>QUYỀN TRUY CẬP KHÁCH MỜI</span>
+                    <span>{ug.guestAccess}</span>
                   </div>
                   <h3 className="font-serif text-2xl font-bold text-gold-200">
                     {t.gallery.uploadRestrictedTitle}
@@ -1164,7 +1166,7 @@ export const GallerySection: React.FC = () => {
                   <p className="font-sans text-xs sm:text-sm text-ivory-100/80 max-w-sm mx-auto leading-relaxed">
                     {!isRegisteredGuest
                       ? t.gallery.uploadRestrictedDesc
-                      : "Khách mời hiện chưa được cấp quyền đóng góp ảnh cho kho kỷ niệm. Vui lòng liên hệ Nhã để mở quyền nhé! 💌"}
+                      : ug.noPermission}
                   </p>
                   <div className="pt-2">
                     <button
@@ -1172,7 +1174,7 @@ export const GallerySection: React.FC = () => {
                       onClick={() => setIsUploadOpen(false)}
                       className="px-6 py-2.5 rounded-full bg-gold-500 hover:bg-gold-600 text-emerald-950 font-sans font-bold text-xs uppercase tracking-wider active:scale-95 transition-all shadow-soft-xs cursor-pointer"
                     >
-                      Đã hiểu
+                      {ug.gotIt}
                     </button>
                   </div>
                 </motion.div>
@@ -1185,7 +1187,7 @@ export const GallerySection: React.FC = () => {
                       <span>{t.gallery.uploadModalTitle}</span>
                     </div>
                     <h3 className="font-serif text-2xl sm:text-3xl font-bold text-gold-200">
-                      Chia Sẻ Khoảnh Khắc
+                      {ug.shareMoments}
                     </h3>
                     <p className="font-sans text-xs text-ivory-100/70 mt-1 max-w-sm mx-auto">
                       {t.gallery.uploadModalDesc}
@@ -1195,17 +1197,17 @@ export const GallerySection: React.FC = () => {
                     <div className="flex items-center justify-center gap-2 mt-4 mb-1 text-[11px] font-sans">
                       <span className="flex items-center gap-1 text-gold-300 font-semibold">
                         <span className="w-5 h-5 rounded-full bg-gold-500 text-emerald-950 flex items-center justify-center font-bold text-[10px]">1</span>
-                        Chọn ảnh
+                        {ug.steps[0]}
                       </span>
                       <span className="w-4 h-px bg-gold-500/30" />
                       <span className="flex items-center gap-1 text-ivory-100/70">
                         <span className="w-5 h-5 rounded-full bg-white/10 text-gold-300 flex items-center justify-center font-bold text-[10px]">2</span>
-                        Thông tin
+                        {ug.steps[1]}
                       </span>
                       <span className="w-4 h-px bg-gold-500/30" />
                       <span className="flex items-center gap-1 text-ivory-100/70">
                         <span className="w-5 h-5 rounded-full bg-white/10 text-gold-300 flex items-center justify-center font-bold text-[10px]">3</span>
-                        Gửi
+                        {ug.steps[2]}
                       </span>
                     </div>
                   </div>
@@ -1215,7 +1217,7 @@ export const GallerySection: React.FC = () => {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="block text-xs font-sans uppercase tracking-wider text-gold-300 font-semibold">
-                          Hình ảnh kỷ niệm:
+                          {ug.photosLabel}
                         </label>
                         <div className="flex bg-emerald-900/60 p-0.5 rounded-lg border border-gold-500/25">
                           <button
@@ -1269,7 +1271,7 @@ export const GallerySection: React.FC = () => {
                               <div className="flex items-center justify-between px-1 text-xs">
                                 <span className="font-sans font-semibold text-gold-300 flex items-center gap-1">
                                   <Images className="w-3.5 h-3.5 text-gold-400" />
-                                  Đã chọn <strong className="text-gold-200 font-bold">{filePreviews.length}/{MAX_UPLOAD_PHOTOS}</strong> bức ảnh
+                                  {ug.selected[0]} <strong className="text-gold-200 font-bold">{filePreviews.length}/{MAX_UPLOAD_PHOTOS}</strong> {ug.selected[1]}
                                 </span>
                                 <div className="flex items-center gap-2">
                                   {filePreviews.length < MAX_UPLOAD_PHOTOS && (
@@ -1279,7 +1281,7 @@ export const GallerySection: React.FC = () => {
                                       className="inline-flex items-center gap-1 text-[11px] text-gold-300 hover:text-gold-200 font-sans font-semibold px-2 py-0.5 rounded-full bg-gold-500/15 border border-gold-500/30 hover:bg-gold-500/25 transition-all cursor-pointer"
                                     >
                                       <Plus className="w-3 h-3" />
-                                      <span>Thêm ảnh</span>
+                                      <span>{ug.addPhoto}</span>
                                     </button>
                                   )}
                                   <button
@@ -1290,7 +1292,7 @@ export const GallerySection: React.FC = () => {
                                     }}
                                     className="text-[11px] text-red-400 hover:text-red-300 font-sans cursor-pointer underline"
                                   >
-                                    Xóa hết
+                                    {ug.clearAll}
                                   </button>
                                 </div>
                               </div>
@@ -1317,7 +1319,7 @@ export const GallerySection: React.FC = () => {
                                       type="button"
                                       onClick={() => handleRemoveFile(idx)}
                                       className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-md hover:bg-red-500 transition-all cursor-pointer"
-                                      title="Xóa ảnh này"
+                                      title={ug.removePhoto}
                                     >
                                       <X className="w-3 h-3" />
                                     </button>
@@ -1333,7 +1335,7 @@ export const GallerySection: React.FC = () => {
                                   >
                                     <Plus className="w-5 h-5 text-gold-400 group-hover:scale-110 transition-transform" />
                                     <span className="text-[9px] text-gold-300 font-sans font-semibold mt-0.5">
-                                      Thêm ảnh ({filePreviews.length}/{MAX_UPLOAD_PHOTOS})
+                                      {ug.addPhoto} ({filePreviews.length}/{MAX_UPLOAD_PHOTOS})
                                     </span>
                                   </button>
                                 )}
@@ -1352,7 +1354,7 @@ export const GallerySection: React.FC = () => {
                                 {t.gallery.uploadSelectFile}
                               </span>
                               <span className="font-sans text-[11px] text-ivory-100/60 mt-1">
-                                Hỗ trợ chọn tối đa 12 ảnh mỗi lần (PNG, JPG, JPEG, WEBP) giúp tải nhanh & bảo toàn chất lượng
+                                {ug.fileHint(MAX_UPLOAD_PHOTOS)}
                               </span>
                             </button>
                           )}
@@ -1386,7 +1388,7 @@ export const GallerySection: React.FC = () => {
                               disabled={urlList.length >= MAX_UPLOAD_PHOTOS || !imageUrlInput.trim()}
                               className="px-3 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-600 text-emerald-950 font-sans font-bold text-xs active:scale-95 transition-all cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                              + Thêm link
+                              {ug.addLink}
                             </button>
                           </div>
 
@@ -1394,14 +1396,14 @@ export const GallerySection: React.FC = () => {
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between text-xs px-1">
                                 <span className="font-sans text-gold-300 font-semibold">
-                                  Đã nhập <strong className="text-gold-200">{urlList.length}/{MAX_UPLOAD_PHOTOS}</strong> liên kết ảnh
+                                  {ug.entered[0]} <strong className="text-gold-200">{urlList.length}/{MAX_UPLOAD_PHOTOS}</strong> {ug.entered[1]}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => setUrlList([])}
                                   className="text-[11px] text-red-400 hover:text-red-300 font-sans cursor-pointer underline"
                                 >
-                                  Xóa hết
+                                  {ug.clearAll}
                                 </button>
                               </div>
                               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1.5 rounded-2xl bg-black/30 border border-gold-500/20">
@@ -1416,7 +1418,7 @@ export const GallerySection: React.FC = () => {
                                       fill
                                       className="object-cover"
                                       onError={() => {
-                                        setUploadError(`Link ảnh #${idx + 1} không thể hiển thị. Vui lòng kiểm tra lại URL!`);
+                                        setUploadError(ug.linkBroken(idx + 1));
                                       }}
                                     />
                                     <button
@@ -1434,7 +1436,7 @@ export const GallerySection: React.FC = () => {
                             <div className="w-full aspect-[4/3] sm:aspect-[16/9] rounded-2xl border border-gold-500/20 bg-white/5 flex flex-col items-center justify-center p-4 text-center">
                               <ImageIcon className="w-8 h-8 text-gold-400/40 mb-1" />
                               <span className="text-[11px] text-ivory-100/60 font-sans">
-                                Dán liên kết ảnh trực tiếp (URL) và nhấn &quot;+ Thêm link&quot; để thêm nhiều ảnh
+                                {ug.urlHint}
                               </span>
                             </div>
                           )}
@@ -1449,7 +1451,7 @@ export const GallerySection: React.FC = () => {
                           {t.gallery.uploadNameLabel}:
                         </label>
                         <span className="inline-flex items-center gap-1 text-[10px] text-gold-300 font-sans font-semibold">
-                          <ShieldCheck className="w-3 h-3 text-gold-400" /> Khách mời đã xác thực
+                          <ShieldCheck className="w-3 h-3 text-gold-400" /> {ug.verifiedGuest}
                         </span>
                       </div>
                       <input
@@ -1469,7 +1471,7 @@ export const GallerySection: React.FC = () => {
                         </label>
                         {isCustomCategory && cleanCategories.length > 0 && (
                           <span className="text-[10px] font-sans text-gold-200 bg-gold-500/20 px-2 py-0.5 rounded-full border border-gold-500/30">
-                            Chủ đề mới
+                            {ug.newTopic}
                           </span>
                         )}
                       </div>
@@ -1531,7 +1533,7 @@ export const GallerySection: React.FC = () => {
                             <Tag className="w-3.5 h-3.5 text-gold-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                           </div>
                           <p className="text-[10px] text-ivory-100/50 mt-1 pl-1">
-                            💡 Gợi ý: Nhập tên chủ đề bạn muốn đặt (VD: Du Lịch, Hội Bạn Thân, Kỷ Niệm Cấp 3...).
+                            {ug.topicHint}
                           </p>
                         </div>
                       )}
@@ -1559,7 +1561,7 @@ export const GallerySection: React.FC = () => {
                         className="inline-flex items-center gap-1.5 text-xs font-sans text-gold-300 hover:text-gold-200 transition-colors cursor-pointer py-1"
                       >
                         <SlidersHorizontal className="w-3.5 h-3.5 text-gold-400" />
-                        <span>Tùy chọn hiển thị nâng cao</span>
+                        <span>{ug.advanced}</span>
                         <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showAdvancedOptions ? "rotate-180" : ""}`} />
                       </button>
 
@@ -1572,10 +1574,10 @@ export const GallerySection: React.FC = () => {
                         >
                           <div className="flex items-center justify-between mb-1">
                             <label className="block text-xs font-sans uppercase tracking-wider text-gold-300 font-semibold">
-                              Thứ tự ưu tiên:
+                              {ug.priority}
                             </label>
                             <span className="text-[10px] text-ivory-100/50 font-sans">
-                              (Mặc định là 1)
+                              ({ug.priorityDefault})
                             </span>
                           </div>
                           <input
@@ -1585,11 +1587,11 @@ export const GallerySection: React.FC = () => {
                             step="1"
                             value={uploadPriority}
                             onChange={(e) => setUploadPriority(e.target.value)}
-                            placeholder="Mặc định là 1"
+                            placeholder={ug.priorityDefault}
                             className="w-full px-3.5 py-2 rounded-xl bg-white/10 border border-gold-500/30 text-ivory-100 placeholder-ivory-100/40 text-xs font-sans focus:outline-hidden focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-all"
                           />
                           <p className="text-[10px] text-ivory-100/50 pl-1">
-                            Số càng nhỏ (1, 2, 3...) sẽ được ưu tiên hiển thị ở các trang đầu tiên.
+                            {ug.priorityHint}
                           </p>
                         </motion.div>
                       )}
@@ -1622,9 +1624,9 @@ export const GallerySection: React.FC = () => {
                           <UploadCloud className="w-4 h-4" />
                           <span>
                             {uploadSourceMode === "file" && selectedFiles.length > 1
-                              ? `Tải ${selectedFiles.length} Ảnh Lên Kho Kỷ Niệm`
+                              ? ug.uploadN(selectedFiles.length)
                               : uploadSourceMode === "url" && urlList.length > 1
-                              ? `Tải ${urlList.length} Ảnh Lên Kho Kỷ Niệm`
+                              ? ug.uploadN(urlList.length)
                               : t.gallery.uploadSubmitBtn}
                           </span>
                         </>
@@ -1662,8 +1664,8 @@ export const GallerySection: React.FC = () => {
                 </span>
                 <button
                   onClick={handleCloseLightbox}
-                  aria-label="Đóng xem ảnh (Phím Esc)"
-                  title="Đóng (Esc)"
+                  aria-label={ug.close}
+                  title={ug.closeTitle}
                   className="w-9 h-9 rounded-full bg-gold-500/15 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-colors touch-manipulation border border-gold-500/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
                 >
                   <X className="w-5 h-5" />
@@ -1674,7 +1676,7 @@ export const GallerySection: React.FC = () => {
               <div className="relative aspect-[4/5] sm:aspect-[16/11] w-full bg-black flex items-center justify-center overflow-hidden">
                 <Image
                   src={getOptimizedImageUrl(currentPhoto.src, 1800)}
-                  alt={currentPhoto.alt || currentPhoto.title || "Kỷ niệm lễ tốt nghiệp"}
+                  alt={currentPhoto.alt || currentPhoto.title || ug.photoAlt}
                   fill
                   sizes="100vw"
                   quality={85}
@@ -1687,8 +1689,8 @@ export const GallerySection: React.FC = () => {
                 {/* Left/Right Arrow Navigation */}
                 <button
                   onClick={handlePrev}
-                  aria-label="Xem ảnh trước (Phím mũi tên trái)"
-                  title="Ảnh trước (←)"
+                  aria-label={ug.prev}
+                  title={ug.prevTitle}
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-all backdrop-blur-md border border-gold-500/30 active:scale-95 touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
                 >
                   <ChevronLeft className="w-6 h-6" />
@@ -1696,8 +1698,8 @@ export const GallerySection: React.FC = () => {
 
                 <button
                   onClick={handleNext}
-                  aria-label="Xem ảnh kế tiếp (Phím mũi tên phải)"
-                  title="Ảnh sau (→)"
+                  aria-label={ug.next}
+                  title={ug.nextTitle}
                   className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 text-gold-300 flex items-center justify-center hover:bg-gold-500 hover:text-emerald-950 transition-all backdrop-blur-md border border-gold-500/30 active:scale-95 touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
                 >
                   <ChevronRight className="w-6 h-6" />

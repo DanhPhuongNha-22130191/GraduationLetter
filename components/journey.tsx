@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
+import { uiCopy } from "@/config/ui-copy";
 import { extrasCopy } from "@/config/extras";
 import { Reveal, SectionHeading } from "@/components/animated-motifs";
 
@@ -21,16 +22,16 @@ export const JourneySection: React.FC = () => {
           <div className="relative w-20 h-20 shrink-0 rounded-full bg-white border border-gold-500/50 p-1.5 shadow-soft-sm">
             <Image
               src={graduationConfig.universityLogoUrl}
-              alt={`Logo ${graduationConfig.university}`}
+              alt={`Logo ${uiCopy[lang].profile.university}`}
               fill
               sizes="80px"
               className="object-contain p-1.5 rounded-full"
             />
           </div>
           <div>
-            <p className="font-serif text-xl sm:text-2xl text-emerald-950 leading-snug">{graduationConfig.university}</p>
+            <p className="font-serif text-xl sm:text-2xl text-emerald-950 leading-snug">{uiCopy[lang].profile.university}</p>
             <p className="text-sm text-charcoal/75 mt-1">
-              {graduationConfig.faculty} · {graduationConfig.major} · {graduationConfig.classCode}
+              {uiCopy[lang].profile.faculty} · {t.hero.major} · {graduationConfig.classCode}
             </p>
             <p className="eyebrow mt-2">{graduationConfig.period}</p>
           </div>

@@ -10,6 +10,7 @@ import { useGuest } from "@/context/guest-context";
 import { playBackgroundMusic } from "@/components/music-toggle";
 import { AnimatedFlourishDivider, WheatBranch, EASE_LUX } from "@/components/animated-motifs";
 import { extrasCopy } from "@/config/extras";
+import { uiCopy } from "@/config/ui-copy";
 
 async function compressAvatarFile(file: File, maxDim = 1200, quality = 0.85): Promise<Blob | File> {
   if (typeof window === "undefined" || !file.type.startsWith("image/")) return file;
@@ -293,7 +294,7 @@ export const HeroSection: React.FC<{ revealed?: boolean }> = ({ revealed = true 
           <div className="relative aspect-square rounded-full overflow-hidden bg-emerald-900">
             <Image
               src={avatarUrl}
-              alt={`Chân dung ${graduationConfig.name} trong lễ phục tốt nghiệp`}
+              alt={uiCopy[lang].hero.portraitAlt(graduationConfig.name)}
               fill
               priority
               sizes="(max-width: 640px) 232px, 256px"

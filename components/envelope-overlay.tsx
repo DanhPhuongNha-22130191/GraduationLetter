@@ -6,6 +6,7 @@ import { MailOpen, Sparkles, GraduationCap, Award } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { playBackgroundMusic } from "@/components/music-toggle";
 import { useLanguage } from "@/context/language-context";
+import { uiCopy } from "@/config/ui-copy";
 import { useGuest, trackOpenInvitation } from "@/context/guest-context";
 import { getRememberedSelfName, rememberSelfName } from "@/config/visitor";
 
@@ -96,6 +97,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
   onClose,
 }) => {
   const { t, lang } = useLanguage();
+  const u = uiCopy[lang].envelope;
   const { guestName, hasCustomGuest, pronounMode, getGreetingPrefix, setGuestName } = useGuest();
   const [isOpening, setIsOpening] = useState(false);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
@@ -182,7 +184,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/35 bg-emerald-950/80 text-[10px] sm:text-xs font-sans tracking-[0.2em] text-gold-200 uppercase backdrop-blur-md">
               <Sparkles className="w-3 h-3 text-gold-500" />
-              <span>OFFICIAL GRADUATION INVITATION</span>
+              <span>{u.badge}</span>
               <Sparkles className="w-3 h-3 text-gold-500" />
             </div>
           </motion.div>
@@ -205,7 +207,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
               <motion.div
                 role="button"
                 tabIndex={0}
-                aria-label="Con dấu sáp - Mở thiệp"
+                aria-label={u.sealLabel}
                 animate={isOpening ? { scale: [1, 1.25, 0], rotate: [0, 15, 45] } : { scale: [1, 1.04, 1] }}
                 transition={isOpening ? { duration: 0.6 } : { repeat: Infinity, duration: 4, ease: "easeInOut" }}
                 onClick={handleOpenEnvelope}
@@ -224,7 +226,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
               </motion.div>
 
               <h1 className="font-serif text-xl sm:text-2xl md:text-3xl uppercase tracking-[0.16em] text-gold-200 font-bold mb-1 leading-tight">
-                LỄ TỐT NGHIỆP 2026
+                {u.title(graduationConfig.year)}
               </h1>
 
               <h2 className="font-serif text-lg sm:text-xl font-medium text-ivory-50 tracking-normal mb-2.5">
@@ -233,7 +235,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
 
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/10 text-gold-200 font-sans text-[10px] sm:text-xs tracking-wider uppercase mb-2.5 font-medium border border-gold-500/30">
                 <Award className="w-3.5 h-3.5 text-gold-500" />
-                <span>{graduationConfig.major}</span>
+                <span>{t.hero.major}</span>
               </div>
 
               {/* Personalized Recipient Badge on Envelope */}
@@ -255,9 +257,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
                     htmlFor="envelope-self-name"
                     className="block font-serif italic text-base text-gold-200 leading-snug mb-2.5"
                   >
-                    {lang === "vi"
-                      ? "Cho mình xin tên bạn để gọi cho thân nhé"
-                      : "May I have your name, so this invitation feels just for you?"}
+                    {u.namePrompt}
                   </label>
                   <input
                     id="envelope-self-name"
@@ -273,7 +273,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
                         handleOpenEnvelope(e as unknown as React.MouseEvent);
                       }
                     }}
-                    placeholder={lang === "vi" ? "Nhập tên của bạn (không bắt buộc)" : "Your name (optional)"}
+                    placeholder={u.namePlaceholder}
                     className="w-full rounded-full bg-white/[0.06] border border-gold-500/35 px-4 py-3 text-center font-serif text-base text-ivory-50 placeholder:text-ivory-100/45 placeholder:font-sans placeholder:text-xs focus:outline-none focus:border-gold-500 focus:bg-white/[0.09] transition-colors"
                   />
                 </div>
@@ -299,7 +299,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
             transition={{ repeat: Infinity, duration: 2.5 }}
             className="z-10 mb-4 sm:mb-6 text-center text-gold-200 text-[10px] sm:text-xs font-sans tracking-widest uppercase flex items-center justify-center gap-2"
           >
-            <span>✦ Chạm để mở thiệp ✦</span>
+            <span>✦ {u.tapToOpen} ✦</span>
           </motion.div>
         </motion.div>
       )}

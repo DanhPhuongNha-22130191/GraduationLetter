@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
+import { uiCopy } from "@/config/ui-copy";
 import { useGuest, trackOpenInvitation } from "@/context/guest-context";
 
 interface WishItem {
@@ -28,6 +29,7 @@ interface WishItem {
 
 export const RsvpSection: React.FC = () => {
   const { t, lang } = useLanguage();
+  const ur = uiCopy[lang].rsvp;
   const { guestName, setGuestName, isRegisteredGuest } = useGuest();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -253,7 +255,7 @@ export const RsvpSection: React.FC = () => {
                 {fullName.trim() && (
                   <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-900/10 border border-gold-500/30 text-emerald-950 text-xs font-sans">
                     <span className="text-charcoal/70">
-                      {lang === "vi" ? "Người tham dự:" : lang === "km" ? "អ្នកចូលរួម៖" : "Attendee:"}
+                      {ur.attendee}
                     </span>
                     <strong className="text-emerald-950 font-bold">{fullName.trim()}</strong>
                   </div>
@@ -291,15 +293,11 @@ export const RsvpSection: React.FC = () => {
                               document.getElementById("inputName")?.focus();
                             }}
                             className="text-[11px] font-sans text-gold-700 hover:text-emerald-950 font-semibold underline underline-offset-2 flex items-center gap-1 cursor-pointer transition-colors"
-                            title="Đổi tên người tham dự khác"
+                            title={ur.changeNameTitle}
                           >
                             <UserCheck className="w-3.5 h-3.5" />
                             <span>
-                              {lang === "vi"
-                                ? "Đổi tên khác"
-                                : lang === "km"
-                                ? "ប្តូរឈ្មោះ"
-                                : "Change name"}
+                              {ur.changeName}
                             </span>
                           </button>
                         ) : (
@@ -310,15 +308,11 @@ export const RsvpSection: React.FC = () => {
                               setIsNameManuallyEdited(false);
                             }}
                             className="text-[11px] font-sans text-gold-700 hover:text-emerald-950 font-semibold underline underline-offset-2 flex items-center gap-1 cursor-pointer transition-colors"
-                            title={`Dùng lại tên trên thiệp (${guestName})`}
+                            title={ur.restoreTitle(guestName)}
                           >
                             <RotateCcw className="w-3 h-3" />
                             <span>
-                              {lang === "vi"
-                                ? `Khôi phục (${guestName})`
-                                : lang === "km"
-                                ? `ឈ្មោះដើម (${guestName})`
-                                : `Restore (${guestName})`}
+                              {ur.restore(guestName)}
                             </span>
                           </button>
                         )}
@@ -348,8 +342,8 @@ export const RsvpSection: React.FC = () => {
                           document.getElementById("inputName")?.focus();
                         }}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-charcoal/40 hover:text-charcoal p-1 text-xs cursor-pointer transition-colors"
-                        title="Xóa tên để nhập tên mới"
-                        aria-label="Xóa tên người tham dự"
+                        title={ur.clearNameTitle}
+                        aria-label={ur.clearName}
                       >
                         ✕
                       </button>
@@ -365,23 +359,11 @@ export const RsvpSection: React.FC = () => {
                     >
                       <span className="text-gold-600 font-bold">✦</span>
                       <span>
-                        {lang === "vi" ? (
-                          <>
-                            Xác nhận tham dự với tên:{" "}
-                            <strong className="text-emerald-950 font-semibold">
-                              {fullName.trim()}
-                            </strong>{" "}
-                            (Tên ban đầu trên thiệp: <em>{guestName}</em>)
-                          </>
-                        ) : (
-                          <>
-                            Attending as:{" "}
-                            <strong className="text-emerald-950 font-semibold">
-                              {fullName.trim()}
-                            </strong>{" "}
-                            (Original invite name: <em>{guestName}</em>)
-                          </>
-                        )}
+                        {ur.attendingAs}{" "}
+                        <strong className="text-emerald-950 font-semibold">
+                          {fullName.trim()}
+                        </strong>{" "}
+                        ({ur.originalName} <em>{guestName}</em>)
                       </span>
                     </motion.p>
                   )}
@@ -510,7 +492,7 @@ export const RsvpSection: React.FC = () => {
           <div className="mt-10 space-y-3">
             <h4 className="font-serif text-xs font-bold uppercase tracking-widest text-gold-700 text-center flex items-center justify-center gap-2">
               <Heart className="w-3.5 h-3.5 text-gold-600 fill-gold-600" />
-              <span>LỜI CHÚC TỪ NGƯỜI THÂN YÊU</span>
+              <span>{ur.wishesTitle}</span>
               <Heart className="w-3.5 h-3.5 text-gold-600 fill-gold-600" />
             </h4>
             <div className="space-y-2">

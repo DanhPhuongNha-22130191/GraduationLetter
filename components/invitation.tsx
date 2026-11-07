@@ -5,6 +5,7 @@ import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { extrasCopy } from "@/config/extras";
+import { uiCopy } from "@/config/ui-copy";
 import { Reveal, SectionHeading, AnimatedFlourishDivider, DiplomaScrollIcon } from "@/components/animated-motifs";
 
 type Mode = "elder" | "senior" | "junior" | string;
@@ -92,7 +93,7 @@ export const InvitationSection: React.FC = () => {
 
         {customMessage && (
           <Reveal className="mt-10 max-w-md mx-auto border-l-2 border-gold-500 pl-5 text-left">
-            <p className="eyebrow mb-2">Đôi lời gửi gắm riêng đến {guestName}</p>
+            <p className="eyebrow mb-2">{uiCopy[lang].invitation.privateNote(guestName)}</p>
             <p className="font-serif italic text-lg leading-relaxed text-charcoal">&ldquo;{customMessage}&rdquo;</p>
           </Reveal>
         )}
