@@ -270,9 +270,11 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
                 >
                   <label
                     htmlFor="envelope-self-name"
-                    className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold-500 font-semibold mb-2"
+                    className="block font-serif italic text-base text-gold-200 leading-snug mb-2.5"
                   >
-                    {lang === "vi" ? "Bạn là ai nhỉ?" : "May I know your name?"}
+                    {lang === "vi"
+                      ? "Cho mình xin tên bạn để gọi cho thân nhé"
+                      : "May I have your name, so this invitation feels just for you?"}
                   </label>
                   <input
                     id="envelope-self-name"
