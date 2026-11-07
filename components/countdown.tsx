@@ -128,7 +128,7 @@ export const CountdownSection: React.FC = () => {
       <div className="w-full max-w-2xl mx-auto text-center relative z-10">
         <SectionHeading eyebrow={t.countdown.eyebrow} title={t.countdown.title} onDark className="mb-10" />
 
-        <Reveal className="grid grid-cols-4 gap-px bg-gold-500/30 border border-gold-500/30" >
+        <Reveal className="grid grid-cols-4 gap-px bg-gold-500/30 border border-gold-500/30 rounded-2xl overflow-hidden">
           {timeUnits.map((unit) => (
             <div key={unit.label} className="bg-emerald-950 py-6 sm:py-9 px-1 flex flex-col items-center">
               <span

@@ -136,11 +136,9 @@
 .diploma-frame {
   position: relative;
   background: rgb(var(--c-ivory-card));
-  border: 1px solid rgb(var(--c-gold-500) / 0.55);
-}
-.diploma-frame::before {
-  content: ''; position: absolute; inset: 6px; pointer-events: none;
-  border: 1px solid rgb(var(--c-gold-500) / 0.28);
+  border: 1px solid rgb(var(--c-gold-500) / 0.35);
+  border-radius: 1.75rem;
+  box-shadow: 0 14px 34px -18px rgb(var(--c-emerald-950) / 0.22);
 }
 .diploma-frame-dark {
   background: rgb(var(--c-emerald-900));

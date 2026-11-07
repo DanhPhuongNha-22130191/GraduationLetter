@@ -7,7 +7,7 @@ import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { formatLocalizedTime, formatLocalizedDate } from "@/config/i18n";
 import { extras, extrasCopy } from "@/config/extras";
-import { Reveal, SectionHeading, GradCapIcon, CornerOrnament } from "@/components/animated-motifs";
+import { Reveal, SectionHeading, GradCapIcon } from "@/components/animated-motifs";
 import { parseCustomTargetDate } from "@/components/countdown";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -59,9 +59,7 @@ interface EventCardProps {
 }
 
 const EventCard: React.FC<EventCardProps> = (p) => (
-  <article className="diploma-frame p-8 sm:p-10 text-center flex flex-col h-full">
-    <CornerOrnament className="absolute top-2 left-2 w-7 h-7 text-gold-500" />
-    <CornerOrnament className="absolute top-2 right-2 w-7 h-7 text-gold-500 -scale-x-100" />
+  <article className="diploma-frame px-6 py-8 sm:p-10 text-center flex flex-col h-full">
 
     <p className="eyebrow">{p.index}</p>
     <h3 className="font-serif text-2xl sm:text-[1.75rem] text-emerald-950 mt-2 mb-6 tracking-wide">{p.title}</h3>
@@ -101,14 +99,14 @@ const EventCard: React.FC<EventCardProps> = (p) => (
       </div>
     </dl>
 
-    <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+    <div className="mt-8 flex flex-col gap-3 justify-center sm:flex-row">
       {p.mapUrl && (
-        <a href={p.mapUrl} target="_blank" rel="noopener noreferrer" className="btn-outline">
+        <a href={p.mapUrl} target="_blank" rel="noopener noreferrer" className="btn-outline w-full sm:w-auto">
           <Navigation className="w-3.5 h-3.5" strokeWidth={1.75} />
           {p.directionsLabel}
         </a>
       )}
-      <button type="button" onClick={p.onCalendar} className="btn-outline">
+      <button type="button" onClick={p.onCalendar} className="btn-outline w-full sm:w-auto">
         <CalendarPlus className="w-3.5 h-3.5" strokeWidth={1.75} />
         {p.calendarLabel}
       </button>

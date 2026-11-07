@@ -286,17 +286,17 @@ export const HeroSection: React.FC = () => {
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, delay: 0.25, ease: EASE_LUX }}
-          className="relative w-[15.5rem] sm:w-72"
+          className="relative w-[14.5rem] sm:w-64"
         >
           {/* Viền arch lệch */}
-          <div className="absolute -inset-2.5 rounded-t-[999px] rounded-b-md border border-gold-500/50" aria-hidden="true" />
-          <div className="relative aspect-[3/4] rounded-t-[999px] rounded-b-md overflow-hidden bg-emerald-900">
+          <div className="absolute -inset-2.5 rounded-full border border-gold-500/50" aria-hidden="true" />
+          <div className="relative aspect-square rounded-full overflow-hidden bg-emerald-900">
             <Image
               src={avatarUrl}
               alt={`Chân dung ${graduationConfig.name} trong lễ phục tốt nghiệp`}
               fill
               priority
-              sizes="(max-width: 640px) 248px, 288px"
+              sizes="(max-width: 640px) 232px, 256px"
               quality={85}
               className="object-cover"
               unoptimized
@@ -307,7 +307,7 @@ export const HeroSection: React.FC = () => {
               }}
             />
             {/* Overlay mờ phía dưới để chữ/khung hòa vào ảnh */}
-            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-emerald-950/60 to-transparent" aria-hidden="true" />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-t from-emerald-950/40 via-transparent to-transparent" aria-hidden="true" />
 
             {isUploading && (
               <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center z-10" role="status">
@@ -336,7 +336,7 @@ export const HeroSection: React.FC = () => {
                 disabled={isUploading}
                 aria-label="Đổi ảnh đại diện (Dành riêng cho Phương Nhã)"
                 title="Đổi ảnh đại diện (Dành riêng cho Phương Nhã)"
-                className="absolute bottom-2 -right-3 w-10 h-10 rounded-full bg-gold-500 text-emerald-950 flex items-center justify-center shadow-soft-lg border border-ivory-50/60 hover:scale-105 active:scale-95 transition-transform duration-500 ease-lux cursor-pointer z-20"
+                className="absolute bottom-3 right-1 w-10 h-10 rounded-full bg-gold-500 text-emerald-950 flex items-center justify-center shadow-soft-lg border border-ivory-50/60 hover:scale-105 active:scale-95 transition-transform duration-500 ease-lux cursor-pointer z-20"
               >
                 <Camera className="w-4 h-4" strokeWidth={1.75} />
               </button>

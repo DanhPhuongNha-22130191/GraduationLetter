@@ -23,8 +23,8 @@ export const LocationSection: React.FC = () => {
         />
 
         <Reveal>
-          <div className="diploma-frame p-3 sm:p-4">
-            <div className="aspect-[4/3] sm:aspect-[16/9] w-full overflow-hidden bg-ivory-200">
+          <div className="diploma-frame p-2.5 sm:p-4">
+            <div className="aspect-[4/3] sm:aspect-[16/9] w-full overflow-hidden rounded-[1.25rem] bg-ivory-200">
               <iframe
                 title={`${t.location.title}: ${t.details.venueVal}`}
                 src={embedMapUrl}
