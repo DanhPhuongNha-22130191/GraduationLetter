@@ -143,10 +143,8 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
     setTimeout(() => {
       setInternalIsOpen(true);
       onOpen?.();
-      const el = document.getElementById("invitation");
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-      }
+      // Sau khi mở thiệp: đứng ở đầu trang (hero/avatar), không cuộn xuống
+      window.scrollTo({ top: 0, behavior: "auto" });
     }, 700);
   };
 
