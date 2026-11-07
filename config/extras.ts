@@ -20,6 +20,7 @@ type Copy = {
   quote: string;
   quoteBy: string;
   scrollHint: string;
+  scrollCta: string;
   classOf: string;
   honors: string;
   ceremony: string;
@@ -55,6 +56,7 @@ export const extrasCopy: Record<Language, Copy> = {
     quote: "Mỗi trang sách đã mở, mỗi đêm thức trắng, mỗi lần vấp ngã rồi đứng dậy — tất cả đều dẫn về ngày hôm nay.",
     quoteBy: "Hành trình bốn năm",
     scrollHint: "Cuộn xuống",
+    scrollCta: "Lướt xuống để xem",
     classOf: "Class of",
     honors: "Cử nhân · Kỹ sư",
     ceremony: "Lễ tốt nghiệp",
@@ -88,6 +90,7 @@ export const extrasCopy: Record<Language, Copy> = {
     quote: "Every page turned, every sleepless night, every fall and every rise — all of it led to today.",
     quoteBy: "Four years, one journey",
     scrollHint: "Scroll",
+    scrollCta: "Scroll down to view",
     classOf: "Class of",
     honors: "Bachelor · Engineer",
     ceremony: "Graduation Ceremony",

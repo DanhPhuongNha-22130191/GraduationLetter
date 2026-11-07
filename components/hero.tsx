@@ -399,10 +399,10 @@ export const HeroSection: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1, ease: EASE_LUX }}
           onClick={scrollToNext}
-          aria-label={t.hero.openBtn}
+          aria-label={x.scrollCta}
           className="btn-gold mt-9"
         >
-          <span>{t.hero.openBtn}</span>
+          <span>{x.scrollCta}</span>
           <ChevronDown className="w-4 h-4" strokeWidth={1.75} />
         </motion.button>
       </div>
