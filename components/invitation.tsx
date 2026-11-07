@@ -9,10 +9,6 @@ import { Reveal, SectionHeading, AnimatedFlourishDivider, DiplomaScrollIcon } fr
 
 type Mode = "elder" | "senior" | "junior" | string;
 
-/** Cách xưng hô theo từng nhóm khách (giữ nguyên nội dung cũ, gom lại thành bảng tra). */
-const PARA1_SUBJECT: Record<string, Record<string, string>> = {
-  vi: { elder: "con", senior: "em", junior: "anh", default: "mình" },
-};
 
 const PARA2: Record<string, { lead: Record<string, string>; tail: string }> = {
   vi: {
@@ -44,7 +40,7 @@ const PARA2: Record<string, { lead: Record<string, string>; tail: string }> = {
 
 export const InvitationSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { guestName, hasCustomGuest, pronounMode, customMessage, getGreetingPrefix } = useGuest();
+  const { guestName, hasCustomGuest, pronounMode, customMessage, getGreetingPrefix, getSelfPronoun } = useGuest();
   const x = extrasCopy[lang];
 
   const mode: Mode = pronounMode ?? "default";
@@ -52,7 +48,7 @@ export const InvitationSection: React.FC = () => {
   const para1 =
     lang === "vi" && hasCustomGuest
       ? `Sau những năm tháng học tập, nỗ lực và trưởng thành tại Trường Đại học Nông Lâm TP.HCM, ${
-          PARA1_SUBJECT.vi[mode] ?? PARA1_SUBJECT.vi.default
+          getSelfPronoun() === "Nhã" ? "mình" : getSelfPronoun()
         } Danh Phương Nhã đã chính thức hoàn thành hành trình đại học ngành Công nghệ thông tin (Lớp DH22DTB).`
       : t.invitation.para1;
 
@@ -79,11 +75,10 @@ export const InvitationSection: React.FC = () => {
           <p className="eyebrow mt-6">{x.quoteBy}</p>
         </Reveal>
 
-        <SectionHeading title={t.invitation.title} />
+        <SectionHeading title={hasCustomGuest ? getGreetingPrefix(lang) : t.invitation.title} />
 
         {hasCustomGuest && (
           <Reveal className="my-8">
-            <p className="eyebrow mb-2">{getGreetingPrefix(lang)}</p>
             <h3 className="font-serif italic text-3xl sm:text-4xl text-emerald-950 break-words overflow-wrap-anywhere">
               {guestName}
             </h3>
