@@ -6,7 +6,7 @@ import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { formatLocalizedTime, formatLocalizedDate } from "@/config/i18n";
-import { extras, extrasCopy } from "@/config/extras";
+import { extrasCopy } from "@/config/extras";
 import { Reveal, SectionHeading, GradCapIcon } from "@/components/animated-motifs";
 import { parseCustomTargetDate } from "@/components/countdown";
 
@@ -141,16 +141,6 @@ export const GraduationInfoSection: React.FC = () => {
     });
   };
 
-  const addParty = () => {
-    downloadIcs({
-      title: `${x.calendarParty} — ${graduationConfig.name}`,
-      start: new Date(extras.party.isoStart),
-      end: new Date(extras.party.isoEnd),
-      location: `${x.partyVenue}, ${x.partyAddress}`,
-      description: `${graduationConfig.name} · ${extras.hashtag}`,
-    });
-  };
-
   return (
     <section id="details" className="px-5 bg-ivory-100 relative" style={{ paddingBlock: "var(--section-y)" }}>
       <div className="max-w-4xl mx-auto">
@@ -160,10 +150,10 @@ export const GraduationInfoSection: React.FC = () => {
           icon={<GradCapIcon className="w-9 h-9" />}
         />
 
-        <div className={`grid gap-6 sm:gap-8 ${extras.party.enabled ? "md:grid-cols-2" : "max-w-xl mx-auto"}`}>
+        <div className="max-w-xl mx-auto">
           <Reveal className="h-full">
             <EventCard
-              index="I"
+              index=""
               title={x.ceremony}
               date={dateText}
               time={timeText}
@@ -179,25 +169,6 @@ export const GraduationInfoSection: React.FC = () => {
             />
           </Reveal>
 
-          {extras.party.enabled && (
-            <Reveal delay={0.12} className="h-full">
-              {/* [PLACEHOLDER] Tiệc chúc mừng: sửa trong config/extras.ts + extrasCopy */}
-              <EventCard
-                index="II"
-                title={x.party}
-                date={dateText}
-                time={x.partyTime}
-                venue={x.partyVenue}
-                address={x.partyAddress}
-                dress={x.dressParty}
-                dressLabel={x.dressCode}
-                mapUrl={extras.party.mapUrl}
-                directionsLabel={x.directions}
-                calendarLabel={x.addToCalendar}
-                onCalendar={addParty}
-              />
-            </Reveal>
-          )}
         </div>
       </div>
     </section>

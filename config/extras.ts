@@ -9,13 +9,6 @@ export const extras = {
 
   // Lễ tốt nghiệp: lấy từ graduationConfig (date/time/venue/address/mapUrl)
 
-  // [PLACEHOLDER] Tiệc chúc mừng — thay ngày giờ & địa điểm thật
-  party: {
-    enabled: true,
-    isoStart: "2026-10-21T18:00:00",
-    isoEnd: "2026-10-21T21:00:00",
-    mapUrl: "https://maps.google.com/?q=Thu+Duc+Ho+Chi+Minh+City",
-  },
 
   ceremonyEnd: "2026-10-21T11:30:00",
 
@@ -71,7 +64,7 @@ export const extrasCopy: Record<Language, Copy> = {
     partyVenue: "Địa điểm sẽ được thông báo",
     partyAddress: "TP. Hồ Chí Minh",
     dressCode: "Trang phục",
-    dressCeremony: "Lễ phục tốt nghiệp / trang phục lịch sự",
+    dressCeremony: "Mọi người cứ mặc bộ nào khiến mình đẹp nhất và tự tin nhất nhé!",
     dressParty: "Smart casual — gam màu trung tính, xanh lục hoặc kem",
     directions: "Chỉ đường",
     addToCalendar: "Thêm vào lịch",
@@ -104,7 +97,7 @@ export const extrasCopy: Record<Language, Copy> = {
     partyVenue: "Venue to be announced",
     partyAddress: "Ho Chi Minh City",
     dressCode: "Dress code",
-    dressCeremony: "Graduation gown / formal attire",
+    dressCeremony: "Wear whatever makes you look and feel your best and most confident!",
     dressParty: "Smart casual — neutral, green or cream tones",
     directions: "Directions",
     addToCalendar: "Add to calendar",
