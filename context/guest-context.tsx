@@ -9,6 +9,7 @@ import {
 } from "@/config/guests";
 import { graduationConfig } from "@/config/graduation";
 import { Language, translations } from "@/config/i18n";
+import { getVisitorId, visitorNote } from "@/config/visitor";
 
 export type GuestPronounMode = "friend" | "elder" | "senior" | "junior";
 
@@ -119,14 +120,24 @@ function autoDetectModeFromName(name: string): GuestPronounMode {
 /**
  * Gửi log ngầm (Silent Beacon) về Google Sheets để biết ai đã mở thiệp (kể cả khách link chung)
  */
-export function trackOpenInvitation(guestName?: string, mode?: string) {
+export function trackOpenInvitation(
+  guestName?: string,
+  mode?: string,
+  opts?: { source?: "link" | "self" | "rsvp" }
+) {
   if (typeof window === "undefined") return;
+  const source = opts?.source ?? "link";
   const isAnonymous = !guestName || !guestName.trim();
-  const nameToLog = isAnonymous ? "Khách vãng lai (Link chung)" : guestName.trim();
-  const sessionKey = `tracked_open_${encodeURIComponent(nameToLog)}`;
-  if (sessionStorage.getItem(sessionKey)) return;
-
-  sessionStorage.setItem(sessionKey, "1");
+  const vid = getVisitorId();
+  // Khách link chung không nhập tên: kèm mã khách ngay trong cột viewer để đối chiếu sau
+  const nameToLog = isAnonymous ? `Khách vãng lai (Link chung) · ${vid}` : guestName.trim();
+  const sessionKey = `tracked_open_${source}_${encodeURIComponent(nameToLog)}`;
+  try {
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, "1");
+  } catch {
+    // ignore
+  }
 
   try {
     if (graduationConfig.googleScriptUrl) {
@@ -140,6 +151,16 @@ export function trackOpenInvitation(guestName?: string, mode?: string) {
         ? "Đàn em (anh)"
         : "Bạn bè (mình)";
 
+      const how =
+        isAnonymous
+          ? "Khách mở thiệp (Link chung, không nhập tên)"
+          : source === "self"
+          ? "Khách mở link chung & tự nhập tên"
+          : source === "rsvp"
+          ? "Khách link chung đã gửi RSVP"
+          : `Khách mở thiệp (${modeLabel})`;
+      const note = `${how} · ${visitorNote()}`;
+
       const payload = {
         type: "OPEN",
         action: "OPEN",
@@ -147,14 +168,14 @@ export function trackOpenInvitation(guestName?: string, mode?: string) {
         visitTime: new Date().toLocaleString("vi-VN"),
         viewer: nameToLog,
         role: modeLabel,
-        note: isAnonymous ? "Khách mở thiệp (Link chung)" : `Khách mở thiệp (${modeLabel})`,
+        note,
         // Backward-compatibility keys
         name: nameToLog,
         phone: "-",
         attending: "ĐÃ MỞ THIỆP 💌",
         guests: 0,
         mode: modeLabel,
-        message: isAnonymous ? "Khách mở thiệp (Link chung)" : `Khách mở thiệp (${modeLabel})`,
+        message: note,
         timestamp: new Date().toLocaleString("vi-VN"),
       };
 

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
-import { useGuest } from "@/context/guest-context";
+import { useGuest, trackOpenInvitation } from "@/context/guest-context";
 
 interface WishItem {
   name: string;
@@ -28,7 +28,7 @@ interface WishItem {
 
 export const RsvpSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { guestName, setGuestName } = useGuest();
+  const { guestName, setGuestName, isRegisteredGuest } = useGuest();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [attending, setAttending] = useState<"yes" | "no">("yes");
@@ -184,6 +184,12 @@ export const RsvpSection: React.FC = () => {
         scriptPromise,
         new Promise((resolve) => setTimeout(resolve, 1200)),
       ]);
+
+      // Khách không có link riêng (link chung): ghi thêm 1 dòng vào sheet "views" kèm mã khách,
+      // để nối các lượt mở ẩn danh trước đó (cùng mã) với tên thật vừa gửi RSVP.
+      if (!isRegisteredGuest) {
+        trackOpenInvitation(cleanFullName, undefined, { source: "rsvp" });
+      }
 
       // Đồng bộ tên người tham dự mới vào guest context để toàn bộ thiệp phản ánh đúng tên
       if (cleanFullName && cleanFullName !== guestName && setGuestName) {

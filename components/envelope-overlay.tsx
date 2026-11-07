@@ -7,6 +7,7 @@ import { graduationConfig } from "@/config/graduation";
 import { playBackgroundMusic } from "@/components/music-toggle";
 import { useLanguage } from "@/context/language-context";
 import { useGuest, trackOpenInvitation } from "@/context/guest-context";
+import { getRememberedSelfName, rememberSelfName } from "@/config/visitor";
 
 /* ── Animated background motifs ── */
 
@@ -112,9 +113,14 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
   onClose,
 }) => {
   const { t, lang } = useLanguage();
-  const { guestName, hasCustomGuest, pronounMode, getGreetingPrefix } = useGuest();
+  const { guestName, hasCustomGuest, pronounMode, getGreetingPrefix, setGuestName } = useGuest();
   const [isOpening, setIsOpening] = useState(false);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
+  // Link chung: khách tự nhập tên (không bắt buộc), nhớ cho lần mở sau
+  const [selfName, setSelfName] = useState("");
+  React.useEffect(() => {
+    setSelfName(getRememberedSelfName());
+  }, []);
 
   // If controlledIsOpen is provided, use it; otherwise fallback to internalIsOpen
   const isCurrentlyOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
@@ -133,7 +139,15 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
     playBackgroundMusic();
 
     // Ghi nhận lượt mở thiệp vào Google Sheets ngay khi bấm Mở Thiệp
-    trackOpenInvitation(guestName, pronounMode);
+    const typedName = selfName.trim();
+    if (!hasCustomGuest && typedName) {
+      // Khách link chung tự nhập tên -> cá nhân hóa thiệp + ghi tên thật vào Sheet
+      rememberSelfName(typedName);
+      setGuestName(typedName);
+      trackOpenInvitation(typedName, undefined, { source: "self" });
+    } else {
+      trackOpenInvitation(guestName, pronounMode);
+    }
 
     // Tự động kích hoạt tải lại kho ảnh mới nhất ngay khi người dùng bấm Mở Thiệp
     if (typeof window !== "undefined") {
@@ -250,10 +264,33 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
                   </span>
                 </div>
               ) : (
-                <div className="my-1.5 px-4 py-1.5 rounded-full bg-white/[0.04] border border-gold-500/20 text-center">
-                  <span className="text-xs font-sans uppercase tracking-[0.25em] text-gold-200 font-medium">
-                    ✦ {t.invitation.guestEyebrow.toUpperCase()} ✦
-                  </span>
+                <div
+                  className="w-full my-2 text-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <label
+                    htmlFor="envelope-self-name"
+                    className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold-500 font-semibold mb-2"
+                  >
+                    {lang === "vi" ? "Bạn là ai nhỉ?" : "May I know your name?"}
+                  </label>
+                  <input
+                    id="envelope-self-name"
+                    type="text"
+                    value={selfName}
+                    maxLength={60}
+                    autoComplete="name"
+                    onChange={(e) => setSelfName(e.target.value)}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleOpenEnvelope(e as unknown as React.MouseEvent);
+                      }
+                    }}
+                    placeholder={lang === "vi" ? "Nhập tên của bạn (không bắt buộc)" : "Your name (optional)"}
+                    className="w-full rounded-full bg-white/[0.06] border border-gold-500/35 px-4 py-3 text-center font-serif text-base text-ivory-50 placeholder:text-ivory-100/45 placeholder:font-sans placeholder:text-xs focus:outline-none focus:border-gold-500 focus:bg-white/[0.09] transition-colors"
+                  />
                 </div>
               )}
 
