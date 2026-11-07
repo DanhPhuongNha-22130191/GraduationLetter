@@ -1,27 +1,38 @@
-import type { Metadata } from "next";
-import { Cormorant_Garamond, Be_Vietnam_Pro, Kantumruy_Pro } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Cormorant_Garamond, Inter, Pinyon_Script, Kantumruy_Pro } from "next/font/google";
 import "./globals.css";
 
+// Tiêu đề: serif thanh lịch
 const fontSerif = Cormorant_Garamond({
   subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
   style: ["normal", "italic"],
   variable: "--font-serif",
   display: "swap",
 });
 
-const fontSans = Be_Vietnam_Pro({
+// Nội dung: sans-serif sạch, hỗ trợ đủ dấu tiếng Việt
+const fontSans = Inter({
   subsets: ["latin", "vietnamese"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600"],
   variable: "--font-sans",
+  display: "swap",
+});
+
+// Chữ viết tay: chỉ dùng tiết chế cho tên người tốt nghiệp
+const fontScript = Pinyon_Script({
+  subsets: ["latin", "vietnamese"],
+  weight: "400",
+  variable: "--font-script",
   display: "swap",
 });
 
 const fontKhmer = Kantumruy_Pro({
   subsets: ["khmer"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
   variable: "--font-khmer",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -38,18 +49,25 @@ export const metadata: Metadata = {
   },
 };
 
+// Cho phép zoom (accessibility)
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#1E3A2F",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`scroll-smooth ${fontSerif.variable} ${fontSans.variable} ${fontKhmer.variable}`} suppressHydrationWarning>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <meta name="theme-color" content="#123C32" />
-      </head>
-      <body className="bg-ivory text-charcoal antialiased selection:bg-gold selection:text-white min-h-screen" suppressHydrationWarning>
+    <html
+      lang="vi"
+      className={`scroll-smooth ${fontSerif.variable} ${fontSans.variable} ${fontScript.variable} ${fontKhmer.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="bg-ivory text-charcoal antialiased selection:bg-gold selection:text-emerald-950 min-h-screen" suppressHydrationWarning>
         {children}
       </body>
     </html>

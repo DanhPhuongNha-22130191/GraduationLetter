@@ -30,6 +30,7 @@ import { useGuest } from "@/context/guest-context";
 import { graduationConfig, GalleryItem } from "@/config/graduation";
 import { fetchPhotosFromSheet } from "@/config/guests";
 import { Lock, ShieldCheck } from "lucide-react";
+import { SectionHeading } from "@/components/animated-motifs";
 
 function getOptimizedImageUrl(src: string, width = 800): string {
   if (!src || typeof src !== "string") return "";
@@ -849,24 +850,10 @@ export const GallerySection: React.FC = () => {
   const currentPhoto = selectedIndex !== null ? filteredItems[selectedIndex] : null;
 
   return (
-    <section id="gallery" className="py-16 sm:py-24 px-4 bg-ivory-50 text-charcoal relative overflow-hidden">
+    <section id="gallery" className="px-5 bg-ivory-50 text-charcoal relative overflow-hidden" style={{ paddingBlock: "var(--section-y)" }}>
       <div className="w-full max-w-5xl mx-auto relative z-10">
         {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-8"
-        >
-          <span className="text-gold-700 font-sans text-xs uppercase tracking-[0.25em] font-semibold block mb-1">
-            {t.gallery.eyebrow}
-          </span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-emerald-950">
-            {t.gallery.title}
-          </h2>
-          <div className="w-12 h-0.5 bg-gold-500 mx-auto mt-3 rounded-full" />
-        </motion.div>
+        <SectionHeading eyebrow={t.gallery.eyebrow} title={t.gallery.title} className="mb-10" />
 
         {/* Action Buttons: Upload Memory Photo & Sync */}
         <motion.div

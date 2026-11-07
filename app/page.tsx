@@ -46,7 +46,7 @@ export default function Home() {
       <GuestProvider>
         <main className="relative min-h-screen w-full overflow-hidden bg-ivory">
           {/* Background Ambient Gold Sparkle Particle System — Graduation Caps only on Envelope screen */}
-          <ParticleCanvas showGradCaps={!isEnvelopeOpen} showButterflies={!isEnvelopeOpen} />
+          <ParticleCanvas showGradCaps={!isEnvelopeOpen} showButterflies={false} />
 
           {/* Envelope Opening Screen Modal */}
           <EnvelopeOverlay
@@ -66,11 +66,11 @@ export default function Home() {
           {/* Main Single Page Sections */}
           <HeroSection />
           <InvitationSection />
-          <GallerySection />
-          <GraduationInfoSection />
-          <CountdownSection />
           <JourneySection />
+          <CountdownSection />
+          <GraduationInfoSection />
           <LocationSection />
+          <GallerySection />
           <RsvpSection />
           <ClosingSection onReopenEnvelope={handleCloseEnvelope} />
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { SectionHeading } from "@/components/animated-motifs";
 import {
   Send,
   CheckCircle2,
@@ -211,26 +212,10 @@ export const RsvpSection: React.FC = () => {
   };
 
   return (
-    <section id="rsvp" className="py-16 sm:py-24 px-4 bg-ivory-100 text-charcoal relative overflow-hidden">
+    <section id="rsvp" className="px-5 bg-ivory-100 text-charcoal relative overflow-hidden" style={{ paddingBlock: "var(--section-y)" }}>
       <div className="w-full max-w-lg mx-auto relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-8"
-        >
-          <span className="text-gold-700 font-sans text-xs uppercase tracking-[0.25em] font-semibold block mb-1">
-            {t.rsvp.eyebrow}
-          </span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-emerald-950">
-            {t.rsvp.title}
-          </h2>
-          <p className="font-sans text-xs sm:text-sm text-charcoal/75 mt-2 max-w-xs mx-auto font-medium">
-            {t.rsvp.subtitle}
-          </p>
-          <div className="w-12 h-0.5 bg-gold-500 mx-auto mt-3 rounded-full" />
-        </motion.div>
+        <SectionHeading eyebrow={t.rsvp.eyebrow} title={t.rsvp.title} className="mb-4" />
+        <p className="text-center text-sm text-charcoal/75 max-w-xs mx-auto mb-10">{t.rsvp.subtitle}</p>
 
         {/* Refined RSVP Container */}
         <motion.div

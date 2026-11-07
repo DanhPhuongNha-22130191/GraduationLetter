@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Timer } from "lucide-react";
+import { Reveal, SectionHeading } from "@/components/animated-motifs";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
@@ -18,7 +17,7 @@ interface TimeLeft {
 /**
  * Phân tích ngày giờ tùy chỉnh (customDate + customTime) thành đối tượng Date mục tiêu
  */
-function parseCustomTargetDate(customDate?: string, customTime?: string): Date {
+export function parseCustomTargetDate(customDate?: string, customTime?: string): Date {
   const defaultTarget = new Date(graduationConfig.graduationDate); // Mặc định 2026-10-21T08:00:00
   let year = defaultTarget.getFullYear();
   let month = defaultTarget.getMonth();
@@ -125,51 +124,29 @@ export const CountdownSection: React.FC = () => {
   const displayTimeStr = effectiveTime ? formatLocalizedTime(effectiveTime, lang) : t.details.timeVal;
 
   return (
-    <section id="countdown" className="py-14 sm:py-24 px-3 sm:px-4 bg-ivory-50 text-charcoal relative overflow-hidden">
-      <div className="w-full max-w-lg mx-auto text-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="mb-8"
-        >
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gold-500/10 text-gold-700 text-[11px] sm:text-xs font-sans font-semibold uppercase tracking-widest mb-3 border border-gold-500/30">
-            <Timer className="w-3.5 h-3.5 text-gold-600" />
-            <span>COUNTDOWN</span>
-          </div>
+    <section id="countdown" className="px-5 bg-emerald-950 text-ivory-50 relative overflow-hidden" style={{ paddingBlock: "var(--section-y)" }}>
+      <div className="w-full max-w-2xl mx-auto text-center relative z-10">
+        <SectionHeading eyebrow={t.countdown.eyebrow} title={t.countdown.title} onDark className="mb-10" />
 
-          <h2 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight text-emerald-950">
-            {t.countdown.title}
-          </h2>
-          <p className="font-sans text-xs sm:text-sm text-charcoal/75 mt-2 font-medium">
-            {displayDateStr} — {displayTimeStr}
-          </p>
-        </motion.div>
-
-        {/* High-end Mobile-Optimized Countdown Flip Cards Grid */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-4">
-          {timeUnits.map((unit, idx) => (
-            <motion.div
-              key={unit.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: idx * 0.1 }}
-              className="bg-white rounded-xl sm:rounded-2xl py-3.5 px-1.5 sm:p-5 border border-gold-500/25 shadow-soft-md flex flex-col items-center justify-center relative overflow-hidden group hover:border-gold-500/40 transition-colors"
-            >
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gold-gradient" />
-
-              <span className="font-serif text-2xl sm:text-5xl font-bold text-emerald-950 tracking-tight leading-none mb-1 group-hover:scale-[1.03] transition-transform">
+        <Reveal className="grid grid-cols-4 gap-px bg-gold-500/30 border border-gold-500/30" >
+          {timeUnits.map((unit) => (
+            <div key={unit.label} className="bg-emerald-950 py-6 sm:py-9 px-1 flex flex-col items-center">
+              <span
+                className="font-serif text-4xl sm:text-6xl font-medium text-ivory-50 leading-none tabular-nums"
+                aria-label={`${unit.value} ${unit.label}`}
+              >
                 {hasMounted ? String(unit.value).padStart(2, "0") : "00"}
               </span>
-
-              <span className="font-sans text-[10px] sm:text-xs tracking-wider uppercase text-gold-700 font-semibold">
-                {unit.label}
-              </span>
-            </motion.div>
+              <span className="eyebrow eyebrow-on-dark !text-[0.6rem] sm:!text-[0.7rem] mt-3 !tracking-[0.2em]">{unit.label}</span>
+            </div>
           ))}
-        </div>
+        </Reveal>
+
+        <p className="font-serif italic text-lg text-gold-200 mt-8">
+          {displayDateStr}
+          <span className="mx-2 text-gold-500">·</span>
+          {displayTimeStr}
+        </p>
       </div>
     </section>
   );

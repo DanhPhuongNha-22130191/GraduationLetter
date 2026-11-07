@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { ChevronDown, Sparkles, GraduationCap, MailOpen, Camera, Loader2, CheckCircle2 } from "lucide-react";
+import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { ChevronDown, Camera, Loader2, CheckCircle2 } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { playBackgroundMusic } from "@/components/music-toggle";
-import { AnimatedFlourishDivider } from "@/components/animated-motifs";
+import { AnimatedFlourishDivider, LaurelBranch, EASE_LUX } from "@/components/animated-motifs";
+import { extrasCopy } from "@/config/extras";
 
 async function compressAvatarFile(file: File, maxDim = 1200, quality = 0.85): Promise<Blob | File> {
   if (typeof window === "undefined" || !file.type.startsWith("image/")) return file;
@@ -61,6 +62,12 @@ export const HeroSection: React.FC = () => {
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [uploadMessage, setUploadMessage] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const reduceMotion = useReducedMotion();
+  const x = extrasCopy[lang];
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end start"] });
+  const portraitY = useTransform(scrollYProgress, [0, 1], [0, reduceMotion ? 0 : 70]);
+  const haloY = useTransform(scrollYProgress, [0, 1], [0, reduceMotion ? 0 : 130]);
 
   // Fetch persistent cloud avatar on mount and on tab focus
   useEffect(() => {
@@ -240,49 +247,56 @@ export const HeroSection: React.FC = () => {
   };
 
   return (
-    <section id="hero" className="relative min-h-[92vh] sm:min-h-screen flex flex-col justify-between items-center px-4 py-8 sm:py-12 bg-ivory-50 text-charcoal overflow-hidden">
-      {/* Background Subtle Paper Texture & Soft Amber Radial */}
-      <div className="absolute inset-0 paper-texture opacity-60 pointer-events-none" />
-      <div className="absolute inset-0 bg-radial from-gold-500/10 via-transparent to-transparent opacity-40 pointer-events-none" />
-
-      {/* Top Header Badge */}
+    <section
+      id="hero"
+      ref={sectionRef}
+      className="relative min-h-[100svh] flex flex-col items-center justify-center px-5 py-16 sm:py-20 bg-emerald-950 text-ivory-50 overflow-hidden"
+    >
+      {/* Halo mờ — parallax chậm hơn nội dung */}
       <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="z-10 text-center mt-6 sm:mt-2"
-      >
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/30 bg-gold-500/10 text-xs font-sans tracking-widest text-emerald-900 font-semibold uppercase shadow-soft-sm backdrop-blur-xs">
-          <Sparkles className="w-3.5 h-3.5 text-gold-600" />
-          <span>{t.hero.invitationCard}</span>
-          <Sparkles className="w-3.5 h-3.5 text-gold-600" />
-        </div>
-      </motion.div>
+        style={{ y: haloY }}
+        aria-hidden="true"
+        className="absolute left-1/2 top-[18%] -translate-x-1/2 w-[130vw] max-w-[900px] aspect-square rounded-full bg-radial from-emerald-700/40 via-emerald-900/10 to-transparent pointer-events-none"
+      />
+      {/* Cành nguyệt quế hai bên (ẩn trên mobile hẹp để thoáng) */}
+      <LaurelBranch className="hidden md:block absolute left-[6%] top-1/2 -translate-y-1/2 w-20 h-40 text-gold-500/50" />
+      <LaurelBranch flip className="hidden md:block absolute right-[6%] top-1/2 -translate-y-1/2 w-20 h-40 text-gold-500/50" />
 
-      {/* Main Luxury Card Frame */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.9, delay: 0.2 }}
-        className="z-10 my-auto w-full max-w-sm sm:max-w-md glass-gold-card rounded-3xl p-5 sm:p-8 shadow-soft-xl relative flex flex-col items-center text-center border border-gold-500/25"
-      >
-        {/* Single subtle inner hairline border */}
-        <div className="absolute inset-2.5 rounded-2xl border border-gold-500/15 pointer-events-none" />
-
-        {/* Graduate Avatar Portrait Frame with Refined Gold Ring */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 border-2 border-gold-500 shadow-soft-md mb-3 sm:mb-4 bg-gold-gradient transform hover:scale-[1.03] transition-transform"
+      <div className="relative z-10 w-full max-w-md flex flex-col items-center text-center">
+        <motion.p
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: EASE_LUX }}
+          className="eyebrow eyebrow-on-dark mb-2"
         >
-          <div className="relative w-full h-full rounded-full overflow-hidden border border-ivory-50">
+          {t.hero.invitationCard}
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.9, delay: 0.15, ease: EASE_LUX }}
+          className="font-serif italic text-gold-200 text-lg tracking-[0.2em] mb-7"
+        >
+          {x.classOf} {graduationConfig.year}
+        </motion.p>
+
+        {/* Chân dung trong khung arch */}
+        <motion.div
+          style={{ y: portraitY }}
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.25, ease: EASE_LUX }}
+          className="relative w-[15.5rem] sm:w-72"
+        >
+          {/* Viền arch lệch */}
+          <div className="absolute -inset-2.5 rounded-t-[999px] rounded-b-md border border-gold-500/50" aria-hidden="true" />
+          <div className="relative aspect-[3/4] rounded-t-[999px] rounded-b-md overflow-hidden bg-emerald-900">
             <Image
               src={avatarUrl}
-              alt={graduationConfig.name}
+              alt={`Chân dung ${graduationConfig.name} trong lễ phục tốt nghiệp`}
               fill
               priority
-              sizes="(max-width: 640px) 120px, 160px"
+              sizes="(max-width: 640px) 248px, 288px"
               quality={85}
               className="object-cover"
               unoptimized
@@ -292,34 +306,28 @@ export const HeroSection: React.FC = () => {
                 }
               }}
             />
+            {/* Overlay mờ phía dưới để chữ/khung hòa vào ảnh */}
+            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-emerald-950/60 to-transparent" aria-hidden="true" />
 
-            {/* Upload Overlay */}
             {isUploading && (
-              <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-xs flex flex-col items-center justify-center p-2 text-center text-ivory-50 z-10">
+              <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center z-10" role="status">
                 {uploadStatus === "uploading" && (
                   <>
-                    <Loader2 className="w-5 h-5 text-gold-200 animate-spin mb-1" />
-                    <span className="text-[9px] font-sans font-medium text-gold-200 leading-tight">Đang tải...</span>
+                    <Loader2 className="w-6 h-6 text-gold-200 animate-spin mb-1" />
+                    <span className="text-[11px] font-sans text-gold-200">Đang tải...</span>
                   </>
                 )}
                 {uploadStatus === "success" && (
                   <>
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 mb-1" />
-                    <span className="text-[9px] font-sans font-semibold text-emerald-300 leading-tight">Thành công!</span>
+                    <CheckCircle2 className="w-6 h-6 text-emerald-400 mb-1" />
+                    <span className="text-[11px] font-sans text-emerald-200">Thành công!</span>
                   </>
                 )}
               </div>
             )}
           </div>
 
-          {/* Gold Crest Icon Badge Overlay (Default) */}
-          {!isOwner && (
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gold-gradient text-emerald-950 flex items-center justify-center shadow-soft-md border-2 border-ivory-50">
-              <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2]" />
-            </div>
-          )}
-
-          {/* Owner Change Cover Photo Button (Only for slug phuongnha) */}
+          {/* Chỉ chủ thiệp (slug phuongnha) mới thấy nút đổi ảnh */}
           {isOwner && (
             <>
               <button
@@ -328,117 +336,81 @@ export const HeroSection: React.FC = () => {
                 disabled={isUploading}
                 aria-label="Đổi ảnh đại diện (Dành riêng cho Phương Nhã)"
                 title="Đổi ảnh đại diện (Dành riêng cho Phương Nhã)"
-                className="absolute -bottom-1 -right-1 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gold-gradient text-emerald-950 flex items-center justify-center shadow-soft-lg border-2 border-ivory-50 hover:scale-110 active:scale-95 transition-all cursor-pointer z-20 group focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
+                className="absolute bottom-2 -right-3 w-10 h-10 rounded-full bg-gold-500 text-emerald-950 flex items-center justify-center shadow-soft-lg border border-ivory-50/60 hover:scale-105 active:scale-95 transition-transform duration-500 ease-lux cursor-pointer z-20"
               >
-                <Camera className="w-4 h-4 stroke-[2.2] group-hover:rotate-12 transition-transform" />
+                <Camera className="w-4 h-4" strokeWidth={1.75} />
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarFileChange}
-                className="hidden"
-              />
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarFileChange} className="hidden" />
             </>
           )}
         </motion.div>
 
-        {/* Upload status message feedback */}
         {uploadMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`text-xs font-sans font-semibold mb-2 px-3 py-1 rounded-full ${
-              uploadStatus === "error"
-                ? "bg-red-50 text-red-700 border border-red-200"
-                : "bg-gold-500/20 text-emerald-900 border border-gold-500/30"
+          <div
+            role="status"
+            className={`mt-4 text-xs font-sans px-3 py-1 rounded-full ${
+              uploadStatus === "error" ? "bg-red-50 text-red-700" : "bg-gold-500/20 text-gold-200"
             }`}
           >
             {uploadMessage}
-          </motion.div>
+          </div>
         )}
 
-        {/* Ceremony Title */}
-        <h2 className="font-serif text-[11px] sm:text-xs uppercase tracking-[0.25em] text-gold-700 font-bold mb-0.5 flex items-center gap-1.5">
-          <span className="text-gold-500/70">✦</span>
-          <span>{t.hero.ceremony}</span>
-          <span className="text-gold-500/70">✦</span>
-        </h2>
-
-        {/* Student Name - Most Prominent Element */}
+        {/* Tên — chữ viết tay tiết chế, chỉ dùng cho tên */}
         <motion.h1
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.5 }}
-          className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-emerald-950 tracking-tight my-1 leading-tight"
+          transition={{ duration: 0.9, delay: 0.5, ease: EASE_LUX }}
+          className="font-script text-[3.25rem] sm:text-7xl leading-[1.1] text-ivory-50 mt-9 mb-1"
         >
           {graduationConfig.name}
         </motion.h1>
 
-        {/* Degree Subtitle */}
-        <span className="italic font-serif text-gold-700 text-sm sm:text-base block my-0.5 font-semibold">
-          {t.hero.degree}
-        </span>
-
-        {/* Animated Flourish Divider */}
-        <AnimatedFlourishDivider className="my-1.5 text-gold-600" />
-
-        {/* Major & Year Pill Badge */}
-        <motion.div
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="inline-block px-3.5 py-1 rounded-full border border-emerald-900/15 bg-emerald-900/5 text-emerald-900 font-sans font-semibold text-[11px] sm:text-xs tracking-wider uppercase my-1"
+          transition={{ duration: 0.9, delay: 0.7 }}
+          className="font-serif text-[0.8rem] sm:text-sm uppercase tracking-[0.3em] text-gold-200 mt-2"
         >
-          {t.hero.major}
-        </motion.div>
+          {t.hero.degree} · {t.hero.major}
+        </motion.p>
 
-        {/* Subtitle quote - Compact & Supporting */}
-        <p className="font-serif italic text-xs sm:text-sm text-charcoal/75 max-w-xs mb-2 line-clamp-2">
+        <AnimatedFlourishDivider className="my-6" />
+
+        <p className="font-serif italic text-base text-ivory-100/80 max-w-xs leading-relaxed">
           &ldquo;{t.hero.subTitle}&rdquo;
         </p>
 
-        {/* Personalized Guest Badge */}
         {hasCustomGuest && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-            className="w-full my-2 py-2 px-3 rounded-2xl bg-gold-500/10 border border-gold-500/30 shadow-soft-xs"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.9 }}
+            className="mt-7 w-full border-y border-gold-500/30 py-3"
           >
-            <span className="block text-[10px] font-sans uppercase tracking-[0.2em] text-gold-700 font-bold mb-0.5">
-              ✦ {getGreetingPrefix(lang).toUpperCase()} ✦
-            </span>
-            <span className="font-serif italic text-base sm:text-lg font-bold text-emerald-950 line-clamp-2 break-words overflow-wrap-anywhere">
-              {guestName}
-            </span>
+            <span className="block eyebrow eyebrow-on-dark mb-1">{getGreetingPrefix(lang)}</span>
+            <span className="font-serif italic text-2xl text-ivory-50 break-words overflow-wrap-anywhere">{guestName}</span>
           </motion.div>
         )}
 
-        {/* Gold Gradient Action Button - Main CTA */}
         <motion.button
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
+          type="button"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1, ease: EASE_LUX }}
           onClick={scrollToNext}
           aria-label={t.hero.openBtn}
-          className="w-full sm:w-auto px-8 py-3 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-xs sm:text-sm tracking-wider uppercase shadow-gold-glow flex items-center justify-center gap-2 border border-gold-200/50 hover:brightness-105 transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
+          className="btn-gold mt-9"
         >
-          <MailOpen className="w-4 h-4 stroke-[2]" />
           <span>{t.hero.openBtn}</span>
-          <ChevronDown className="w-4 h-4 text-emerald-950" />
+          <ChevronDown className="w-4 h-4" strokeWidth={1.75} />
         </motion.button>
-      </motion.div>
+      </div>
 
-      {/* Swipe Down Floating Indicator - Subtle & Supporting */}
-      <motion.div
-        animate={{ y: [0, 4, 0] }}
-        transition={{ repeat: Infinity, duration: 2.5 }}
-        className="z-10 text-charcoal/50 text-xs font-sans hidden sm:flex flex-col items-center gap-0.5 cursor-pointer hover:text-charcoal transition-colors"
-        onClick={scrollToNext}
-      >
-        <span className="tracking-widest uppercase text-[9px]">{t.hero.swipeDown}</span>
-        <ChevronDown className="w-3.5 h-3.5 text-gold-600/70" />
-      </motion.div>
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-1 text-gold-200/60" aria-hidden="true">
+        <span className="eyebrow eyebrow-on-dark !text-[0.6rem] opacity-70">{x.scrollHint}</span>
+        <div className="w-px h-8 bg-gradient-to-b from-gold-500/70 to-transparent" />
+      </div>
     </section>
   );
 };

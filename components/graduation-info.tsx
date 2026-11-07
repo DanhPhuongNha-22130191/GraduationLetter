@@ -1,123 +1,206 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { User, BookOpen, Calendar as CalendarIcon, Clock, MapPin, Copy, Check } from "lucide-react";
+import { Copy, Check, CalendarPlus, Navigation, Shirt } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { formatLocalizedTime, formatLocalizedDate } from "@/config/i18n";
+import { extras, extrasCopy } from "@/config/extras";
+import { Reveal, SectionHeading, GradCapIcon, CornerOrnament } from "@/components/animated-motifs";
+import { parseCustomTargetDate } from "@/components/countdown";
+
+const pad = (n: number) => String(n).padStart(2, "0");
+const icsStamp = (d: Date) =>
+  `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+const icsEscape = (s: string) => s.replace(/([,;])/g, "\\$1").replace(/\n/g, "\\n");
+
+/** Tạo & tải file .ics (mở được bằng Apple/Google/Outlook Calendar). */
+function downloadIcs(opts: { title: string; start: Date; end: Date; location: string; description: string }) {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Graduation Invitation//VI",
+    "BEGIN:VEVENT",
+    `UID:${icsStamp(opts.start)}-${Math.random().toString(36).slice(2)}@graduation-invitation`,
+    `DTSTAMP:${icsStamp(new Date())}`,
+    `DTSTART:${icsStamp(opts.start)}`,
+    `DTEND:${icsStamp(opts.end)}`,
+    `SUMMARY:${icsEscape(opts.title)}`,
+    `LOCATION:${icsEscape(opts.location)}`,
+    `DESCRIPTION:${icsEscape(opts.description)}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+  const url = URL.createObjectURL(new Blob([lines], { type: "text/calendar;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "graduation.ics";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+interface EventCardProps {
+  index: string;
+  title: string;
+  date: string;
+  time: string;
+  venue: string;
+  address: string;
+  dress: string;
+  dressLabel: string;
+  mapUrl?: string;
+  directionsLabel: string;
+  calendarLabel: string;
+  onCalendar: () => void;
+  copy?: { onClick: () => void; copied: boolean; label: string; copiedLabel: string };
+}
+
+const EventCard: React.FC<EventCardProps> = (p) => (
+  <article className="diploma-frame p-8 sm:p-10 text-center flex flex-col h-full">
+    <CornerOrnament className="absolute top-2 left-2 w-7 h-7 text-gold-500" />
+    <CornerOrnament className="absolute top-2 right-2 w-7 h-7 text-gold-500 -scale-x-100" />
+
+    <p className="eyebrow">{p.index}</p>
+    <h3 className="font-serif text-2xl sm:text-[1.75rem] text-emerald-950 mt-2 mb-6 tracking-wide">{p.title}</h3>
+
+    <dl className="space-y-4 text-sm flex-1">
+      <div>
+        <dt className="sr-only">Ngày</dt>
+        <dd className="font-serif text-lg text-emerald-900">{p.date}</dd>
+        <dd className="text-charcoal/75 mt-0.5 tabular-nums">{p.time}</dd>
+      </div>
+      <div className="w-8 h-px bg-gold-500/60 mx-auto" aria-hidden="true" />
+      <div>
+        <dt className="sr-only">Địa điểm</dt>
+        <dd className="font-serif text-lg text-emerald-900 leading-snug">{p.venue}</dd>
+        <dd className="text-charcoal/75 mt-1 leading-relaxed">{p.address}</dd>
+        {p.copy && (
+          <dd className="mt-2">
+            <button
+              type="button"
+              onClick={p.copy.onClick}
+              className="inline-flex items-center gap-1.5 text-xs text-gold-700 hover:text-emerald-900 transition-colors duration-500 ease-lux cursor-pointer"
+              aria-label={p.copy.copied ? p.copy.copiedLabel : p.copy.label}
+            >
+              {p.copy.copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {p.copy.copied ? p.copy.copiedLabel : p.copy.label}
+            </button>
+          </dd>
+        )}
+      </div>
+      <div className="w-8 h-px bg-gold-500/60 mx-auto" aria-hidden="true" />
+      <div className="flex items-start justify-center gap-2.5 text-left max-w-xs mx-auto">
+        <Shirt className="w-4 h-4 mt-0.5 shrink-0 text-gold-600" strokeWidth={1.5} aria-hidden="true" />
+        <div>
+          <dt className="eyebrow !text-[0.625rem]">{p.dressLabel}</dt>
+          <dd className="text-charcoal/80 mt-1">{p.dress}</dd>
+        </div>
+      </div>
+    </dl>
+
+    <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+      {p.mapUrl && (
+        <a href={p.mapUrl} target="_blank" rel="noopener noreferrer" className="btn-outline">
+          <Navigation className="w-3.5 h-3.5" strokeWidth={1.75} />
+          {p.directionsLabel}
+        </a>
+      )}
+      <button type="button" onClick={p.onCalendar} className="btn-outline">
+        <CalendarPlus className="w-3.5 h-3.5" strokeWidth={1.75} />
+        {p.calendarLabel}
+      </button>
+    </div>
+  </article>
+);
 
 export const GraduationInfoSection: React.FC = () => {
   const { t, lang } = useLanguage();
-  const { effectiveDate, effectiveTime, hasCustomDate, hasCustomTime } = useGuest();
+  const { effectiveDate, effectiveTime } = useGuest();
   const [copied, setCopied] = useState(false);
+  const x = extrasCopy[lang];
+
+  const dateText = effectiveDate ? formatLocalizedDate(effectiveDate, lang) : t.details.dateVal;
+  const timeText = effectiveTime ? formatLocalizedTime(effectiveTime, lang) : t.details.timeVal;
 
   const handleCopyAddress = () => {
-    if (!graduationConfig.address) return;
-    navigator.clipboard.writeText(`${t.details.venueVal} - ${t.details.addressVal}`);
+    navigator.clipboard?.writeText(`${t.details.venueVal} - ${t.details.addressVal}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const items = [
-    {
-      icon: User,
-      label: t.details.graduate,
-      value: graduationConfig.name,
-      highlight: true,
-    },
-    {
-      icon: BookOpen,
-      label: t.details.major,
-      value: `${graduationConfig.major} — Lớp ${graduationConfig.classCode}`,
-    },
-    {
-      icon: CalendarIcon,
-      label: t.details.date,
-      value: effectiveDate ? formatLocalizedDate(effectiveDate, lang) : t.details.dateVal,
-      highlight: hasCustomDate,
-    },
-    {
-      icon: Clock,
-      label: t.details.time,
-      value: effectiveTime ? formatLocalizedTime(effectiveTime, lang) : t.details.timeVal,
-      highlight: hasCustomTime,
-    },
-    {
-      icon: MapPin,
-      label: t.details.venue,
-      value: t.details.venueVal,
-      subValue: t.details.addressVal,
-      copyable: true,
-    },
-  ];
+  const addCeremony = () => {
+    const start = parseCustomTargetDate(effectiveDate, effectiveTime);
+    const end = new Date(start.getTime() + 3.5 * 60 * 60 * 1000);
+    downloadIcs({
+      title: `${x.calendarCeremony} — ${graduationConfig.name}`,
+      start,
+      end,
+      location: `${t.details.venueVal}, ${t.details.addressVal}`,
+      description: `${graduationConfig.name} · ${graduationConfig.major}`,
+    });
+  };
+
+  const addParty = () => {
+    downloadIcs({
+      title: `${x.calendarParty} — ${graduationConfig.name}`,
+      start: new Date(extras.party.isoStart),
+      end: new Date(extras.party.isoEnd),
+      location: `${x.partyVenue}, ${x.partyAddress}`,
+      description: `${graduationConfig.name} · ${extras.hashtag}`,
+    });
+  };
 
   return (
-    <section id="details" className="py-16 sm:py-24 px-4 bg-ivory-100 relative z-10">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-8 sm:mb-12">
-          <span className="text-xs font-sans uppercase tracking-[0.25em] text-gold-700 font-semibold">
-            {t.details.eyebrow}
-          </span>
-          <h2 className="font-serif text-3xl sm:text-4xl text-emerald-950 font-bold mt-1">
-            {t.details.title}
-          </h2>
-          <div className="w-12 h-0.5 bg-gold-500 mx-auto mt-3" />
+    <section id="details" className="px-5 bg-ivory-100 relative" style={{ paddingBlock: "var(--section-y)" }}>
+      <div className="max-w-4xl mx-auto">
+        <SectionHeading
+          eyebrow={t.details.eyebrow}
+          title={t.details.title}
+          icon={<GradCapIcon className="w-9 h-9" />}
+        />
+
+        <div className={`grid gap-6 sm:gap-8 ${extras.party.enabled ? "md:grid-cols-2" : "max-w-xl mx-auto"}`}>
+          <Reveal className="h-full">
+            <EventCard
+              index="I"
+              title={x.ceremony}
+              date={dateText}
+              time={timeText}
+              venue={t.details.venueVal}
+              address={t.details.addressVal}
+              dress={x.dressCeremony}
+              dressLabel={x.dressCode}
+              mapUrl={graduationConfig.mapUrl}
+              directionsLabel={x.directions}
+              calendarLabel={x.addToCalendar}
+              onCalendar={addCeremony}
+              copy={{ onClick: handleCopyAddress, copied, label: t.details.copy, copiedLabel: t.details.copied }}
+            />
+          </Reveal>
+
+          {extras.party.enabled && (
+            <Reveal delay={0.12} className="h-full">
+              {/* [PLACEHOLDER] Tiệc chúc mừng: sửa trong config/extras.ts + extrasCopy */}
+              <EventCard
+                index="II"
+                title={x.party}
+                date={dateText}
+                time={x.partyTime}
+                venue={x.partyVenue}
+                address={x.partyAddress}
+                dress={x.dressParty}
+                dressLabel={x.dressCode}
+                mapUrl={extras.party.mapUrl}
+                directionsLabel={x.directions}
+                calendarLabel={x.addToCalendar}
+                onCalendar={addParty}
+              />
+            </Reveal>
+          )}
         </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="relative bg-white/90 rounded-2xl sm:rounded-3xl p-5 sm:p-8 border border-gold-500/25 shadow-soft-lg space-y-3.5 backdrop-blur-xs"
-        >
-          {items.map((item, idx) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={idx}
-                className={`p-3.5 sm:p-4 rounded-xl sm:rounded-2xl transition-all flex items-start justify-between gap-3 ${
-                  item.highlight
-                    ? "bg-gold-500/10 border border-gold-500/35 shadow-soft-xs"
-                    : "bg-ivory-50/80 border border-gold-500/15 hover:border-gold-500/30"
-                }`}
-              >
-                <div className="flex items-start gap-3 sm:gap-4 flex-1">
-                  <div className={`p-2.5 rounded-xl shrink-0 ${item.highlight ? "bg-gold-gradient text-emerald-950 shadow-soft-xs" : "bg-emerald-900/10 text-emerald-900"}`}>
-                    <Icon className="w-5 h-5 stroke-[2]" />
-                  </div>
-                  <div>
-                    <span className="block text-[11px] sm:text-xs font-sans text-gold-700 uppercase tracking-wider font-semibold">
-                      {item.label}
-                    </span>
-                    <span className={`block font-serif text-sm sm:text-base ${item.highlight ? "font-bold text-emerald-950 text-base sm:text-lg" : "text-charcoal"}`}>
-                      {item.value}
-                    </span>
-                    {item.subValue && (
-                      <span className="block text-xs font-sans text-charcoal/70 mt-0.5">
-                        {item.subValue}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {item.copyable && (
-                  <button
-                    onClick={handleCopyAddress}
-                    aria-label={copied ? t.details.copied : t.details.copy}
-                    title={copied ? t.details.copied : t.details.copy}
-                    className="p-2 sm:px-3 sm:py-2 rounded-xl bg-gold-500/15 hover:bg-gold-500/25 text-gold-700 text-xs transition-colors shrink-0 flex items-center gap-1.5 active:scale-95 touch-manipulation border border-gold-500/30 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
-                  >
-                    {copied ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4" />}
-                    <span className="hidden sm:inline font-sans font-semibold">{copied ? t.details.copied : t.details.copy}</span>
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </motion.div>
       </div>
     </section>
   );
