@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BarChart3,
+  CalendarDays,
   Check,
   Copy,
   Link2,
@@ -17,6 +18,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { AdminDashboard } from "@/components/admin-dashboard";
+import { graduationConfig } from "@/config/graduation";
 import { Pagination, usePagination, useListAnchor } from "@/components/admin-pagination";
 
 type Mode = "friend" | "elder" | "senior" | "junior";
@@ -104,6 +106,78 @@ function guestUrl(slug: string) {
 function isoToDMY(iso: string) {
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
+}
+
+// Ngày lễ mặc định của thiệp (04/12/2026)
+const DEFAULT_DATE_ISO = graduationConfig.graduationDate.slice(0, 10);
+
+/** "2026-12-04" -> "Thứ Sáu, 04/12/2026" (không phụ thuộc ngôn ngữ trình duyệt) */
+function formatDateVi(iso: string) {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return "Chọn ngày";
+  const wd = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"][
+    new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).getUTCDay()
+  ];
+  return `${wd}, ${m[3]}/${m[2]}/${m[1]}`;
+}
+
+/**
+ * Ô chọn ngày: hiện sẵn ngày mặc định dạng DD/MM/YYYY, chạm vào để mở lịch của máy.
+ * Ô date gốc nằm trong suốt phủ lên trên -> điện thoại mở bảng chọn ngày gốc,
+ * máy tính gọi showPicker(). Không bị tràn/chồng như ô date mặc định trên iPhone.
+ */
+function DateField({
+  id,
+  value,
+  defaultIso,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  defaultIso: string;
+  onChange: (v: string) => void;
+}) {
+  const shown = value || defaultIso;
+  const isDefault = shown === defaultIso;
+  return (
+    <div>
+      <div className="relative">
+        <input
+          id={id}
+          type="date"
+          value={shown}
+          onChange={(e) => onChange(e.target.value)}
+          onClick={(e) => {
+            try {
+              e.currentTarget.showPicker();
+            } catch {
+              // trình duyệt không hỗ trợ showPicker -> để mặc định
+            }
+          }}
+          className="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none [color-scheme:dark]"
+        />
+        <div
+          aria-hidden="true"
+          className={`${inputCls} flex items-center justify-between gap-2 pointer-events-none peer-focus:border-gold peer-focus:ring-1 peer-focus:ring-gold`}
+        >
+          <span className="truncate">{formatDateVi(shown)}</span>
+          <CalendarDays className="w-4 h-4 shrink-0 text-gold" />
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-2 mt-1 text-[11px]">
+        <span className="text-ivory/40">{isDefault ? "Ngày mặc định của thiệp · chạm để đổi" : "Đã đổi ngày riêng cho khách này"}</span>
+        {!isDefault && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="text-gold-light underline underline-offset-2 cursor-pointer whitespace-nowrap"
+          >
+            Về mặc định
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function CopyButton({ text, label = "Copy", className = "" }: { text: string; label?: string; className?: string }) {
@@ -459,7 +533,7 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
           name,
           mode,
           customMessage,
-          customDate: isoToDMY(dateIso),
+          customDate: isoToDMY(dateIso || DEFAULT_DATE_ISO),
           customTime,
           canUpload,
         }),
@@ -564,16 +638,10 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
           <p className="text-right text-[11px] text-ivory/40 mt-1">{customMessage.length}/1500</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="min-w-0">
             <label className={labelCls} htmlFor="g-date">Ngày</label>
-            <input
-              id="g-date"
-              type="date"
-              value={dateIso}
-              onChange={(e) => setDateIso(e.target.value)}
-              className={`${inputCls} [color-scheme:dark] min-w-0`}
-            />
+            <DateField id="g-date" value={dateIso} defaultIso={DEFAULT_DATE_ISO} onChange={setDateIso} />
           </div>
           <div className="min-w-0">
             <label className={labelCls} htmlFor="g-time">Giờ</label>
@@ -581,13 +649,13 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
               id="g-time"
               value={customTime}
               onChange={(e) => setCustomTime(e.target.value)}
-              placeholder="10:00 sáng"
+              placeholder="VD: 10:00 - 11:30 sáng"
               className={inputCls}
               maxLength={60}
             />
+            <p className="text-[11px] text-ivory/40 mt-1">Để trống để dùng giờ mặc định của thiệp.</p>
           </div>
         </div>
-        <p className="text-[11px] text-ivory/40 -mt-2">Ngày và giờ có thể để trống để dùng mặc định của thiệp.</p>
 
         <label className="flex items-center gap-3 min-h-11 text-sm text-ivory/80 cursor-pointer">
           <input
