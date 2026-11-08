@@ -40,6 +40,23 @@ export async function POST(request: Request) {
     // ignore
   }
 
+  const noStore = { "Cache-Control": "no-store" };
+  const ua = request.headers.get("user-agent") || "";
+  const isAdmin = isAdminRequest(request);
+
+  // Mã thiết bị: cookie httpOnly do server cấp (trình duyệt/app khác nhau = thiết bị khác nhau)
+  let deviceId = readCookie(request, DEVICE_COOKIE);
+  const isNewDevice = !/^D[A-Z0-9]{8,32}$/.test(deviceId);
+  if (isNewDevice) deviceId = newDeviceId();
+
+  // Đọc danh sách khách và ghi nhận thiết bị CÙNG LÚC (mỗi lần gọi Apps Script mất ~1 giây)
+  // Mã link chỉ gồm chữ thường + số (đúng định dạng mã do trang admin tạo) mới được ghi nhận sớm.
+  const slugKey = slug.toLowerCase().replace(/[-_]/g, "");
+  const earlyClaim =
+    slug && !isAdmin && /^[a-z0-9]{3,40}$/.test(slugKey)
+      ? claimDevice(slugKey, deviceId, { userAgent: describeDevice(ua) }).catch(() => "error" as const)
+      : null;
+
   let list;
   try {
     list = await listGuestsServer();
@@ -49,17 +66,11 @@ export async function POST(request: Request) {
   }
 
   const defaults = earliestDefaults(list);
-  const noStore = { "Cache-Control": "no-store" };
 
   if (!slug) return NextResponse.json({ found: false, locked: false, defaults }, { headers: noStore });
 
   const guest = findGuest(list, slug);
   if (!guest) return NextResponse.json({ found: false, locked: false, defaults }, { headers: noStore });
-
-  // Mã thiết bị: cookie httpOnly do server cấp (trình duyệt/app khác nhau = thiết bị khác nhau)
-  let deviceId = readCookie(request, DEVICE_COOKIE);
-  const isNewDevice = !/^D[A-Z0-9]{8,32}$/.test(deviceId);
-  if (isNewDevice) deviceId = newDeviceId();
 
   const withDeviceCookie = (res: NextResponse) => {
     if (isNewDevice) {
@@ -75,15 +86,19 @@ export async function POST(request: Request) {
   };
 
   // Admin xem thử link: không chiếm chỗ thiết bị của khách
-  if (isAdminRequest(request)) {
+  if (isAdmin) {
     return NextResponse.json(
       { found: true, locked: false, preview: true, guest: publicProfile(guest), defaults },
       { headers: noStore }
     );
   }
 
-  const ua = request.headers.get("user-agent") || "";
-  const result = await claimDevice(guest.slug || slug, deviceId, { userAgent: describeDevice(ua) });
+  // Link cũ khớp theo tên (mã trên link khác slug thật) -> ghi nhận theo slug thật
+  const guestKey = (guest.slug || slug).toLowerCase().replace(/[-_]/g, "");
+  const result =
+    earlyClaim && guestKey === slugKey
+      ? await earlyClaim
+      : await claimDevice(guestKey, deviceId, { userAgent: describeDevice(ua) });
 
   if (result === "locked") {
     const res = NextResponse.json({ found: true, locked: true, defaults }, { headers: noStore });

@@ -98,7 +98,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
 }) => {
   const { t, lang } = useLanguage();
   const u = uiCopy[lang].envelope;
-  const { guestName, hasCustomGuest, pronounMode, getGreetingPrefix, setGuestName } = useGuest();
+  const { guestName, hasCustomGuest, isResolvingGuest, pronounMode, getGreetingPrefix, setGuestName } = useGuest();
   const [isOpening, setIsOpening] = useState(false);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   // Link chung: khách tự nhập tên (không bắt buộc), nhớ cho lần mở sau
@@ -119,7 +119,8 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
 
   const handleOpenEnvelope = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isOpening || isCurrentlyOpen) return;
+    // Chưa xác nhận xong khách của link riêng -> đợi (tối đa vài giây) để thiệp mở đúng tên
+    if (isOpening || isCurrentlyOpen || isResolvingGuest) return;
     setIsOpening(true);
     playBackgroundMusic();
 
@@ -239,7 +240,19 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
               </div>
 
               {/* Personalized Recipient Badge on Envelope */}
-              {hasCustomGuest ? (
+              {isResolvingGuest && !hasCustomGuest ? (
+                <div
+                  className="w-full my-2 py-2 px-3 rounded-2xl bg-white/[0.04] border border-gold-500/30 text-center"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold-500/70 font-bold mb-1.5">
+                    ✦ {getGreetingPrefix(lang).toUpperCase()} ✦
+                  </span>
+                  <span className="block mx-auto h-5 sm:h-6 w-2/3 rounded-full bg-gradient-to-r from-gold-500/10 via-gold-200/25 to-gold-500/10 animate-pulse" />
+                  <span className="sr-only">Đang mở thiệp của bạn…</span>
+                </div>
+              ) : hasCustomGuest ? (
                 <div className="w-full my-2 py-2 px-3 rounded-2xl bg-white/[0.04] border border-gold-500/30 text-center">
                   <span className="block text-[10px] font-sans uppercase tracking-[0.25em] text-gold-500 font-bold mb-0.5">
                     ✦ {getGreetingPrefix(lang).toUpperCase()} ✦
@@ -285,6 +298,7 @@ export const EnvelopeOverlay: React.FC<EnvelopeOverlayProps> = ({
                 whileTap={{ scale: 0.97 }}
                 onClick={handleOpenEnvelope}
                 aria-label={t.hero.openBtn}
+                aria-busy={isResolvingGuest}
                 className="w-full mt-2 py-3.5 rounded-full bg-gold-gradient text-emerald-950 font-sans font-bold text-xs sm:text-sm tracking-widest uppercase shadow-md flex items-center justify-center gap-2 border border-gold-200/50 hover:brightness-105 transition-all touch-manipulation cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-gold-500"
               >
                 <MailOpen className="w-4 h-4 stroke-[2]" />

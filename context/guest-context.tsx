@@ -9,11 +9,16 @@ import { getVisitorId, visitorNote } from "@/config/visitor";
 
 export type GuestPronounMode = "friend" | "elder" | "senior" | "junior";
 
+// Thông tin của chính khách đang dùng thiết bị này (chỉ 1 khách, không phải cả danh sách)
+const OWN_GUEST_CACHE_KEY = "invitation_own_guest_v1";
+
 interface GuestContextType {
   guestName: string;
   currentSlug: string;
   isOwner: boolean;
   hasCustomGuest: boolean;
+  /** Đang chờ server xác nhận khách của link riêng */
+  isResolvingGuest: boolean;
   isRegisteredGuest: boolean;
   canUpload: boolean;
   pronounMode: GuestPronounMode;
@@ -40,6 +45,7 @@ const GuestContext = createContext<GuestContextType>({
   currentSlug: "",
   isOwner: false,
   hasCustomGuest: false,
+  isResolvingGuest: false,
   isRegisteredGuest: false,
   canUpload: false,
   pronounMode: "friend",
@@ -193,6 +199,9 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [audioUrl, setAudioUrlState] = useState<string>(graduationConfig.audioUrl);
   const isInitialized = useRef(false);
   const isFetchingSheetRef = useRef(false);
+  // true khi mở bằng link riêng và đang chờ server xác nhận khách (tránh hiện ô nhập tên 1-2 giây)
+  // Mặc định true để lần vẽ đầu tiên (trước khi đọc URL) cũng không nháy ô nhập tên.
+  const [isResolvingGuest, setIsResolvingGuest] = useState<boolean>(true);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -262,6 +271,11 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setOrRemove("invitation_guest_msg", profile.customMessage);
         setOrRemove("invitation_guest_time", profile.customTime);
         setOrRemove("invitation_guest_date", profile.customDate);
+        // Nhớ thông tin của CHÍNH khách này trên thiết bị của họ -> lần sau mở link hiện tên ngay
+        const param = sessionStorage.getItem("invitation_pending_slug") || profile.slug || "";
+        if (param && !preview) {
+          localStorage.setItem(OWN_GUEST_CACHE_KEY, JSON.stringify({ param, profile }));
+        }
       } catch {
         // ignore
       }
@@ -280,6 +294,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setCurrentSlugState("");
       try {
         GUEST_KEYS.forEach((k) => sessionStorage.removeItem(k));
+        localStorage.removeItem(OWN_GUEST_CACHE_KEY);
       } catch {
         // ignore
       }
@@ -364,6 +379,36 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }
 
+        // 2b. Link riêng mở lại trên CÙNG thiết bị: hiện tên ngay từ bộ nhớ của chính khách đó,
+        //     server vẫn kiểm tra lại ở bước 3 (bị khoá/xoá thì thông tin sẽ được gỡ).
+        let pendingSlug = "";
+        try {
+          pendingSlug = sessionStorage.getItem("invitation_pending_slug") || "";
+        } catch {}
+        let hasLocalGuest = Boolean(pendingSlug) && Boolean(sessionStorage.getItem("invitation_guest_name"));
+        if (pendingSlug && !hasLocalGuest) {
+          try {
+            const cached = JSON.parse(localStorage.getItem(OWN_GUEST_CACHE_KEY) || "null");
+            if (cached?.param === pendingSlug && cached.profile?.name) {
+              const p = cached.profile as GuestProfile;
+              setGuestNameState(p.name);
+              setIsRegisteredGuest(true);
+              setCanUploadState(p.canUpload !== false);
+              setPronounModeState(p.mode || "friend");
+              setCustomMessageState(p.customMessage);
+              setCustomTimeState(p.customTime);
+              setCustomDateState(p.customDate);
+              setCurrentSlugState(p.slug || "");
+              hasLocalGuest = true;
+            }
+          } catch {
+            // ignore
+          }
+        }
+        // Có link riêng mà chưa biết là ai -> phong bì hiện "đang mở thiệp" thay vì ô nhập tên
+        setIsResolvingGuest(Boolean(pendingSlug) && !hasLocalGuest);
+        const resolveTimeout = window.setTimeout(() => setIsResolvingGuest(false), 8000);
+
         // 3. ĐỒNG BỘ VỚI SERVER: lấy thông tin của chính khách này + ngày giờ mặc định
         const syncGuestDataFromSheet = () => {
           if (isFetchingSheetRef.current) return;
@@ -390,6 +435,8 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             })
             .finally(() => {
               isFetchingSheetRef.current = false;
+              setIsResolvingGuest(false);
+              window.clearTimeout(resolveTimeout);
             });
         };
 
@@ -510,6 +557,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } catch (err) {
       console.warn("Could not process guest context:", err);
+      setIsResolvingGuest(false);
     }
   }, []);
 
@@ -586,6 +634,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         currentSlug,
         isOwner,
         hasCustomGuest: Boolean(guestName.trim()),
+        isResolvingGuest,
         isRegisteredGuest,
         canUpload,
         pronounMode,
