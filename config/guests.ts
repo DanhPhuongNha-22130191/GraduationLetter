@@ -1,5 +1,9 @@
 import { GuestPronounMode } from "@/context/guest-context";
 import { graduationConfig } from "@/config/graduation";
+import { parseSheetDate, normalizeSheetDate } from "@/config/date-utils";
+
+// Đổi key (v2) để loại bỏ cache cũ trên trình duyệt khách còn chứa ngày sai (30/10)
+const GUEST_CACHE_KEY = "cached_guest_registry_v2";
 
 export interface GuestProfile {
   slug?: string;
@@ -22,7 +26,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Hành trình 4 năm đại học cuối cùng cũng đã khép lại trọn vẹn. Cảm ơn bản thân vì đã luôn nỗ lực không ngừng nghỉ, và biết ơn gia đình, thầy cô cùng tất cả những người bạn tuyệt vời đã luôn đồng hành bên Nhã! ✨🎓",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   giabao: {
@@ -31,7 +34,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Gia Bảo ơi! Qua dự lễ tốt nghiệp và chụp cùng tui vài kiểu ảnh kỷ niệm nhen 🥹 Chớp mắt một cái là tụi mình đã đi hết 4 năm đại học rồi. Bạn bè thì nhiều nhưng tri kỷ cùng đồng hành chẳng có mấy ai. Ngày đặc biệt này có mặt m thì niềm vui của t mới trọn vẹn được á! Hẹn gặp m nhaaa 🤍🎓",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   thaovan: {
@@ -40,7 +42,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Thảo Vân ơi, ngày trọng đại của t nhất định m phải có mặt đó nha 🥹 Cảm ơn m suốt những năm tháng qua luôn là người bạn đồng hành số một, chở t đi khắp nơi không ngại nắng mưa. Nhẩm lại tụi mình quen nhau cũng gần 10 năm rồi đó má, nhanh ghê luôn! Bạn thân cả đời đếm trên đầu ngón tay thôi nên hôm tốt nghiệp phải cùng t chụp thật nhiều tấm hình kỷ niệm nhen 🤍 T tốt nghiệp xong đi làm giàu là m chuẩn bị làm tài xế VIP của t đó nhen =))) Hẹn m nhaaa ✨🎓",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   nhuquynh: {
@@ -49,7 +50,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Quỳnh ơiii, qua chung vui tốt nghiệp và chụp hình với t nhaaa 🥹 Thoắt cái là hết 4 năm đại học rồi, không biết kịp hít thở không khí dân IT bao lâu hay lại nhận lệnh lên đường phục vụ Tổ quốc nữa =))) Nên hôm nay có dịp là phải chụp lưu niệm cho đã nhen! Lỡ t đi NVQS thiệt thì m ở ngoài ráng cày lên sếp bự, đợi t về dắt t apply ké chứ 2 năm không gõ code chắc quên hết trơn haha. Nhất định phải qua với t nhen 🤍✨",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   nhutquang: {
@@ -58,7 +58,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Nhựt Quang ơii! Ngày t chính thức nhận bằng kỹ sư m không qua là giận thiệt không thèm nhìn mặt luôn đó nha 😤 Đùa chứ 4 năm đại học trôi qua lẹ quá, có m chung vui chụp tấm hình kỷ niệm thì mới trọn vẹn được. Sắp xếp thời gian qua với t nha người anh em ơi! 🎓📸",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   myxuyen: {
@@ -67,7 +66,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Anh Xuyên ơi! Hôm tốt nghiệp của em, anh nhớ ghé qua trường chung vui và chụp cùng em vài tấm hình kỷ niệm thật đẹp nhaaa 🎓✨ Ngày quan trọng này có anh đến chung vui là em quý và vui lắm luôn á!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   huutri: {
@@ -76,7 +74,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Hữu Trí ơi! Ngày Nhã tốt nghiệp, Trí nhớ sắp xếp qua trường chụp với Nhã vài bức hình lưu niệm nhen 🥹 Bạn bè ở đây cũng không có nhiều, có Trí đến chung vui và sẻ chia khoảnh khắc này cùng Nhã thì quý giá biết bao. Hẹn gặp Trí hôm đó nhaaa! ✨🎓",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   tanthanh: {
@@ -85,7 +82,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Tấn Thành ơii! Ngày lễ tốt nghiệp của anh, em nhớ qua trường chụp ảnh kỷ niệm với anh nhen 🥹 4 năm đại học cuối cùng cũng cán đích rồi, có em ghé chung vui là ngày hôm đó thêm rực rỡ và ý nghĩa hơn bao giờ hết luôn á. Nhất định phải qua đó nhaaa! 🎓🤍",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   minhkhoi: {
@@ -94,7 +90,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Pỏm ơii! Ngày t nhận bằng tốt nghiệp m nhớ sắp xếp qua trường chụp với t vài tấm ảnh kỷ niệm nhen 📸✨ 4 năm thanh xuân trôi qua nhanh như một cái chớp mắt, ngày này có m cùng chung vui và ghi lại khoảnh khắc là vui hết sảy luôn á. Hẹn gặp m nhaaa!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   tuankiet: {
@@ -103,7 +98,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Kiệt ơi! Hôm lễ tốt nghiệp của Nhã, Kiệt nhớ ghé trường cùng chung vui và chụp với Nhã mấy kiểu ảnh kỷ niệm nhen 🎓✨ Bao nhiêu năm nỗ lực mới có ngày này, có Kiệt đến chia vui là Nhã trân quý và vui lắm luôn á. Hẹn gặp Kiệt hôm đó nha!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   hien: {
@@ -112,7 +106,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Minh Hiển ơi! Ngày Nhã chính thức nhận bằng tốt nghiệp, Hiển nhớ dành chút thời gian ghé qua trường chụp với Nhã vài tấm hình kỷ niệm nha 📸✨ Có bạn bè thân thiết đến chung vui trong ngày này thì khoảnh khắc tốt nghiệp mới thật sự trọn vẹn. Rất mong được đón tiếp Hiển nhen!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   nhuy: {
@@ -121,7 +114,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "friend",
     customMessage: "Ý ơi! Ngày lễ tốt nghiệp của Nhã, Ý nhớ ghé qua trường chung vui và chụp cùng Nhã những tấm hình kỷ niệm thật xinh xắn nhaaa 🎓🌸 Sau bao nhiêu năm tháng miệt mài học tập, có Ý cùng chia sẻ niềm vui trong ngày đặc biệt này là Nhã quý lắm luôn á. Hẹn gặp Ý nha!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   quy: {
@@ -130,7 +122,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "senior",
     customMessage: "Anh Quý ơi! Em chính thức tốt nghiệp đại học rồi nè anh 🎓📸 Ngày lễ nhận bằng của em, anh Quý nhớ sắp xếp chút thời gian ghé qua trường chụp với em vài tấm hình kỷ niệm nha anh. Có người anh thân thiết đến chung vui là niềm vinh hạnh và vui vẻ lớn của em á!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   utmy: {
@@ -139,7 +130,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "senior",
     customMessage: "Út iu dấu ơi! Cuối cùng ngày em cầm tấm bằng tốt nghiệp trên tay cũng đã tới rồi nè 🎉✨ Út nhớ ghé qua trường chụp thật nhiều hình kỷ niệm đẹp với em nhaaa. Cảm ơn Út thời gian qua luôn yêu thương và ủng hộ em hết mình. Mãi yêu Út, hẹn gặp Út ngày tốt nghiệp nhen! 🤍🎓",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   anhthi: {
@@ -148,7 +138,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "senior",
     customMessage: "Anh Hai ơi! Hành trình 4 năm đại học của em trai đã chính thức về đích rồi nè 🎓✨ Ngày em nhận bằng tốt nghiệp, Anh Hai nhớ sắp xếp thời gian ghé qua trường chung vui và chụp với em vài kiểu ảnh kỷ niệm nha. Sự có mặt của Anh Hai là niềm tự hào và động lực rất lớn đối với em á!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   anhnam: {
@@ -157,7 +146,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "senior",
     customMessage: "Anh Hai ơi! Ngày em nhận bằng tốt nghiệp đại học, Anh Hai nhớ chở Chị Hai cùng qua trường chung vui và chụp với em những bức ảnh kỷ niệm thật đẹp nhaaa 🎓✨ Có cả Anh Hai và Chị Hai đến dự là ngày đặc biệt của em sẽ trọn vẹn và ấm áp lắm luôn á!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   benhi: {
@@ -166,7 +154,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "senior",
     customMessage: "Chị Hai Nhi ơi! Em Nhã đã chính thức hoàn thành chặng đường đại học và nhận bằng tốt nghiệp rồi nè 🎓🎉 Chị Hai nhớ ghé trường chụp hình kỷ niệm cùng em nha. Có Chị Hai sang chung vui là ngày tốt nghiệp của em thêm rộn ràng và vui vẻ lắm luôn á!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   bean: {
@@ -175,7 +162,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "junior",
     customMessage: "Bé An ơi! Anh Hai Nhã đã chính thức tốt nghiệp đại học rồi nè 🎓🎉 Bé An nhớ lên trường chung vui và chụp với anh Hai thật nhiều tấm hình kỷ niệm thật đẹp nhen. Cố gắng học giỏi sau này cũng nhận bằng rực rỡ như anh Hai nha!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   bame: {
@@ -184,7 +170,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "elder",
     customMessage: "Kính gửi Ba Mẹ kính yêu của con! Hành trình 4 năm đại học của con đã chính thức hoàn thành, và tấm bằng kỹ sư hôm nay là món quà tri ân sâu sắc nhất con dành tặng Ba Mẹ. Con kính mời Ba Mẹ cùng em gái Phương Anh lên dự lễ tốt nghiệp để cùng con ghi lại những khoảnh khắc gia đình thiêng liêng và tự hào nhất. Sự hiện diện của Ba Mẹ là niềm hạnh phúc lớn nhất của cuộc đời con! 🤍🎓",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   bac5: {
@@ -193,7 +178,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "elder",
     customMessage: "Dạ con kính chào Út và Dượng 5! Hôm nay con đã hoàn thành xong chương trình đại học và chính thức nhận bằng tốt nghiệp 🎓✨ Con kính mời Út và Dượng Năm sắp xếp thời gian lên trường chung vui và chụp với con vài tấm hình kỷ niệm. Sự hiện diện và lời chúc của Út, Dượng là niềm vinh hạnh rất lớn đối với con ạ!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   canha: {
@@ -202,7 +186,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "elder",
     customMessage: "Dạ con kính gửi Cả Nhà Mình! Trải qua 4 năm miệt mài học tập, con đã chính thức tốt nghiệp đại học. Con kính mời cả gia đình mình cùng lên trường tham dự buổi lễ và chụp những bức hình kỷ niệm thật ý nghĩa cùng con. Ngày trọng đại này có đầy đủ cả nhà bên cạnh là điều tuyệt vời và ấm áp nhất đối với con ạ! 🎓🤍",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   di9: {
@@ -211,7 +194,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "elder",
     customMessage: "Dạ con kính chào Dì và Dượng 9! Con đã hoàn thành 4 năm đại học và chính thức nhận tấm bằng kỹ sư 🎓✨ Con kính mời Dì 9 và Dượng 9 dành chút thời gian ghé qua trường chung vui và chụp ảnh lưu niệm cùng con trong ngày đặc biệt này ạ. Con cảm ơn Dì và Dượng rất nhiều!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   di3: {
@@ -220,7 +202,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "elder",
     customMessage: "Dạ con kính chào Dì Ba! Con đã chính thức tốt nghiệp đại học rồi ạ 🎓✨ Con kính mời Dì Ba sắp xếp thời gian lên trường tham dự buổi lễ và chụp cùng con vài tấm ảnh kỷ niệm nha Dì. Sự hiện diện của Dì Ba là niềm vui và vinh hạnh lớn đối với con ạ!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   diut: {
@@ -229,7 +210,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "elder",
     customMessage: "Dạ con kính chào Dì Út! Hành trình đại học của con đã khép lại bằng tấm bằng tốt nghiệp 🎓🎉 Con kính mời Dì Út lên trường chung vui và chụp với con những tấm hình kỷ niệm thật đẹp trong ngày này nha Dì. Con mong được đón tiếp Dì Út lắm ạ!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
   cau5: {
@@ -238,7 +218,6 @@ export const defaultGuestRegistry: Record<string, GuestProfile> = {
     mode: "elder",
     customMessage: "Dạ con kính chào Cậu Năm! Con đã chính thức hoàn thành 4 năm học và nhận bằng tốt nghiệp kỹ sư 🎓✨ Con kính mời Cậu Năm bớt chút thời gian lên trường tham dự và chụp với con những bức ảnh kỷ niệm ý nghĩa. Sự có mặt của Cậu Năm là niềm tự hào và vinh hạnh rất lớn cho con ạ!",
     customTime: "10:00 - 11:30 sáng",
-    customDate: "30/10/2026",
     canUpload: true,
   },
 };
@@ -301,25 +280,11 @@ export function parseDateTimeToTimestamp(dateStr?: string, timeStr?: string): nu
   let hours = defaultTarget.getHours();
   let minutes = defaultTarget.getMinutes();
 
-  if (dateStr && dateStr.trim()) {
-    // Google Sheets có thể trả về dạng "30/10/2026 00:00:00" — strip phần giờ thừa
-    const trimmed = dateStr.trim().replace(/\s+\d{1,2}:\d{2}(:\d{2})?$/, "").trim();
-    const matchDMY = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-    const matchYMD = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-    const matchDM = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
-
-    if (matchDMY) {
-      day = parseInt(matchDMY[1], 10);
-      month = parseInt(matchDMY[2], 10) - 1;
-      year = parseInt(matchDMY[3], 10);
-    } else if (matchYMD) {
-      year = parseInt(matchYMD[1], 10);
-      month = parseInt(matchYMD[2], 10) - 1;
-      day = parseInt(matchYMD[3], 10);
-    } else if (matchDM) {
-      day = parseInt(matchDM[1], 10);
-      month = parseInt(matchDM[2], 10) - 1;
-    }
+  const parsed = parseSheetDate(dateStr);
+  if (parsed) {
+    day = parsed.d;
+    month = parsed.m - 1;
+    year = parsed.y;
   }
 
   if (timeStr && timeStr.trim()) {
@@ -354,8 +319,8 @@ export function getEarliestGraduationDateTime(
   if (!targetRegistry && typeof window !== "undefined") {
     try {
       const cached =
-        localStorage.getItem("cached_guest_registry") ||
-        sessionStorage.getItem("cached_guest_registry");
+        localStorage.getItem(GUEST_CACHE_KEY) ||
+        sessionStorage.getItem(GUEST_CACHE_KEY);
       if (cached) {
         targetRegistry = JSON.parse(cached);
       }
@@ -396,8 +361,8 @@ export function getCachedGuestSync(slug: string): GuestProfile | null {
   const cleanSlug = slug.trim().toLowerCase().replace(/[-_]/g, "");
   try {
     const raw =
-      localStorage.getItem("cached_guest_registry") ||
-      sessionStorage.getItem("cached_guest_registry");
+      localStorage.getItem(GUEST_CACHE_KEY) ||
+      sessionStorage.getItem(GUEST_CACHE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === "object" && parsed[cleanSlug]) {
@@ -414,7 +379,7 @@ export function getCachedGuestSync(slug: string): GuestProfile | null {
  * Tải danh sách khách mời từ Google Sheet (Sheet 3 / KhachMoi)
  */
 export async function fetchGuestsFromSheet(forceRefresh = false): Promise<Record<string, GuestProfile>> {
-  const cacheKey = "cached_guest_registry";
+  const cacheKey = GUEST_CACHE_KEY;
 
   // 1. Kiểm tra cache LocalStorage / SessionStorage nếu không yêu cầu làm mới dữ liệu
   if (!forceRefresh && typeof window !== "undefined") {
@@ -549,7 +514,7 @@ export async function fetchGuestsFromSheet(forceRefresh = false): Promise<Record
               mode,
               customMessage: customMessage ? String(customMessage).trim() : undefined,
               customTime: customTime ? String(customTime).trim() : undefined,
-              customDate: customDate ? String(customDate).trim() : undefined,
+              customDate: normalizeSheetDate(customDate),
               canUpload,
               specialPhoto: specialPhoto ? String(specialPhoto).trim() : undefined,
             };

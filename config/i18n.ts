@@ -1,3 +1,5 @@
+import { parseSheetDate } from "@/config/date-utils";
+
 export type Language = "vi" | "en" | "km";
 
 /**
@@ -75,37 +77,11 @@ export function formatLocalizedDate(dateStr?: string, lang: Language = "vi"): st
   if (!dateStr) return "";
   const trimmed = dateStr.trim();
 
-  let d = 0, m = 0, y = 0;
-
-  // Format DD/MM/YYYY or DD-MM-YYYY (và "DD/MM/YYYY HH:MM:SS" từ Google Sheets)
-  const cleanedDate = trimmed.replace(/\s+\d{1,2}:\d{2}(:\d{2})?$/, "").trim();
-  const matchDMY = cleanedDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  // Format YYYY-MM-DD
-  const matchYMD = cleanedDate.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-  // Format DD/MM
-  const matchDM = cleanedDate.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
-
-  if (matchDMY) {
-    d = parseInt(matchDMY[1], 10);
-    m = parseInt(matchDMY[2], 10);
-    y = parseInt(matchDMY[3], 10);
-  } else if (matchYMD) {
-    y = parseInt(matchYMD[1], 10);
-    m = parseInt(matchYMD[2], 10);
-    d = parseInt(matchYMD[3], 10);
-  } else if (matchDM) {
-    d = parseInt(matchDM[1], 10);
-    m = parseInt(matchDM[2], 10);
-    y = 2026;
-  } else {
-    // Hỗ trợ tự động đọc chuỗi Date chuẩn của JavaScript / Google Sheets (ví dụ: Mon Jan 18 2027...)
-    const parsedDate = new Date(trimmed);
-    if (!isNaN(parsedDate.getTime())) {
-      d = parsedDate.getDate();
-      m = parsedDate.getMonth() + 1;
-      y = parsedDate.getFullYear();
-    }
-  }
+  // Dùng chung bộ parse không phụ thuộc múi giờ (ISO UTC từ Sheet được quy về giờ VN)
+  const parsed = parseSheetDate(trimmed);
+  const d = parsed?.d ?? 0;
+  const m = parsed?.m ?? 0;
+  const y = parsed?.y ?? 0;
 
   if (d > 0 && m >= 1 && m <= 12 && y > 0) {
     const dateObj = new Date(y, m - 1, d);

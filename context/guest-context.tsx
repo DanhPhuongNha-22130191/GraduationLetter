@@ -8,6 +8,7 @@ import {
   getEarliestGraduationDateTime,
 } from "@/config/guests";
 import { graduationConfig } from "@/config/graduation";
+import { normalizeSheetDate } from "@/config/date-utils";
 import { Language, translations } from "@/config/i18n";
 import { getVisitorId, visitorNote } from "@/config/visitor";
 
@@ -378,8 +379,9 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
               // Cập nhật ngày giờ sớm nhất từ danh sách Sheet
               const dynamicEarliest = getEarliestGraduationDateTime(dynamicRegistry);
-              if (dynamicEarliest.earliestDate) setDefaultEarliestDate(dynamicEarliest.earliestDate);
-              if (dynamicEarliest.earliestTime) setDefaultEarliestTime(dynamicEarliest.earliestTime);
+              // Luôn ghi đè (kể cả undefined) để không giữ lại ngày cũ khi Sheet đã đổi/xóa
+              setDefaultEarliestDate(dynamicEarliest.earliestDate);
+              setDefaultEarliestTime(dynamicEarliest.earliestTime);
 
               let dynamicProfile: GuestProfile | null = null;
               if (activeSlug) {
@@ -397,6 +399,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 setPronounModeState(dynamicProfile.mode);
                 setCustomMessageState(dynamicProfile.customMessage);
                 setCustomTimeState(dynamicProfile.customTime);
+                setCustomDateState(dynamicProfile.customDate);
                 try {
                   sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
                   sessionStorage.setItem("invitation_guest_is_registered", "true");
@@ -612,13 +615,8 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Ngày từ DB (Google Sheet) lỗi/sai định dạng -> bỏ qua để dùng ngày mặc định 04/12/2026 (graduationConfig)
-  const isValidDateStr = (s?: string): s is string =>
-    !!s && /^(\d{1,2}[/-]\d{1,2}([/-]\d{4})?|\d{4}[/-]\d{1,2}[/-]\d{1,2})/.test(s.trim());
-  const effectiveDate = isValidDateStr(customDate)
-    ? customDate
-    : isValidDateStr(defaultEarliestDate)
-      ? defaultEarliestDate
-      : undefined;
+  // Chuẩn hóa về "DD/MM/YYYY" theo giờ VN (xử lý cả ISO UTC từ Sheet / sessionStorage cũ)
+  const effectiveDate = normalizeSheetDate(customDate) ?? normalizeSheetDate(defaultEarliestDate);
   const effectiveTime = customTime || defaultEarliestTime;
 
   const cleanSlug = (currentSlug || "").trim().toLowerCase().replace(/[-_]/g, "");

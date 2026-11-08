@@ -6,6 +6,7 @@ import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { useGuest } from "@/context/guest-context";
 import { formatLocalizedDate, formatLocalizedTime } from "@/config/i18n";
+import { parseSheetDate } from "@/config/date-utils";
 
 interface TimeLeft {
   days: number;
@@ -27,24 +28,11 @@ export function parseCustomTargetDate(customDate?: string, customTime?: string):
 
   // 1. Phân tích customDate (hỗ trợ DD/MM/YYYY, YYYY-MM-DD, DD-MM-YYYY)
   // Google Sheets có thể trả về dạng "30/10/2026 00:00:00" — strip phần giờ thừa
-  if (customDate && customDate.trim()) {
-    const trimmedDate = customDate.trim().replace(/\s+\d{1,2}:\d{2}(:\d{2})?$/, "").trim();
-    const matchDMY = trimmedDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-    const matchYMD = trimmedDate.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-    const matchDM = trimmedDate.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
-
-    if (matchDMY) {
-      day = parseInt(matchDMY[1], 10);
-      month = parseInt(matchDMY[2], 10) - 1;
-      year = parseInt(matchDMY[3], 10);
-    } else if (matchYMD) {
-      year = parseInt(matchYMD[1], 10);
-      month = parseInt(matchYMD[2], 10) - 1;
-      day = parseInt(matchYMD[3], 10);
-    } else if (matchDM) {
-      day = parseInt(matchDM[1], 10);
-      month = parseInt(matchDM[2], 10) - 1;
-    }
+  const parsed = parseSheetDate(customDate);
+  if (parsed) {
+    day = parsed.d;
+    month = parsed.m - 1;
+    year = parsed.y;
   }
 
   // 2. Phân tích customTime (hỗ trợ "09:30 - 11:30 sáng", "14:00 chiều", "10:00 AM"...)
