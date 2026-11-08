@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { graduationConfig } from "@/config/graduation";
-import { fetchGuestsFromSheet, type GuestProfile } from "@/config/guests";
+import type { GuestProfile } from "@/config/guests";
 import { normalizeSheetDate } from "@/config/date-utils";
 import { generateGuestCode, isAdminRequest } from "@/lib/admin-auth";
+import { MAX_DEVICES_PER_LINK, deviceCounts, listGuestsServer, resetDevices } from "@/lib/guests-server";
+import { getScriptUrl, isSheetConfigured, sheetPostInit } from "@/lib/sheet";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,35 +16,46 @@ const unauthorized = () =>
 
 const cleanKey = (s: string) => s.trim().toLowerCase().replace(/[-_]/g, "");
 
-/** Danh sách khách (mỗi khách 1 dòng, bỏ các khóa phụ tra theo tên) */
-async function listGuests(): Promise<GuestProfile[]> {
-  const registry = await fetchGuestsFromSheet(true);
-  const seen = new Set<string>();
-  const list: GuestProfile[] = [];
-  for (const p of Object.values(registry)) {
-    const key = cleanKey(p.slug || p.name);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    list.push(p);
-  }
-  return list;
-}
+/** Danh sách khách mới nhất từ Sheet */
+const listGuests = (): Promise<GuestProfile[]> => listGuestsServer(true);
 
 export async function GET(request: Request) {
   if (!isAdminRequest(request)) return unauthorized();
   try {
-    const guests = await listGuests();
-    return NextResponse.json({ success: true, guests }, { headers: { "Cache-Control": "no-store" } });
+    const [guests, devices] = await Promise.all([listGuests(), deviceCounts()]);
+    const withDevices = guests.map((g) => ({ ...g, devices: devices[cleanKey(g.slug || "")] || 0 }));
+    return NextResponse.json(
+      { success: true, guests: withDevices, maxDevices: MAX_DEVICES_PER_LINK },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (err) {
     console.error("[Admin guests GET]", err);
     return NextResponse.json({ success: false, error: "Không tải được danh sách khách" }, { status: 502 });
   }
 }
 
+/** Mở khoá link: xoá các thiết bị đã ghi nhận để khách mở lại được (vd khách đổi điện thoại) */
+export async function PATCH(request: Request) {
+  if (!isAdminRequest(request)) return unauthorized();
+  let slug = "";
+  try {
+    const body = await request.json();
+    slug = typeof body?.slug === "string" ? body.slug.trim() : "";
+  } catch {
+    // ignore
+  }
+  if (!slug) return NextResponse.json({ success: false, error: "Thiếu mã khách" }, { status: 400 });
+  const ok = await resetDevices(slug);
+  return NextResponse.json(
+    ok ? { success: true } : { success: false, error: "Không mở khoá được — kiểm tra Apps Script đã có RESET_DEVICES" },
+    { status: ok ? 200 : 502 }
+  );
+}
+
 export async function POST(request: Request) {
   if (!isAdminRequest(request)) return unauthorized();
-  if (!graduationConfig.googleScriptUrl) {
-    return NextResponse.json({ success: false, error: "Chưa cấu hình Google Script URL" }, { status: 500 });
+  if (!isSheetConfigured()) {
+    return NextResponse.json({ success: false, error: "Chưa cấu hình GOOGLE_SCRIPT_URL trên Vercel" }, { status: 500 });
   }
 
   let body: Record<string, unknown> = {};
@@ -91,12 +103,7 @@ export async function POST(request: Request) {
   };
 
   try {
-    const res = await fetch(graduationConfig.googleScriptUrl, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
+    const res = await fetch(getScriptUrl(), sheetPostInit(payload));
     if (!res.ok) {
       return NextResponse.json(
         { success: false, error: `Google Script trả về lỗi HTTP ${res.status}` },

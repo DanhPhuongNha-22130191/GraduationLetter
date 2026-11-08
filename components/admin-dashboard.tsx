@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, Check, Clock, RefreshCw, Table2, X, MousePointerClick, Eye, Users, UserCheck } from "lucide-react";
+import { Pagination, usePagination, useListAnchor } from "@/components/admin-pagination";
+import { AlertTriangle, BarChart3, Check, Clock, RefreshCw, Table2, X, MousePointerClick, Eye, Users, UserCheck } from "lucide-react";
 
 /* ───────────────────────────── Types ───────────────────────────── */
 
 type Mode = "friend" | "elder" | "senior" | "junior";
 interface RawView { time: string; viewer: string; role: string; note: string }
 interface RawRsvp { time: string; name: string; status: string; quantity: number; message: string }
-interface RawGuest { slug?: string; name: string; mode: Mode }
+interface RawGuest { slug?: string; name: string; mode: Mode; devices?: number }
 interface StatsPayload {
   success: boolean;
   views: RawView[];
@@ -26,6 +27,8 @@ interface ViewEvent {
   role: string;
   note: string;
   isClick: boolean;
+  /** Link bị mở trên thiết bị lạ (quá giới hạn thiết bị) */
+  isAlert: boolean;
   isAnon: boolean;
   personKey: string;
   ip?: string;
@@ -81,6 +84,7 @@ function osFamily(s: string): string {
 
 function toEvent(v: RawView): ViewEvent {
   const isClick = v.viewer === "Lượt bấm link" || /^Bấm link \(server\)/.test(v.note);
+  const isAlert = /Thiết bị lạ/.test(v.role) || /^⚠ Link của/.test(v.note);
   const isAnon = /^Khách vãng lai/i.test(v.viewer);
   const vid = (v.viewer + " " + v.note).match(/V-[A-Z0-9]{4,}/)?.[0];
   const ev: ViewEvent = {
@@ -89,6 +93,7 @@ function toEvent(v: RawView): ViewEvent {
     role: isAnon ? "Mời chung" : v.role || "Không rõ",
     note: v.note,
     isClick,
+    isAlert,
     isAnon,
     personKey: isAnon ? `anon:${vid ?? v.note}` : `name:${normName(v.viewer)}`,
   };
@@ -168,6 +173,16 @@ interface ColumnDatum { key: string; label: string; value: number; tip: string }
 function ColumnChart({ data, height = 200, unit = "lượt" }: { data: ColumnDatum[]; height?: number; unit?: string }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
+
+  // Điện thoại: chạm ra ngoài biểu đồ thì ẩn tooltip
+  useEffect(() => {
+    if (hover === null) return;
+    const onTouch = (e: TouchEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setHover(null);
+    };
+    document.addEventListener("touchstart", onTouch, { passive: true });
+    return () => document.removeEventListener("touchstart", onTouch);
+  }, [hover, ref]);
 
   const padL = 32, padR = 8, padT = 18, padB = 24;
   const innerW = Math.max(0, width - padL - padR);
@@ -324,7 +339,7 @@ function ChartCard({
         <button
           type="button"
           onClick={() => setAsTable((v) => !v)}
-          className="shrink-0 inline-flex items-center gap-1 text-[11px] text-ivory/60 hover:text-gold cursor-pointer"
+          className="shrink-0 inline-flex items-center gap-1 -m-2 p-2 text-xs sm:text-[11px] text-ivory/60 hover:text-gold cursor-pointer"
           aria-pressed={asTable}
         >
           {asTable ? <BarChart3 className="w-3.5 h-3.5" /> : <Table2 className="w-3.5 h-3.5" />}
@@ -439,7 +454,22 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
     const inRange = (e: { t: VnTime | null }) => (range === "all" ? true : !!e.t && e.t.day >= startDay);
 
     const events = all.filter(inRange);
-    const opens = events.filter((e) => !e.isClick);
+    const opens = events.filter((e) => !e.isClick && !e.isAlert);
+    // Cảnh báo: gom theo khách
+    const alertMap = new Map<string, { name: string; count: number; last: VnTime | null; detail: string }>();
+    events
+      .filter((e) => e.isAlert)
+      .forEach((e) => {
+        const cur = alertMap.get(e.viewer) || { name: e.viewer, count: 0, last: null, detail: "" };
+        cur.count++;
+        if (e.t && (!cur.last || e.t.ts > cur.last.ts)) {
+          cur.last = e.t;
+          // note: "⚠ Link của X bị mở ... · IP 1.2.3.4 · iPhone iOS 17 · Zalo" -> phần thiết bị
+          cur.detail = e.note.split(" · ").slice(2).join(" · ");
+        }
+        alertMap.set(e.viewer, cur);
+      });
+    const alerts = [...alertMap.values()].sort((a, b) => (b.last?.ts || 0) - (a.last?.ts || 0));
     const clicks = events.filter((e) => e.isClick);
 
     // Theo ngày
@@ -501,6 +531,7 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
         return {
           name: g.name,
           slug: g.slug || "",
+          devices: g.devices || 0,
           mode: g.mode,
           opens: st?.count || 0,
           last: st?.last || null,
@@ -513,11 +544,10 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
 
     const recent = [...events]
       .filter((e) => e.t)
-      .sort((a, b) => (b.t!.ts || 0) - (a.t!.ts || 0))
-      .slice(0, 15);
+      .sort((a, b) => (b.t!.ts || 0) - (a.t!.ts || 0));
 
     return {
-      opens, clicks, byDay, byHour, byRole, byViewer, byOs, byApp, uniqueViewers,
+      opens, clicks, alerts, byDay, byHour, byRole, byViewer, byOs, byApp, uniqueViewers,
       rsvpList, yes, yesPeople, guestRows, openedGuests, recent,
     };
   }, [data, range]);
@@ -529,20 +559,27 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
     return s.guestRows;
   }, [s, guestFilter]);
 
+  // Phân trang 10 dòng; về trang 1 khi đổi bộ lọc / khoảng thời gian
+  const EMPTY: ViewEvent[] = useMemo(() => [], []);
+  const statusAnchor = useListAnchor<HTMLHeadingElement>();
+  const recentAnchor = useListAnchor<HTMLElement>();
+  const statusPager = usePagination(filteredGuests, `${guestFilter}|${range}`);
+  const recentPager = usePagination(s?.recent ?? EMPTY, range);
+
   const RANGE_LABEL: Record<Range, string> = { "7": "7 ngày", "30": "30 ngày", all: "Tất cả" };
 
   return (
     <div className="space-y-4">
       {/* Bộ lọc — một hàng phía trên biểu đồ */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="inline-flex rounded-xl border border-gold/30 p-0.5 bg-emerald-deep" role="group" aria-label="Khoảng thời gian">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex-1 sm:flex-none grid grid-cols-3 sm:inline-flex rounded-xl border border-gold/30 p-0.5 bg-emerald-deep" role="group" aria-label="Khoảng thời gian">
           {(["7", "30", "all"] as Range[]).map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => setRange(r)}
               aria-pressed={range === r}
-              className={`px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-colors ${
+              className={`min-h-10 sm:min-h-0 px-3 py-1.5 text-sm sm:text-xs rounded-lg cursor-pointer transition-colors ${
                 range === r ? "bg-gold text-emerald-deep font-semibold" : "text-ivory/70 hover:text-gold"
               }`}
             >
@@ -552,10 +589,12 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
         </div>
         <button
           onClick={load}
-          className="inline-flex items-center gap-1.5 text-xs text-ivory/70 hover:text-gold cursor-pointer"
+          aria-label="Tải lại số liệu"
+          className="inline-flex items-center justify-center gap-1.5 min-h-10 min-w-10 px-2 text-xs text-ivory/70 hover:text-gold cursor-pointer whitespace-nowrap"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          {data ? `Cập nhật ${new Date(data.fetchedAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}` : "Tải"}
+          <RefreshCw className={`w-4 h-4 sm:w-3.5 sm:h-3.5 ${loading ? "animate-spin" : ""}`} />
+          <span className="hidden sm:inline">Cập nhật </span>
+          {data ? new Date(data.fetchedAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "Tải"}
         </button>
       </div>
 
@@ -568,6 +607,36 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
         <p className="text-center text-sm text-ivory/60 py-10">{loading ? "Đang tải dữ liệu từ Sheet…" : "Chưa có dữ liệu"}</p>
       ) : (
         <>
+          {s.alerts.length > 0 && (
+            <section
+              role="alert"
+              className="rounded-2xl border border-[#ec835a]/60 bg-[#ec835a]/10 p-4 sm:p-5"
+            >
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-ivory">
+                <AlertTriangle className="w-4 h-4 text-[#ec835a] shrink-0" />
+                Link bị mở trên thiết bị lạ ({s.alerts.length} khách)
+              </h3>
+              <p className="text-xs text-ivory/60 mt-1">
+                Có người mở link riêng trên thiết bị thứ 3 trở đi — họ chỉ thấy thiệp chung, không thấy tên và lời nhắn.
+                Nếu đó là chính khách (vd đổi điện thoại), vào tab Danh sách → Mở khoá.
+              </p>
+              <ul className="mt-3 divide-y divide-white/10">
+                {s.alerts.map((a) => (
+                  <li key={a.name} className="py-2 flex items-start justify-between gap-3 text-xs">
+                    <div className="min-w-0">
+                      <div className="text-sm text-ivory font-medium truncate">{a.name}</div>
+                      <div className="text-ivory/50 truncate">{a.detail || "Thiết bị không rõ"}</div>
+                    </div>
+                    <div className="shrink-0 text-right text-ivory/70" style={{ fontVariantNumeric: "tabular-nums" }}>
+                      <div>{a.count} lần</div>
+                      <div className="text-ivory/40">{a.last?.label}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <StatTile hero icon={<Eye className="w-3.5 h-3.5" />} label="Lượt mở thiệp" value={s.opens.length} sub={`${s.uniqueViewers} người xem khác nhau`} />
             <StatTile
@@ -651,9 +720,9 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
 
           {/* Tình trạng từng khách */}
           <section className="rounded-2xl bg-emerald-deep border border-gold/30 p-4 sm:p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <h3 className="text-sm font-semibold text-ivory">Tình trạng từng khách mời</h3>
-              <div className="inline-flex rounded-lg border border-gold/30 p-0.5" role="group" aria-label="Lọc khách">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+              <h3 ref={statusAnchor} className="text-sm font-semibold text-ivory scroll-mt-20">Tình trạng từng khách mời</h3>
+              <div className="grid grid-cols-3 sm:inline-flex rounded-lg border border-gold/30 p-0.5" role="group" aria-label="Lọc khách">
                 {([
                   ["all", `Tất cả (${s.guestRows.length})`],
                   ["opened", `Đã mở (${s.openedGuests})`],
@@ -664,7 +733,7 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
                     type="button"
                     onClick={() => setGuestFilter(k)}
                     aria-pressed={guestFilter === k}
-                    className={`px-2.5 py-1 text-[11px] rounded-md cursor-pointer ${
+                    className={`min-h-10 sm:min-h-0 px-2.5 py-1 text-xs sm:text-[11px] whitespace-nowrap rounded-md cursor-pointer ${
                       guestFilter === k ? "bg-gold text-emerald-deep font-semibold" : "text-ivory/70 hover:text-gold"
                     }`}
                   >
@@ -673,8 +742,39 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
                 ))}
               </div>
             </div>
-            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-              <table className="w-full text-xs min-w-[520px]">
+            {/* Điện thoại: dạng thẻ, không phải kéo ngang */}
+            <ul className="sm:hidden divide-y divide-white/5">
+              {statusPager.pageItems.map((g) => (
+                <li key={g.slug || g.name} className="py-2.5 flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-ivory font-medium truncate">{g.name}</div>
+                    <div className="text-xs text-ivory/50 truncate">
+                      {MODE_SHORT[g.mode] || g.mode} · {g.last ? `Lần cuối ${g.last.label}` : "Chưa mở"} · {g.devices}/2 thiết bị
+                    </div>
+                    {g.rsvp && (
+                      <div className="text-xs mt-0.5 inline-flex items-center gap-1">
+                        {g.rsvp === "yes" ? (
+                          <Check className="w-3.5 h-3.5 text-[#4fd14f]" />
+                        ) : g.rsvp === "no" ? (
+                          <X className="w-3.5 h-3.5 text-[#e66767]" />
+                        ) : null}
+                        <span className="text-ivory/70">RSVP: {g.rsvpText}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className={`text-lg font-semibold ${g.opens ? "text-ivory" : "text-ivory/30"}`} style={{ fontVariantNumeric: "tabular-nums" }}>
+                      {g.opens}
+                    </div>
+                    <div className="text-[10px] text-ivory/40">lượt mở</div>
+                  </div>
+                </li>
+              ))}
+              {filteredGuests.length === 0 && <li className="py-4 text-center text-sm text-ivory/50">Không có khách nào</li>}
+            </ul>
+
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-xs">
                 <thead>
                   <tr className="text-left text-ivory/50">
                     <th className="py-1.5 font-medium">Khách</th>
@@ -685,13 +785,16 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
                   </tr>
                 </thead>
                 <tbody style={{ fontVariantNumeric: "tabular-nums" }}>
-                  {filteredGuests.map((g) => (
+                  {statusPager.pageItems.map((g) => (
                     <tr key={g.slug || g.name} className="border-t border-white/5">
                       <td className="py-2 pr-2">
                         <div className="text-ivory font-medium">{g.name}</div>
                         <div className="text-[10px] text-ivory/40 font-mono">{g.slug}</div>
                       </td>
-                      <td className="py-2 pr-2 text-ivory/70">{MODE_SHORT[g.mode] || g.mode}</td>
+                      <td className="py-2 pr-2 text-ivory/70">
+                        {MODE_SHORT[g.mode] || g.mode}
+                        <div className="text-[10px] text-ivory/40">{g.devices}/2 thiết bị</div>
+                      </td>
                       <td className="py-2 pr-2 text-right text-ivory">{g.opens || <span className="text-ivory/40">0</span>}</td>
                       <td className="py-2 pl-4 pr-2 text-ivory/70">{g.last?.label || <span className="text-ivory/40">Chưa mở</span>}</td>
                       <td className="py-2">
@@ -719,18 +822,20 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
                 </tbody>
               </table>
             </div>
+            <Pagination {...statusPager} anchorRef={statusAnchor} />
           </section>
 
           {/* Hoạt động gần đây */}
-          <section className="rounded-2xl bg-emerald-deep border border-gold/30 p-4 sm:p-5">
+          <section ref={recentAnchor} className="rounded-2xl bg-emerald-deep border border-gold/30 p-4 sm:p-5 scroll-mt-16">
             <h3 className="text-sm font-semibold text-ivory mb-3 flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-gold" /> Hoạt động gần đây
             </h3>
             <ul className="divide-y divide-white/5">
-              {s.recent.map((e, i) => (
-                <li key={i} className="py-2 flex gap-3 text-xs">
+              {recentPager.pageItems.map((e, i) => (
+                <li key={`${recentPager.page}-${i}`} className="py-2 flex gap-3 text-xs">
                   <span className="shrink-0 w-[5.5rem] text-ivory/50" style={{ fontVariantNumeric: "tabular-nums" }}>{e.t?.label}</span>
                   <span className="min-w-0">
+                    {e.isAlert && <AlertTriangle className="inline w-3.5 h-3.5 text-[#ec835a] mr-1 -mt-0.5" aria-label="Cảnh báo" />}
                     <span className="text-ivory font-medium">{e.isClick ? "Bấm link" : e.viewer}</span>
                     <span className="text-ivory/50">
                       {" · "}
@@ -741,6 +846,7 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
               ))}
               {s.recent.length === 0 && <li className="py-4 text-center text-xs text-ivory/50">Chưa có hoạt động</li>}
             </ul>
+            <Pagination {...recentPager} anchorRef={recentAnchor} />
           </section>
         </>
       )}

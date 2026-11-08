@@ -43,8 +43,6 @@ export const graduationConfig = {
   email: "danhphnha@gmail.com",
   mottoQuote: "The future belongs to those who believe in the beauty of their dreams.",
 
-  // Endpoint Google Sheets gửi dữ liệu RSVP, Lượt xem, Ảnh kỷ niệm & Nhạc nền
-  googleScriptUrl: "https://script.google.com/macros/s/AKfycbxiHdEt8xuomf5GZOUMhaEUVkfogpBkxRwDa8ER8PEB2uPbrpP1BGTOLtiENuOlG3meZQ/exec",
 
   // Cấu hình Cloudinary tải ảnh kỷ niệm trực tiếp từ khách
   cloudinaryCloudName: "ddrqfuaji",

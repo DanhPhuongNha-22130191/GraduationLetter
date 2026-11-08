@@ -1,12 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
-import {
-  findGuestBySlug,
-  fetchGuestsFromSheet,
-  GuestProfile,
-  getEarliestGraduationDateTime,
-} from "@/config/guests";
+import { fetchMyGuest, purgeLegacyGuestCache, type GuestProfile } from "@/config/guests";
 import { graduationConfig } from "@/config/graduation";
 import { normalizeSheetDate } from "@/config/date-utils";
 import { Language, translations } from "@/config/i18n";
@@ -141,7 +136,7 @@ export function trackOpenInvitation(
   }
 
   try {
-    if (graduationConfig.googleScriptUrl) {
+    {
       const modeLabel = isAnonymous
         ? "Mời chung"
         : mode === "elder"
@@ -163,30 +158,18 @@ export function trackOpenInvitation(
       const note = `${how} · ${visitorNote()}`;
 
       const payload = {
-        type: "OPEN",
-        action: "OPEN",
-        sheet: "views",
-        visitTime: new Date().toLocaleString("vi-VN"),
+        visitTime: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
         viewer: nameToLog,
         role: modeLabel,
         note,
-        // Backward-compatibility keys
-        name: nameToLog,
-        phone: "-",
-        attending: "ĐÃ MỞ THIỆP 💌",
-        guests: 0,
-        mode: modeLabel,
-        message: note,
-        timestamp: new Date().toLocaleString("vi-VN"),
       };
 
-      fetch(graduationConfig.googleScriptUrl, {
+      // Gửi qua server (server mới biết link Google Sheet)
+      fetch("/api/track", {
         method: "POST",
-        mode: "no-cors",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        keepalive: true,
       }).catch(() => {
         // Silent fail
       });
@@ -241,32 +224,85 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   useEffect(() => {
-    // 0. Khởi tạo ngày giờ sớm nhất từ bộ nhớ đệm
-    const initialEarliest = getEarliestGraduationDateTime();
-    if (initialEarliest.earliestDate) setDefaultEarliestDate(initialEarliest.earliestDate);
-    if (initialEarliest.earliestTime) setDefaultEarliestTime(initialEarliest.earliestTime);
-
     if (isInitialized.current) return;
     isInitialized.current = true;
+
+    // Bản cũ lưu CẢ danh sách khách (kèm lời nhắn) trong trình duyệt -> xoá đi
+    purgeLegacyGuestCache();
+
+    const GUEST_KEYS = [
+      "invitation_guest_name",
+      "invitation_guest_is_registered",
+      "invitation_guest_can_upload",
+      "invitation_guest_mode",
+      "invitation_guest_msg",
+      "invitation_guest_time",
+      "invitation_guest_date",
+      "invitation_guest_slug",
+    ];
+
+    /** Áp dụng thông tin khách do server xác nhận (thiết bị được phép) */
+    const applyGuest = (profile: GuestProfile, preview = false) => {
+      const allowUpload = profile.canUpload !== false;
+      setGuestNameState(profile.name);
+      setIsRegisteredGuest(true);
+      setCanUploadState(allowUpload);
+      setPronounModeState(profile.mode);
+      setCustomMessageState(profile.customMessage);
+      setCustomTimeState(profile.customTime);
+      setCustomDateState(profile.customDate);
+      setCurrentSlugState(profile.slug || "");
+      try {
+        sessionStorage.setItem("invitation_guest_name", profile.name);
+        sessionStorage.setItem("invitation_guest_is_registered", "true");
+        sessionStorage.setItem("invitation_guest_can_upload", allowUpload ? "true" : "false");
+        sessionStorage.setItem("invitation_guest_mode", profile.mode);
+        sessionStorage.setItem("invitation_guest_slug", profile.slug || "");
+        const setOrRemove = (k: string, v?: string) => (v ? sessionStorage.setItem(k, v) : sessionStorage.removeItem(k));
+        setOrRemove("invitation_guest_msg", profile.customMessage);
+        setOrRemove("invitation_guest_time", profile.customTime);
+        setOrRemove("invitation_guest_date", profile.customDate);
+      } catch {
+        // ignore
+      }
+      if (!preview) trackOpenInvitation(profile.name, profile.mode);
+    };
+
+    /** Link bị khoá trên thiết bị này -> chỉ hiện thiệp chung, xoá mọi thông tin riêng */
+    const applyLocked = () => {
+      setGuestNameState("");
+      setIsRegisteredGuest(false);
+      setCanUploadState(false);
+      setPronounModeState("friend");
+      setCustomMessageState(undefined);
+      setCustomTimeState(undefined);
+      setCustomDateState(undefined);
+      setCurrentSlugState("");
+      try {
+        GUEST_KEYS.forEach((k) => sessionStorage.removeItem(k));
+      } catch {
+        // ignore
+      }
+    };
 
     try {
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         let hasParams = false;
 
-        // 1. CÁCH 1: Lấy từ Google Sheet qua Slug (?u=giabao hoặc ?slug=giabao hoặc ?id=giabao)
-        const slugParam = params.get("u") || params.get("slug") || params.get("id");
-        
+        // 1. CÁCH 1: Link riêng qua mã (?u=k7q2m9xa hoặc ?slug= / ?id=)
+        //    Thông tin khách chỉ có sau khi SERVER xác nhận thiết bị này được phép.
+        const slugParam = (params.get("u") || params.get("slug") || params.get("id") || "").trim();
         if (slugParam) {
-          setCurrentSlugState(slugParam);
+          hasParams = true;
           try {
-            sessionStorage.setItem("invitation_guest_slug", slugParam);
+            // Giữ mã trong phiên để reload vẫn hỏi lại server (URL sẽ bị xoá tham số)
+            sessionStorage.setItem("invitation_pending_slug", slugParam);
+            // Mở link khác với phiên trước -> bỏ thông tin khách cũ
+            if (sessionStorage.getItem("invitation_guest_slug") !== slugParam) {
+              GUEST_KEYS.forEach((k) => sessionStorage.removeItem(k));
+            }
           } catch {}
-        } else {
-          const savedSlug = sessionStorage.getItem("invitation_guest_slug");
-          if (savedSlug) {
-            setCurrentSlugState(savedSlug);
-          }
         }
 
         // 2. CÁCH 2: Truyền theo 4 tiền tố danh xưng trực tiếp
@@ -277,159 +313,80 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         let detectedMode: GuestPronounMode = "friend";
         let rawName = "";
-        let foundCustomMsg: string | undefined = undefined;
-        let foundCustomTime: string | undefined = undefined;
-        let foundCustomDate: string | undefined = undefined;
-        let isRegistered = false;
-        let isAllowedUpload = false;
 
-        if (slugParam) {
-          hasParams = true;
-          const profile: GuestProfile | null = findGuestBySlug(slugParam);
-          if (profile) {
-            rawName = profile.name;
-            detectedMode = profile.mode;
-            foundCustomMsg = profile.customMessage;
-            foundCustomTime = profile.customTime;
-            foundCustomDate = profile.customDate;
-            isRegistered = true;
-            isAllowedUpload = profile.canUpload !== false;
+        if (!slugParam) {
+          if (conParam) {
+            hasParams = true;
+            detectedMode = "elder";
+            rawName = conParam;
+          } else if (emParam) {
+            hasParams = true;
+            detectedMode = "senior";
+            rawName = emParam;
+          } else if (anhParam) {
+            hasParams = true;
+            detectedMode = "junior";
+            rawName = anhParam;
+          } else if (banParam) {
+            hasParams = true;
+            detectedMode = "friend";
+            rawName = banParam;
           }
-        } else if (conParam) {
-          hasParams = true;
-          detectedMode = "elder";
-          rawName = conParam;
-        } else if (emParam) {
-          hasParams = true;
-          detectedMode = "senior";
-          rawName = emParam;
-        } else if (anhParam) {
-          hasParams = true;
-          detectedMode = "junior";
-          rawName = anhParam;
-        } else if (banParam) {
-          hasParams = true;
-          detectedMode = "friend";
-          rawName = banParam;
         }
 
         if (rawName && rawName.trim()) {
           const decoded = decodeURIComponent(rawName.replace(/\+/g, " ")).trim();
           setGuestNameState(decoded);
-          setIsRegisteredGuest(isRegistered);
-          setCanUploadState(isAllowedUpload);
+          setIsRegisteredGuest(false);
+          setCanUploadState(false);
           setPronounModeState(detectedMode);
-          setCustomMessageState(foundCustomMsg);
-          setCustomTimeState(foundCustomTime);
-          setCustomDateState(foundCustomDate);
-
           try {
+            sessionStorage.removeItem("invitation_pending_slug");
+            GUEST_KEYS.forEach((k) => sessionStorage.removeItem(k));
             sessionStorage.setItem("invitation_guest_name", decoded);
-            sessionStorage.setItem("invitation_guest_is_registered", isRegistered ? "true" : "false");
-            sessionStorage.setItem("invitation_guest_can_upload", isAllowedUpload ? "true" : "false");
             sessionStorage.setItem("invitation_guest_mode", detectedMode);
-            if (foundCustomMsg) {
-              sessionStorage.setItem("invitation_guest_msg", foundCustomMsg);
-            }
-            if (foundCustomTime) {
-              sessionStorage.setItem("invitation_guest_time", foundCustomTime);
-            }
-            if (foundCustomDate) {
-              sessionStorage.setItem("invitation_guest_date", foundCustomDate);
-            }
           } catch {
             // ignore
           }
-
-          // Theo dõi mở thiệp ngầm vào Google Sheets
           trackOpenInvitation(decoded, detectedMode);
         } else {
-          // Khôi phục từ sessionStorage nếu reload
+          // Khôi phục từ sessionStorage nếu reload (chỉ dữ liệu đã được server xác nhận trong phiên này)
           const saved = sessionStorage.getItem("invitation_guest_name");
-          const savedIsRegistered = sessionStorage.getItem("invitation_guest_is_registered") === "true";
-          const savedCanUpload = sessionStorage.getItem("invitation_guest_can_upload") === "true";
-          const savedMode = (sessionStorage.getItem("invitation_guest_mode") as GuestPronounMode) || "friend";
-          const savedMsg = sessionStorage.getItem("invitation_guest_msg") || undefined;
-          const savedTime = sessionStorage.getItem("invitation_guest_time") || undefined;
-          const savedDate = sessionStorage.getItem("invitation_guest_date") || undefined;
           if (saved) {
             setGuestNameState(saved);
-            setIsRegisteredGuest(savedIsRegistered);
-            setCanUploadState(savedCanUpload);
-            setPronounModeState(savedMode);
-            setCustomMessageState(savedMsg);
-            setCustomTimeState(savedTime);
-            setCustomDateState(savedDate);
+            setIsRegisteredGuest(sessionStorage.getItem("invitation_guest_is_registered") === "true");
+            setCanUploadState(sessionStorage.getItem("invitation_guest_can_upload") === "true");
+            setPronounModeState((sessionStorage.getItem("invitation_guest_mode") as GuestPronounMode) || "friend");
+            setCustomMessageState(sessionStorage.getItem("invitation_guest_msg") || undefined);
+            setCustomTimeState(sessionStorage.getItem("invitation_guest_time") || undefined);
+            setCustomDateState(sessionStorage.getItem("invitation_guest_date") || undefined);
+            setCurrentSlugState(sessionStorage.getItem("invitation_guest_slug") || "");
           }
         }
 
-        // 3. TỰ ĐỘNG ĐỒNG BỘ REALTIME TỪ GOOGLE SHEET (Cập nhật siêu tốc không cần bấm Reload)
+        // 3. ĐỒNG BỘ VỚI SERVER: lấy thông tin của chính khách này + ngày giờ mặc định
         const syncGuestDataFromSheet = () => {
           if (isFetchingSheetRef.current) return;
           isFetchingSheetRef.current = true;
 
-          const activeSlug = slugParam || sessionStorage.getItem("invitation_guest_slug") || currentSlug;
-          const activeName = guestName || sessionStorage.getItem("invitation_guest_name");
+          let activeSlug = "";
+          try {
+            activeSlug = sessionStorage.getItem("invitation_pending_slug") || "";
+          } catch {}
 
-          fetchGuestsFromSheet(true)
-            .then((dynamicRegistry) => {
-              if (!dynamicRegistry || Object.keys(dynamicRegistry).length === 0) {
-                return;
-              }
-
-              // Cập nhật ngày giờ sớm nhất từ danh sách Sheet
-              const dynamicEarliest = getEarliestGraduationDateTime(dynamicRegistry);
+          fetchMyGuest(activeSlug)
+            .then((res) => {
+              if (!res) return;
               // Luôn ghi đè (kể cả undefined) để không giữ lại ngày cũ khi Sheet đã đổi/xóa
-              setDefaultEarliestDate(dynamicEarliest.earliestDate);
-              setDefaultEarliestTime(dynamicEarliest.earliestTime);
+              setDefaultEarliestDate(res.defaults?.earliestDate);
+              setDefaultEarliestTime(res.defaults?.earliestTime);
 
-              let dynamicProfile: GuestProfile | null = null;
-              if (activeSlug) {
-                dynamicProfile = findGuestBySlug(activeSlug, dynamicRegistry);
-              }
-              if (!dynamicProfile && activeName) {
-                dynamicProfile = findGuestBySlug(activeName, dynamicRegistry);
-              }
-
-              if (dynamicProfile) {
-                const allowUpload = dynamicProfile.canUpload !== false;
-                setGuestNameState(dynamicProfile.name);
-                setIsRegisteredGuest(true);
-                setCanUploadState(allowUpload);
-                setPronounModeState(dynamicProfile.mode);
-                setCustomMessageState(dynamicProfile.customMessage);
-                setCustomTimeState(dynamicProfile.customTime);
-                setCustomDateState(dynamicProfile.customDate);
-                try {
-                  sessionStorage.setItem("invitation_guest_name", dynamicProfile.name);
-                  sessionStorage.setItem("invitation_guest_is_registered", "true");
-                  sessionStorage.setItem("invitation_guest_can_upload", allowUpload ? "true" : "false");
-                  sessionStorage.setItem("invitation_guest_mode", dynamicProfile.mode);
-                  if (dynamicProfile.slug) {
-                    sessionStorage.setItem("invitation_guest_slug", dynamicProfile.slug);
-                  }
-                  if (dynamicProfile.customMessage) {
-                    sessionStorage.setItem("invitation_guest_msg", dynamicProfile.customMessage);
-                  } else {
-                    sessionStorage.removeItem("invitation_guest_msg");
-                  }
-                  if (dynamicProfile.customTime) {
-                    sessionStorage.setItem("invitation_guest_time", dynamicProfile.customTime);
-                  } else {
-                    sessionStorage.removeItem("invitation_guest_time");
-                  }
-                  if (dynamicProfile.customDate) {
-                    sessionStorage.setItem("invitation_guest_date", dynamicProfile.customDate);
-                  } else {
-                    sessionStorage.removeItem("invitation_guest_date");
-                  }
-                } catch {
-                  // ignore
-                }
-              }
+              if (!activeSlug) return;
+              if (res.locked) applyLocked();
+              else if (res.guest) applyGuest(res.guest, Boolean(res.preview));
             })
             .catch((err) => {
-              console.warn("[GuestContext] Error syncing guest data from sheet:", err);
+              console.warn("[GuestContext] Error syncing guest data:", err);
             })
             .finally(() => {
               isFetchingSheetRef.current = false;

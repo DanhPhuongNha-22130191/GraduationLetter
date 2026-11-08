@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { graduationConfig } from "@/config/graduation";
+import { getScriptUrl, sheetBody, sheetGetUrl } from "@/lib/sheet";
 
 export const dynamic = "force-dynamic";
 
@@ -56,9 +57,9 @@ function checkRateLimit(ip: string, maxRequests = 5, windowMs = 60000): { allowe
 }
 
 async function writeSinglePhotoToSheet(photo: PhotoPayload, retries = 3): Promise<boolean> {
-  if (!graduationConfig.googleScriptUrl || !photo.photoUrl) {
-    console.error("[Photos Upload] Missing googleScriptUrl or photoUrl", {
-      hasScriptUrl: Boolean(graduationConfig.googleScriptUrl),
+  if (!getScriptUrl() || !photo.photoUrl) {
+    console.error("[Photos Upload] Missing GOOGLE_SCRIPT_URL or photoUrl", {
+      hasScriptUrl: Boolean(getScriptUrl()),
       photoUrl: photo.photoUrl,
     });
     return false;
@@ -66,10 +67,10 @@ async function writeSinglePhotoToSheet(photo: PhotoPayload, retries = 3): Promis
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(graduationConfig.googleScriptUrl, {
+      const res = await fetch(getScriptUrl(), {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
+        body: sheetBody({
           type: "PHOTO_UPLOAD",
           action: "PHOTO_UPLOAD",
           sheet: "photos",

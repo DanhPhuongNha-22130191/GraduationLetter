@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { graduationConfig } from "@/config/graduation";
+import { getScriptUrl, sheetBody, sheetGetUrl } from "@/lib/sheet";
 
 export const dynamic = "force-dynamic";
 
@@ -79,11 +80,11 @@ export async function GET(request: Request) {
       );
     }
 
-    if (graduationConfig.googleScriptUrl) {
+    if (getScriptUrl()) {
       // 1. Kiểm tra sheet chuyên dụng: "avatars"
       try {
         const avatarRes = await fetch(
-          `${graduationConfig.googleScriptUrl}?action=getAvatar&sheet=avatars&_t=${now}`,
+          sheetGetUrl({ action: "getAvatar", sheet: "avatars", _t: String(now) }),
           {
             method: "GET",
             headers: { Accept: "application/json" },
@@ -133,7 +134,7 @@ export async function GET(request: Request) {
       // 2. Dự phòng: Kiểm tra sheet guests với slug = "phuongnha"
       try {
         const res = await fetch(
-          `${graduationConfig.googleScriptUrl}?action=getGuests&sheet=guests&_t=${now}`,
+          sheetGetUrl({ action: "getGuests", sheet: "guests", _t: String(now) }),
           {
             method: "GET",
             headers: { Accept: "application/json" },
@@ -185,7 +186,7 @@ export async function GET(request: Request) {
         console.warn("[Avatar Route] Could not fetch from Sheet guests:", err);
       }
     } else {
-      console.warn("[Avatar Route] graduationConfig.googleScriptUrl is not configured");
+      console.warn("[Avatar Route] GOOGLE_SCRIPT_URL is not configured");
     }
 
     console.warn("[Avatar Route] Falling back to default avatar");
@@ -227,8 +228,8 @@ export async function POST(request: Request) {
 
     const cleanUrl = avatarUrl.trim();
 
-    if (!graduationConfig.googleScriptUrl) {
-      console.error("[Avatar Route POST] graduationConfig.googleScriptUrl is not configured");
+    if (!getScriptUrl()) {
+      console.error("[Avatar Route POST] GOOGLE_SCRIPT_URL is not configured");
       return NextResponse.json({ success: false, error: "Chưa cấu hình Google Script URL" }, { status: 500 });
     }
 
@@ -260,15 +261,15 @@ export async function POST(request: Request) {
 
     // 2. Gửi đồng thời tới cả 2 sheet để đồng bộ và đợi kết quả
     const results = await Promise.allSettled([
-      fetch(graduationConfig.googleScriptUrl, {
+      fetch(getScriptUrl(), {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payloadAvatar),
+        body: sheetBody(payloadAvatar),
       }),
-      fetch(graduationConfig.googleScriptUrl, {
+      fetch(getScriptUrl(), {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
+        body: sheetBody({
           type: "AVATAR_UPDATE",
           action: "AVATAR_UPDATE",
           sheet: "guests",

@@ -9,7 +9,13 @@
  * 5. confirms: confirmTime | fullName | phone | attendStatus | quantity | message
  * 6. guests  : slug | name | mode | customMessage | customTime | customDate | canUpload
  *
+ * 7. devices : slug | deviceId | firstSeen | userAgent   (tự tạo — khoá link tối đa 2 thiết bị)
+ *
  * [BỔ SUNG] ADD_GUEST: trang /admin tạo khách mới + link mã hóa (xem mục "C0" trong doPost).
+ * [BỔ SUNG] CLAIM_DEVICE / RESET_DEVICES: khoá link theo thiết bị (mục "C1").
+ * [BỔ SUNG] KHOÁ BÍ MẬT: Project Settings (bánh răng) → Script Properties → Add property
+ *           Property: API_KEY   Value: (giống hệt SHEET_API_KEY trên Vercel)
+ *           Khi đã đặt API_KEY, mọi request không kèm đúng khoá đều bị từ chối.
  * Sau khi dán: Deploy → Manage deployments → bút chì → Version: New version → Deploy
  * (giữ nguyên deployment cũ để URL /exec không đổi).
  * =================================================================
@@ -112,6 +118,89 @@ function jsonOut(obj) {
 }
 
 // -------------------------------------------------------------
+// HELPER 5b [BỔ SUNG]: Kiểm tra khoá bí mật (Script Properties → API_KEY)
+//  - Chưa đặt API_KEY -> không kiểm tra (tương thích ngược).
+// -------------------------------------------------------------
+function checkApiKey(provided) {
+  var expected = PropertiesService.getScriptProperties().getProperty("API_KEY");
+  if (!expected) return true;
+  return String(provided || "") === String(expected);
+}
+
+// -------------------------------------------------------------
+// HELPER 7 [BỔ SUNG]: Ghi nhận thiết bị mở link (tối đa data.max, mặc định 2)
+//  Chạy trong khoá (LockService) để 2 thiết bị mở cùng lúc không vượt giới hạn.
+//  Trả về { allowed: true|false, count }.
+// -------------------------------------------------------------
+function getDevicesSheet(ss) {
+  var sh = findTargetSheet(ss, "devices");
+  if (!sh) {
+    sh = ss.insertSheet("devices");
+    sh.appendRow(["slug", "deviceId", "firstSeen", "userAgent"]);
+    sh.getRange(1, 1, 1, 4).setFontWeight("bold");
+  }
+  return sh;
+}
+
+function claimDevice(ss, data) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sh = getDevicesSheet(ss);
+    var slug = normalizeStr(data.slug);
+    var dev = String(data.deviceId || "").trim();
+    if (!slug || !dev) return jsonOut({ status: "error", message: "Thiếu slug hoặc deviceId" });
+    var max = Number(data.max) || 2;
+
+    var known = {};
+    var last = sh.getLastRow();
+    if (last > 1) {
+      var vals = sh.getRange(2, 1, last - 1, 2).getValues();
+      for (var i = 0; i < vals.length; i++) {
+        if (normalizeStr(vals[i][0]) === slug) known[String(vals[i][1]).trim()] = true;
+      }
+    }
+    var count = Object.keys(known).length;
+
+    if (known[dev]) return jsonOut({ status: "success", allowed: true, count: count });
+    if (count >= max) return jsonOut({ status: "success", allowed: false, count: count });
+
+    var row = sh.getLastRow() + 1;
+    var range = sh.getRange(row, 1, 1, 4);
+    range.setNumberFormat("@");
+    range.setValues([[slug, dev, String(data.firstSeen || Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss")), String(data.userAgent || "")]]);
+    return jsonOut({ status: "success", allowed: true, count: count + 1 });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// HELPER 8 [BỔ SUNG]: Mở khoá link — xoá mọi thiết bị đã ghi nhận của slug
+function resetDevices(ss, data) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sh = findTargetSheet(ss, "devices");
+    var slug = normalizeStr(data.slug);
+    if (!sh || !slug) return jsonOut({ status: "success", removed: 0 });
+    var last = sh.getLastRow();
+    var removed = 0;
+    if (last > 1) {
+      var vals = sh.getRange(2, 1, last - 1, 1).getValues();
+      for (var i = vals.length - 1; i >= 0; i--) {
+        if (normalizeStr(vals[i][0]) === slug) {
+          sh.deleteRow(i + 2);
+          removed++;
+        }
+      }
+    }
+    return jsonOut({ status: "success", removed: removed });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// -------------------------------------------------------------
 // HELPER 6 [BỔ SUNG]: Thêm khách mới vào tab "guests" (từ trang /admin)
 //  - Dò cột theo tiêu đề hàng 1 (slug | name | mode | customMessage | customTime | customDate | canUpload)
 //  - Ghi cả dòng ở dạng CHỮ (@) để Sheet không tự đổi "04/12/2026" thành ngày tháng
@@ -182,6 +271,11 @@ function addGuestRow(ss, data) {
 // =================================================================
 function doGet(e) {
   try {
+    // [BỔ SUNG] Chỉ server (biết khoá) mới đọc được dữ liệu
+    if (!checkApiKey(e && e.parameter && e.parameter.key)) {
+      return jsonOut({ error: "unauthorized" });
+    }
+
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     cleanLegacySheets(ss);
 
@@ -255,6 +349,11 @@ function doPost(e) {
 
     var rawContents = e.postData && e.postData.contents ? e.postData.contents : "{}";
     var data = JSON.parse(rawContents);
+
+    // [BỔ SUNG] Chỉ server (biết khoá) mới ghi được dữ liệu
+    if (!checkApiKey(data.apiKey)) {
+      return jsonOut({ status: "error", message: "unauthorized" });
+    }
 
     var type = String(data.type || data.action || "").toUpperCase();
     var sheetTargetName = data.sheet || "";
@@ -350,6 +449,17 @@ function doPost(e) {
     // -------------------------------------------------------------
     if (type === "ADD_GUEST") {
       return addGuestRow(ss, data);
+    }
+
+    // -------------------------------------------------------------
+    // C1. [BỔ SUNG] KHOÁ LINK THEO THIẾT BỊ -> TAB "devices"
+    //     Cũng phải đặt TRƯỚC mục C (request có slug).
+    // -------------------------------------------------------------
+    if (type === "CLAIM_DEVICE") {
+      return claimDevice(ss, data);
+    }
+    if (type === "RESET_DEVICES") {
+      return resetDevices(ss, data);
     }
 
     // -------------------------------------------------------------

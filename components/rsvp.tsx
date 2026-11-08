@@ -169,14 +169,12 @@ export const RsvpSection: React.FC = () => {
         console.error("Local storage error:", err);
       }
 
-      // 2. Gửi đến Google Apps Script
-      const scriptPromise = fetch(graduationConfig.googleScriptUrl, {
+      // 2. Gửi qua server (server mới biết link Google Sheet)
+      const scriptPromise = fetch("/api/rsvp", {
         method: "POST",
-        mode: "no-cors",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        keepalive: true,
       }).catch((err) => {
         console.warn("RSVP background sync warning:", err);
       });

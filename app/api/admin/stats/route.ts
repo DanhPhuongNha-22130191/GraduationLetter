@@ -1,20 +1,15 @@
 import { NextResponse } from "next/server";
-import { graduationConfig } from "@/config/graduation";
-import { fetchGuestsFromSheet, type GuestProfile } from "@/config/guests";
+import type { GuestProfile } from "@/config/guests";
 import { isAdminRequest } from "@/lib/admin-auth";
+import { deviceCounts, listGuestsServer } from "@/lib/guests-server";
+import { sheetGetRows } from "@/lib/sheet";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type Row = Record<string, unknown>;
 
-async function readSheet(action: string, sheet: string): Promise<Row[]> {
-  const url = `${graduationConfig.googleScriptUrl}?action=${action}&sheet=${sheet}&_t=${Date.now()}`;
-  const res = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" } });
-  if (!res.ok) throw new Error(`HTTP ${res.status} (${sheet})`);
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
-}
+const readSheet = (action: string, sheet: string): Promise<Row[]> => sheetGetRows(sheet, { action });
 
 const str = (v: unknown) => (v === undefined || v === null ? "" : String(v).trim());
 const pick = (r: Row, ...keys: string[]) => {
@@ -30,11 +25,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: false, error: "Chưa đăng nhập" }, { status: 401 });
   }
 
-  const [viewsRes, rsvpRes, guestsRes] = await Promise.allSettled([
+  const [viewsRes, rsvpRes, guestsRes, devicesRes] = await Promise.allSettled([
     readSheet("getViews", "views"),
     readSheet("getRsvps", "confirms"),
-    fetchGuestsFromSheet(true),
+    listGuestsServer(true),
+    deviceCounts(),
   ]);
+  const devices = devicesRes.status === "fulfilled" ? devicesRes.value : {};
 
   const errors: string[] = [];
   if (viewsRes.status === "rejected") errors.push("Không đọc được sheet lượt xem");
@@ -57,13 +54,13 @@ export async function GET(request: Request) {
   }));
 
   const seen = new Set<string>();
-  const guests: GuestProfile[] = [];
+  const guests: (GuestProfile & { devices: number })[] = [];
   if (guestsRes.status === "fulfilled") {
-    for (const p of Object.values(guestsRes.value)) {
+    for (const p of guestsRes.value) {
       const key = cleanKey(p.slug || p.name);
       if (seen.has(key)) continue;
       seen.add(key);
-      guests.push({ slug: p.slug, name: p.name, mode: p.mode });
+      guests.push({ slug: p.slug, name: p.name, mode: p.mode, devices: devices[cleanKey(p.slug || "")] || 0 });
     }
   }
 

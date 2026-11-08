@@ -1,10 +1,26 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, Check, Copy, Link2, LogOut, RefreshCw, Search, Send, UserPlus, Lock, AlertTriangle } from "lucide-react";
+import {
+  AlertTriangle,
+  BarChart3,
+  Check,
+  Copy,
+  Link2,
+  List,
+  Lock,
+  LogOut,
+  RefreshCw,
+  Search,
+  Send,
+  Share2,
+  UserPlus,
+} from "lucide-react";
 import { AdminDashboard } from "@/components/admin-dashboard";
+import { Pagination, usePagination, useListAnchor } from "@/components/admin-pagination";
 
 type Mode = "friend" | "elder" | "senior" | "junior";
+type Tab = "overview" | "create" | "list";
 
 interface Guest {
   slug?: string;
@@ -14,6 +30,41 @@ interface Guest {
   customTime?: string;
   customDate?: string;
   canUpload?: boolean;
+  /** Số thiết bị đã mở link (tối đa 2) */
+  devices?: number;
+}
+
+const MAX_DEVICES = 2;
+
+/** Xoá các thiết bị đã ghi nhận để khách mở lại link được (vd đổi điện thoại) */
+function UnlockButton({ slug, name, onDone }: { slug: string; name: string; onDone: () => void }) {
+  const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
+  const run = async () => {
+    if (!window.confirm(`Mở khoá link của ${name}?\nCác thiết bị đã mở sẽ bị xoá; 2 thiết bị mở tiếp theo được xem lời nhắn riêng.`)) return;
+    setState("busy");
+    try {
+      const r = await fetch("/api/admin/guests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug }),
+      });
+      const d = await r.json();
+      setState(r.ok && d.success ? "done" : "error");
+      if (r.ok && d.success) onDone();
+    } catch {
+      setState("error");
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={run}
+      disabled={state === "busy"}
+      className={`${actionBtn} col-span-2 sm:col-span-1 bg-transparent border-white/20 text-ivory/80 hover:border-gold hover:text-gold disabled:opacity-50`}
+    >
+      {state === "busy" ? "Đang mở khoá…" : state === "done" ? "Đã mở khoá" : state === "error" ? "Lỗi — thử lại" : "Mở khoá"}
+    </button>
+  );
 }
 
 const MODE_LABEL: Record<Mode, string> = {
@@ -30,10 +81,19 @@ const MODE_SHORT: Record<Mode, string> = {
   junior: "Đàn em",
 };
 
+const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
+  { key: "overview", label: "Tổng quan", icon: <BarChart3 className="w-5 h-5 sm:w-3.5 sm:h-3.5" /> },
+  { key: "create", label: "Thêm khách", icon: <UserPlus className="w-5 h-5 sm:w-3.5 sm:h-3.5" /> },
+  { key: "list", label: "Danh sách", icon: <List className="w-5 h-5 sm:w-3.5 sm:h-3.5" /> },
+];
+
+// text-base trên điện thoại: iPhone tự phóng to trang khi ô nhập có chữ < 16px
 const inputCls =
-  "w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-sm font-sans focus:outline-hidden focus:border-gold focus:ring-1 focus:ring-gold transition-all";
+  "w-full px-3.5 py-3 sm:py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-base sm:text-sm font-sans focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all";
 const labelCls = "block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold mb-1.5";
-const cardCls = "rounded-2xl bg-emerald-deep border border-gold/40 p-5 sm:p-6 shadow-xl";
+const cardCls = "rounded-2xl bg-emerald-deep border border-gold/40 p-4 sm:p-6 shadow-xl";
+const actionBtn =
+  "inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 px-3 py-2 sm:py-1.5 rounded-xl sm:rounded-lg border text-sm sm:text-xs font-semibold transition-colors cursor-pointer";
 
 function guestUrl(slug: string) {
   if (typeof window === "undefined") return "";
@@ -46,20 +106,49 @@ function isoToDMY(iso: string) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
 }
 
-function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
+function CopyButton({ text, label = "Copy", className = "" }: { text: string; label?: string; className?: string }) {
   const [done, setDone] = useState(false);
   return (
     <button
       type="button"
-      onClick={() => {
-        navigator.clipboard?.writeText(text);
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          // Trình duyệt cũ / trong app Zalo: chọn sẵn để người dùng tự copy
+          window.prompt("Copy link:", text);
+        }
         setDone(true);
         setTimeout(() => setDone(false), 1800);
       }}
-      className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gold/15 border border-gold/40 text-gold text-xs font-semibold hover:bg-gold hover:text-emerald-deep transition-colors cursor-pointer"
+      className={`${actionBtn} bg-gold/15 border-gold/40 text-gold hover:bg-gold hover:text-emerald-deep ${className}`}
     >
-      {done ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+      {done ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
       {done ? "Đã copy" : label}
+    </button>
+  );
+}
+
+/** Mở bảng chia sẻ của điện thoại (Zalo, Messenger…); máy không hỗ trợ thì mở Zalo share */
+function ShareButton({ url, name, className = "" }: { url: string; name: string; className?: string }) {
+  const share = async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: "Thiệp mời tốt nghiệp", text: `Thiệp mời gửi ${name}`, url });
+        return;
+      } catch {
+        return; // người dùng bấm huỷ
+      }
+    }
+    window.open(`https://zalo.me/share?url=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer");
+  };
+  return (
+    <button
+      type="button"
+      onClick={share}
+      className={`${actionBtn} bg-white/5 border-white/20 text-ivory hover:border-gold hover:text-gold ${className}`}
+    >
+      <Share2 className="w-4 h-4" /> Gửi
     </button>
   );
 }
@@ -80,24 +169,26 @@ export const AdminPanel: React.FC = () => {
     refreshStatus();
   }, [refreshStatus]);
 
-  return (
-    <main className="min-h-screen bg-emerald-950 text-ivory font-sans px-4 py-8 sm:py-12">
-      <div className="mx-auto w-full max-w-5xl space-y-6">
-        <header className="text-center">
-          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-gold-shimmer">Quản lý khách mời</h1>
-          <p className="text-xs text-ivory/60 mt-1">Tạo link thiệp riêng cho khách mới · Link đã gửi trước đây vẫn dùng bình thường</p>
-        </header>
+  if (!status) {
+    return (
+      <main className="min-h-dvh bg-emerald-950 text-ivory font-sans flex items-center justify-center">
+        <p className="text-sm text-ivory/60">Đang tải…</p>
+      </main>
+    );
+  }
 
-        {!status ? (
-          <p className="text-center text-sm text-ivory/60">Đang tải…</p>
-        ) : !status.loggedIn ? (
-          <LoginForm configured={status.configured} onDone={refreshStatus} />
-        ) : (
-          <Dashboard onLogout={refreshStatus} />
-        )}
-      </div>
-    </main>
-  );
+  if (!status.loggedIn) {
+    return (
+      <main className="min-h-dvh bg-emerald-950 text-ivory font-sans px-4 py-10 flex flex-col justify-center">
+        <header className="text-center mb-6">
+          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-gold-shimmer">Quản lý khách mời</h1>
+        </header>
+        <LoginForm configured={status.configured} onDone={refreshStatus} />
+      </main>
+    );
+  }
+
+  return <Dashboard onLogout={refreshStatus} />;
 };
 
 function LoginForm({ configured, onDone }: { configured: boolean; onDone: () => void }) {
@@ -126,7 +217,7 @@ function LoginForm({ configured, onDone }: { configured: boolean; onDone: () => 
   };
 
   return (
-    <form onSubmit={submit} className={`${cardCls} max-w-sm mx-auto space-y-4`}>
+    <form onSubmit={submit} className={`${cardCls} w-full max-w-sm mx-auto space-y-4`}>
       <div className="flex items-center gap-2 text-gold">
         <Lock className="w-4 h-4" />
         <span className="font-semibold text-sm">Đăng nhập</span>
@@ -148,11 +239,11 @@ function LoginForm({ configured, onDone }: { configured: boolean; onDone: () => 
           autoFocus
         />
       </div>
-      {error && <p className="text-xs text-red-300">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
       <button
         type="submit"
         disabled={busy || !password}
-        className="w-full py-2.5 rounded-xl bg-gold-gradient text-emerald-deep font-bold text-sm uppercase tracking-wider disabled:opacity-50 cursor-pointer"
+        className="w-full min-h-12 rounded-xl bg-gold-gradient text-emerald-deep font-bold text-sm uppercase tracking-wider disabled:opacity-50 cursor-pointer"
       >
         {busy ? "Đang kiểm tra…" : "Vào trang quản lý"}
       </button>
@@ -165,7 +256,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState("");
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<"overview" | "guests">("overview");
+  const [tab, setTab] = useState<Tab>("overview");
 
   const loadGuests = useCallback(async () => {
     setLoading(true);
@@ -187,6 +278,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     loadGuests();
   }, [loadGuests]);
 
+  const goTab = (t: Tab) => {
+    setTab(t);
+    window.scrollTo({ top: 0 });
+  };
+
   const logout = async () => {
     await fetch("/api/admin/login", { method: "DELETE" }).catch(() => {});
     onLogout();
@@ -198,97 +294,148 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     return guests.filter((g) => g.name.toLowerCase().includes(q) || (g.slug || "").toLowerCase().includes(q));
   }, [guests, query]);
 
+  const listAnchor = useListAnchor<HTMLElement>();
+  const pager = usePagination(filtered, query);
+
   return (
-    <>
-      <div className="flex items-center justify-between gap-3">
-        <div className="inline-flex rounded-xl border border-gold/40 p-0.5 bg-emerald-deep" role="tablist">
-          {([
-            ["overview", "Tổng quan", <BarChart3 key="i" className="w-3.5 h-3.5" />],
-            ["guests", "Khách mời", <UserPlus key="i" className="w-3.5 h-3.5" />],
-          ] as const).map(([k, label, icon]) => (
+    <main className="min-h-dvh bg-emerald-950 text-ivory font-sans pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-12">
+      {/* Thanh trên cùng: gọn trên điện thoại, có tab trên máy tính */}
+      <header className="sticky top-0 z-30 bg-emerald-950/90 backdrop-blur-md border-b border-gold/20">
+        <div className="mx-auto max-w-5xl px-4 h-14 flex items-center justify-between gap-3">
+          <h1 className="font-serif text-xl sm:text-2xl font-bold text-gold-shimmer truncate">Quản lý khách mời</h1>
+
+          <nav className="hidden sm:inline-flex rounded-xl border border-gold/40 p-0.5 bg-emerald-deep" role="tablist">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.key}
+                onClick={() => goTab(t.key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs whitespace-nowrap rounded-lg cursor-pointer transition-colors ${
+                  tab === t.key ? "bg-gold text-emerald-deep font-semibold" : "text-ivory/70 hover:text-gold"
+                }`}
+              >
+                {t.icon}
+                {t.label}
+              </button>
+            ))}
+          </nav>
+
+          <button
+            onClick={logout}
+            aria-label="Đăng xuất"
+            className="inline-flex items-center justify-center gap-1.5 min-h-10 min-w-10 -mr-2 px-2 text-xs whitespace-nowrap text-ivory/70 hover:text-gold cursor-pointer"
+          >
+            <LogOut className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
+            <span className="hidden sm:inline">Đăng xuất</span>
+          </button>
+        </div>
+      </header>
+
+      <div className="mx-auto w-full max-w-5xl px-4 pt-4 sm:pt-6 space-y-4 sm:space-y-6">
+        {tab === "overview" && <AdminDashboard onUnauthorized={onLogout} />}
+
+        {tab === "create" && <CreateGuestForm onCreated={loadGuests} onViewList={() => goTab("list")} />}
+
+        {tab === "list" && (
+          <section ref={listAnchor} className={`${cardCls} scroll-mt-16`}>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h2 className="font-serif text-xl text-gold font-semibold">Khách đã có ({guests.length})</h2>
+              <button
+                onClick={loadGuests}
+                aria-label="Tải lại danh sách"
+                className="inline-flex items-center justify-center gap-1 min-h-10 min-w-10 -mr-2 px-2 text-xs text-gold-light hover:text-gold cursor-pointer"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">Tải lại</span>
+              </button>
+            </div>
+
+            <div className="relative mb-2">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ivory/40" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Tìm theo tên hoặc mã…"
+                className={`${inputCls} pl-9`}
+              />
+            </div>
+
+            {listError && <p className="text-sm text-red-300 mb-2">{listError}</p>}
+
+            <ul className="divide-y divide-white/10">
+              {pager.pageItems.map((g) => {
+                const slug = g.slug || g.name;
+                const url = guestUrl(slug);
+                return (
+                  <li key={slug} className="py-3 flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base sm:text-sm font-semibold text-ivory truncate">{g.name}</p>
+                      <p className="text-xs sm:text-[11px] text-ivory/50 truncate">
+                        {MODE_SHORT[g.mode] || g.mode}
+                        {g.customDate ? ` · ${g.customDate}` : ""}
+                        {g.customTime ? ` · ${g.customTime}` : ""}
+                      </p>
+                      <p className="font-mono text-xs sm:text-[11px] text-gold/70 truncate">?u={slug}</p>
+                      <p
+                        className={`text-xs sm:text-[11px] ${
+                          (g.devices || 0) >= MAX_DEVICES ? "text-[#ec835a]" : "text-ivory/50"
+                        }`}
+                      >
+                        Thiết bị đã mở: {g.devices || 0}/{MAX_DEVICES}
+                        {(g.devices || 0) >= MAX_DEVICES ? " · đã khoá thiết bị mới" : ""}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:flex gap-2 shrink-0">
+                      <CopyButton text={url} label="Copy link" />
+                      <ShareButton url={url} name={g.name} />
+                      {(g.devices || 0) > 0 && g.slug && <UnlockButton slug={g.slug} name={g.name} onDone={loadGuests} />}
+                    </div>
+                  </li>
+                );
+              })}
+              {!loading && filtered.length === 0 && (
+                <li className="py-6 text-center text-sm text-ivory/50">Không có khách nào</li>
+              )}
+              {loading && guests.length === 0 && (
+                <li className="py-6 text-center text-sm text-ivory/50">Đang tải…</li>
+              )}
+            </ul>
+            <Pagination {...pager} anchorRef={listAnchor} />
+          </section>
+        )}
+      </div>
+
+      {/* Thanh điều hướng dưới cùng — chỉ trên điện thoại */}
+      <nav
+        className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-emerald-deep/95 backdrop-blur-md border-t border-gold/30 pb-[env(safe-area-inset-bottom)]"
+        role="tablist"
+      >
+        <div className="grid grid-cols-3">
+          {TABS.map((t) => (
             <button
-              key={k}
+              key={t.key}
               type="button"
               role="tab"
-              aria-selected={tab === k}
-              onClick={() => setTab(k)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs whitespace-nowrap rounded-lg cursor-pointer transition-colors ${
-                tab === k ? "bg-gold text-emerald-deep font-semibold" : "text-ivory/70 hover:text-gold"
+              aria-selected={tab === t.key}
+              onClick={() => goTab(t.key)}
+              className={`flex flex-col items-center justify-center gap-0.5 h-16 text-[11px] cursor-pointer transition-colors ${
+                tab === t.key ? "text-gold font-semibold" : "text-ivory/60"
               }`}
             >
-              {icon}
-              {label}
+              {t.icon}
+              {t.label}
             </button>
           ))}
         </div>
-        <button
-          onClick={logout}
-          className="inline-flex items-center gap-1.5 text-xs whitespace-nowrap text-ivory/70 hover:text-gold cursor-pointer"
-        >
-          <LogOut className="w-3.5 h-3.5" /> Đăng xuất
-        </button>
-      </div>
-
-      {tab === "overview" ? (
-        <AdminDashboard onUnauthorized={onLogout} />
-      ) : (
-      <>
-      <CreateGuestForm onCreated={loadGuests} />
-
-      <section className={cardCls}>
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <h2 className="font-serif text-xl text-gold font-semibold">Khách đã có ({guests.length})</h2>
-          <button
-            onClick={loadGuests}
-            className="inline-flex items-center gap-1 text-xs text-gold-light hover:text-gold cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Tải lại
-          </button>
-        </div>
-
-        <div className="relative mb-3">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ivory/40" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm theo tên hoặc mã…"
-            className={`${inputCls} pl-9`}
-          />
-        </div>
-
-        {listError && <p className="text-xs text-red-300 mb-2">{listError}</p>}
-
-        <ul className="divide-y divide-white/10">
-          {filtered.map((g) => {
-            const slug = g.slug || g.name;
-            const url = guestUrl(slug);
-            return (
-              <li key={slug} className="py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-ivory truncate">{g.name}</p>
-                  <p className="text-[11px] text-ivory/50 truncate">
-                    {MODE_SHORT[g.mode] || g.mode}
-                    {g.customDate ? ` · ${g.customDate}` : ""}
-                    {g.customTime ? ` · ${g.customTime}` : ""}
-                  </p>
-                  <p className="font-mono text-[11px] text-gold/80 break-all">{url}</p>
-                </div>
-                <CopyButton text={url} label="Copy link" />
-              </li>
-            );
-          })}
-          {!loading && filtered.length === 0 && (
-            <li className="py-4 text-center text-xs text-ivory/50">Không có khách nào</li>
-          )}
-        </ul>
-      </section>
-      </>
-      )}
-    </>
+      </nav>
+    </main>
   );
 }
 
-function CreateGuestForm({ onCreated }: { onCreated: () => void }) {
+function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onViewList: () => void }) {
   const [name, setName] = useState("");
   const [mode, setMode] = useState<Mode>("friend");
   const [customMessage, setCustomMessage] = useState("");
@@ -326,6 +473,8 @@ function CreateGuestForm({ onCreated }: { onCreated: () => void }) {
       setName("");
       setCustomMessage("");
       onCreated();
+      // Đưa kết quả vào tầm nhìn trên điện thoại
+      setTimeout(() => document.getElementById("create-result")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
     } catch {
       setError("Lỗi kết nối");
     } finally {
@@ -339,6 +488,37 @@ function CreateGuestForm({ onCreated }: { onCreated: () => void }) {
         <UserPlus className="w-5 h-5" /> Thêm khách mới
       </h2>
 
+      {result && (
+        <div id="create-result" className="mb-5 p-4 rounded-xl bg-black/30 border border-gold/40 space-y-3">
+          <p className="text-sm">
+            <Check className="inline w-4 h-4 text-gold mr-1 -mt-0.5" />
+            Đã tạo link cho <span className="font-semibold text-gold">{result.name}</span>
+          </p>
+          <p className="font-mono text-xs text-gold/90 break-all select-all bg-black/20 rounded-lg px-3 py-2">{result.url}</p>
+          <div className="grid grid-cols-2 sm:flex gap-2">
+            <CopyButton text={result.url} label="Copy link" />
+            <ShareButton url={result.url} name={result.name} />
+            <a
+              href={`https://zalo.me/share?url=${encodeURIComponent(result.url)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${actionBtn} col-span-2 sm:col-span-1 bg-white/5 border-white/20 text-ivory hover:border-gold hover:text-gold`}
+            >
+              <Send className="w-4 h-4" /> Gửi qua Zalo
+            </a>
+          </div>
+          {!result.verified && (
+            <p className="flex items-start gap-1.5 text-xs text-amber-200">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              Chưa thấy dòng mới trong Sheet. Mở tab &ldquo;Danh sách&rdquo; sau vài giây để kiểm tra; nếu vẫn không có, kiểm tra Apps Script đã Deploy bản mới chưa.
+            </p>
+          )}
+          <button type="button" onClick={onViewList} className="text-xs text-gold-light underline underline-offset-2 cursor-pointer">
+            Xem danh sách khách
+          </button>
+        </div>
+      )}
+
       <form onSubmit={submit} className="space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -350,6 +530,8 @@ function CreateGuestForm({ onCreated }: { onCreated: () => void }) {
               placeholder="VD: Gia Bảo, Thầy Minh…"
               className={inputCls}
               maxLength={80}
+              autoComplete="off"
+              enterKeyHint="next"
               required
             />
           </div>
@@ -374,84 +556,60 @@ function CreateGuestForm({ onCreated }: { onCreated: () => void }) {
             id="g-msg"
             value={customMessage}
             onChange={(e) => setCustomMessage(e.target.value)}
-            rows={3}
+            rows={4}
             maxLength={1500}
             placeholder="Để trống nếu dùng lời mời mặc định"
             className={inputCls}
           />
+          <p className="text-right text-[11px] text-ivory/40 mt-1">{customMessage.length}/1500</p>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls} htmlFor="g-date">Ngày (tùy chọn)</label>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="min-w-0">
+            <label className={labelCls} htmlFor="g-date">Ngày</label>
             <input
               id="g-date"
               type="date"
               value={dateIso}
               onChange={(e) => setDateIso(e.target.value)}
-              className={`${inputCls} [color-scheme:dark]`}
+              className={`${inputCls} [color-scheme:dark] min-w-0`}
             />
           </div>
-          <div>
-            <label className={labelCls} htmlFor="g-time">Giờ (tùy chọn)</label>
+          <div className="min-w-0">
+            <label className={labelCls} htmlFor="g-time">Giờ</label>
             <input
               id="g-time"
               value={customTime}
               onChange={(e) => setCustomTime(e.target.value)}
-              placeholder="VD: 10:00 - 11:30 sáng"
+              placeholder="10:00 sáng"
               className={inputCls}
               maxLength={60}
             />
           </div>
         </div>
+        <p className="text-[11px] text-ivory/40 -mt-2">Ngày và giờ có thể để trống để dùng mặc định của thiệp.</p>
 
-        <label className="flex items-center gap-2 text-sm text-ivory/80 cursor-pointer">
+        <label className="flex items-center gap-3 min-h-11 text-sm text-ivory/80 cursor-pointer">
           <input
             type="checkbox"
             checked={canUpload}
             onChange={(e) => setCanUpload(e.target.checked)}
-            className="accent-gold w-4 h-4"
+            className="accent-gold w-5 h-5"
           />
           Cho phép khách tải ảnh lên
         </label>
 
-        {error && <p className="text-xs text-red-300">{error}</p>}
+        {error && <p className="text-sm text-red-300">{error}</p>}
 
         <button
           type="submit"
           disabled={busy || !name.trim()}
-          className="w-full py-3 rounded-xl bg-gold-gradient text-emerald-deep font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+          className="w-full min-h-12 rounded-xl bg-gold-gradient text-emerald-deep font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
         >
           <Link2 className="w-4 h-4" />
           {busy ? "Đang tạo & ghi vào Sheet…" : "Tạo link thiệp"}
         </button>
       </form>
-
-      {result && (
-        <div className="mt-5 p-4 rounded-xl bg-black/30 border border-gold/40 space-y-3">
-          <p className="text-sm">
-            Link cho <span className="font-semibold text-gold">{result.name}</span>:
-          </p>
-          <div className="flex items-center gap-2">
-            <p className="font-mono text-xs text-gold/90 break-all select-all flex-1">{result.url}</p>
-            <CopyButton text={result.url} />
-          </div>
-          <a
-            href={`https://zalo.me/share?url=${encodeURIComponent(result.url)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-gold-light hover:text-gold"
-          >
-            <Send className="w-3.5 h-3.5" /> Gửi qua Zalo
-          </a>
-          {!result.verified && (
-            <p className="flex items-start gap-1.5 text-[11px] text-amber-200">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-              Chưa thấy dòng mới trong Sheet. Bấm &ldquo;Tải lại&rdquo; sau vài giây; nếu vẫn không có, kiểm tra Apps Script (docs/apps-script.gs) đã được Deploy bản mới chưa.
-            </p>
-          )}
-        </div>
-      )}
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { graduationConfig, AudioPreset } from "@/config/graduation";
+import { getScriptUrl, sheetBody, sheetGetUrl } from "@/lib/sheet";
 
 export const dynamic = "force-dynamic";
 
@@ -190,8 +191,8 @@ export async function GET(request: Request) {
     });
   }
 
-  if (!graduationConfig.googleScriptUrl) {
-    console.warn("[Music Route GET] graduationConfig.googleScriptUrl is not configured");
+  if (!getScriptUrl()) {
+    console.warn("[Music Route GET] GOOGLE_SCRIPT_URL is not configured");
     return NextResponse.json(
       cachedMusicData || {
         activeAudioUrl: graduationConfig.audioUrl,
@@ -202,7 +203,7 @@ export async function GET(request: Request) {
 
   try {
     const res = await fetch(
-      `${graduationConfig.googleScriptUrl}?action=getMusic&sheet=songs&_t=${now}`,
+      sheetGetUrl({ action: "getMusic", sheet: "songs", _t: String(now) }),
       {
         method: "GET",
         headers: { Accept: "application/json" },
@@ -321,8 +322,8 @@ export async function POST(request: Request) {
 
     const rawUrl = url.trim();
 
-    if (!graduationConfig.googleScriptUrl) {
-      console.error("[Music POST] graduationConfig.googleScriptUrl is not configured");
+    if (!getScriptUrl()) {
+      console.error("[Music POST] GOOGLE_SCRIPT_URL is not configured");
       return NextResponse.json(
         { success: false, error: "Chưa cấu hình Google Script URL" },
         { status: 500 }
@@ -351,10 +352,10 @@ export async function POST(request: Request) {
     let sheetErrorMessage: string | null = null;
 
     try {
-      const sheetRes = await fetch(graduationConfig.googleScriptUrl, {
+      const sheetRes = await fetch(getScriptUrl(), {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
+        body: sheetBody({
           type: "SAVE_MUSIC",
           action: "SAVE_MUSIC",
           sheet: "songs",

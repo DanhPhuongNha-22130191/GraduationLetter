@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { graduationConfig, GalleryItem } from "@/config/graduation";
+import { getScriptUrl, sheetBody, sheetGetUrl } from "@/lib/sheet";
 
 export const dynamic = "force-dynamic";
 
@@ -10,14 +11,14 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const isRefresh = searchParams.get("refresh") === "1";
 
-  if (!graduationConfig.googleScriptUrl) {
-    console.warn("[Photos Route] graduationConfig.googleScriptUrl is not configured");
+  if (!getScriptUrl()) {
+    console.warn("[Photos Route] GOOGLE_SCRIPT_URL is not configured");
     return NextResponse.json(cachedPhotos || []);
   }
 
   try {
     const res = await fetch(
-      `${graduationConfig.googleScriptUrl}?action=getPhotos&sheet=photos${isRefresh ? `&_t=${Date.now()}` : ""}`,
+      sheetGetUrl({ action: "getPhotos", sheet: "photos", ...(isRefresh ? { _t: String(Date.now()) } : {}) }),
       {
         method: "GET",
         headers: { Accept: "application/json" },
