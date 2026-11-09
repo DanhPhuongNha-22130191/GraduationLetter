@@ -271,9 +271,20 @@ function addGuestRow(ss, data) {
       return values.hasOwnProperty(h) ? values[h] : "";
     });
 
+    // Ngày: ghi thành GIÁ TRỊ NGÀY THẬT, không ghi chữ "04/12/2026".
+    // Cột customDate của bảng (Table) có kiểu Ngày + Sheet đang dùng locale Mỹ (tháng/ngày)
+    // -> chữ "04/12/2026" bị hiểu thành 12 tháng 4. Tạo Date từ ngày/tháng/năm thì không thể nhầm.
+    // (12 giờ trưa để đổi múi giờ thế nào cũng không lệch sang ngày khác)
+    var dateColIdx = headers.indexOf("customdate");
+    var dm = String(values.customdate).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (dateColIdx !== -1 && dm) {
+      row[dateColIdx] = new Date(+dm[3], +dm[2] - 1, +dm[1], 12, 0, 0);
+    }
+
     var newRow = lastDataRow + 1;
     var range = sheet.getRange(newRow, 1, 1, row.length);
     range.setNumberFormat("@");
+    if (dateColIdx !== -1 && dm) sheet.getRange(newRow, dateColIdx + 1).setNumberFormat("dd/MM/yyyy");
     range.setValues([row]);
 
     return jsonOut({ status: "success", slug: slug, row: newRow });

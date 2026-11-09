@@ -16,6 +16,7 @@ import {
   Send,
   Share2,
   UserPlus,
+  X,
 } from "lucide-react";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { graduationConfig } from "@/config/graduation";
@@ -110,6 +111,9 @@ function isoToDMY(iso: string) {
 
 // Ngày lễ mặc định của thiệp (04/12/2026)
 const DEFAULT_DATE_ISO = graduationConfig.graduationDate.slice(0, 10);
+
+// Giờ điền sẵn cho khách mới (admin bấm ✕ để xoá rồi nhập giờ khác)
+const DEFAULT_TIME = "10:00 - 11h30 sáng";
 
 /** "2026-12-04" -> "Thứ Sáu, 04/12/2026" (không phụ thuộc ngôn ngữ trình duyệt) */
 function formatDateVi(iso: string) {
@@ -514,7 +518,7 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
   const [mode, setMode] = useState<Mode>("friend");
   const [customMessage, setCustomMessage] = useState("");
   const [dateIso, setDateIso] = useState("");
-  const [customTime, setCustomTime] = useState("");
+  const [customTime, setCustomTime] = useState(DEFAULT_TIME);
   const [canUpload, setCanUpload] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -645,15 +649,39 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
           </div>
           <div className="min-w-0">
             <label className={labelCls} htmlFor="g-time">Giờ</label>
-            <input
-              id="g-time"
-              value={customTime}
-              onChange={(e) => setCustomTime(e.target.value)}
-              placeholder="VD: 10:00 - 11:30 sáng"
-              className={inputCls}
-              maxLength={60}
-            />
-            <p className="text-[11px] text-ivory/40 mt-1">Để trống để dùng giờ mặc định của thiệp.</p>
+            <div className="relative">
+              <input
+                id="g-time"
+                value={customTime}
+                onChange={(e) => setCustomTime(e.target.value)}
+                placeholder={`VD: ${DEFAULT_TIME}`}
+                className={`${inputCls} pr-11`}
+                maxLength={60}
+              />
+              {customTime && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomTime("");
+                    document.getElementById("g-time")?.focus();
+                  }}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-lg text-ivory/50 hover:text-gold hover:bg-white/10 cursor-pointer"
+                  aria-label="Xoá giờ"
+                  title="Xoá giờ để nhập giờ khác"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            {customTime !== DEFAULT_TIME && (
+              <button
+                type="button"
+                onClick={() => setCustomTime(DEFAULT_TIME)}
+                className="text-[11px] text-gold-light underline underline-offset-2 mt-1 cursor-pointer"
+              >
+                Dùng lại giờ mặc định ({DEFAULT_TIME})
+              </button>
+            )}
           </div>
         </div>
 
