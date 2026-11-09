@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Check,
   Copy,
+  GraduationCap,
   Link2,
   List,
   Lock,
@@ -63,15 +64,17 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
 
 // text-base trên điện thoại: iPhone tự phóng to trang khi ô nhập có chữ < 16px
 const inputCls =
-  "w-full px-3.5 py-3 sm:py-2.5 rounded-xl bg-white border border-emerald-900/15 text-emerald-950 placeholder-emerald-900/35 text-base sm:text-sm font-sans focus:outline-none focus:border-gold-600 focus:ring-2 focus:ring-gold/30 transition-all";
+  "w-full px-3.5 py-3 sm:py-2.5 rounded-xl bg-[#F6F8F3] border border-emerald-900/15 text-emerald-950 placeholder-emerald-900/35 text-base sm:text-sm font-sans focus:outline-none focus:bg-white focus:border-gold-600 focus:ring-2 focus:ring-gold/30 transition-all";
 const labelCls = "block text-xs font-sans uppercase tracking-wider text-emerald-800 font-semibold mb-1.5";
-const cardCls = "rounded-2xl bg-white border border-emerald-900/10 p-4 sm:p-6 shadow-soft-sm";
+const cardCls = "rounded-2xl bg-white border border-emerald-900/10 p-4 sm:p-6 shadow-soft-md";
+const pageBg = "bg-[#F1F5EE]";
+const h2Cls = "font-serif text-xl text-emerald-900 font-bold border-l-4 border-gold pl-3";
 const actionBtn =
   "inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 px-3 py-2 sm:py-1.5 rounded-xl sm:rounded-lg border text-sm sm:text-xs font-semibold transition-colors cursor-pointer";
 const btnGold = "bg-gold/10 border-gold/50 text-gold-700 hover:bg-gold hover:text-emerald-950";
-const btnGhost = "bg-white border-emerald-900/15 text-emerald-900 hover:border-gold hover:text-gold-700";
+const btnGhost = "bg-white border-emerald-900/20 text-emerald-900 hover:border-gold hover:bg-gold/10 hover:text-emerald-950";
 const btnPrimary =
-  "w-full min-h-12 rounded-xl bg-emerald-900 text-white font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-700 disabled:opacity-50 disabled:hover:bg-emerald-900 cursor-pointer transition-colors";
+  "w-full min-h-12 rounded-xl bg-emerald-900 text-white font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-soft-md border-b-2 border-gold hover:bg-emerald-700 disabled:opacity-50 disabled:hover:bg-emerald-900 cursor-pointer transition-colors";
 
 function guestUrl(slug: string) {
   if (typeof window === "undefined") return "";
@@ -251,7 +254,7 @@ export const AdminPanel: React.FC = () => {
 
   if (!status) {
     return (
-      <main className="min-h-dvh bg-white text-emerald-950 font-sans flex items-center justify-center">
+      <main className={`min-h-dvh ${pageBg} text-emerald-950 font-sans flex items-center justify-center`}>
         <p className="text-sm text-emerald-900/60">Đang tải…</p>
       </main>
     );
@@ -259,10 +262,13 @@ export const AdminPanel: React.FC = () => {
 
   if (!status.loggedIn) {
     return (
-      <main className="min-h-dvh bg-white text-emerald-950 font-sans px-4 py-10 flex flex-col justify-center">
+      <main className="min-h-dvh bg-emerald-900 text-white font-sans px-4 py-10 flex flex-col justify-center">
         <header className="text-center mb-6">
-          <div className="mx-auto mb-3 h-1 w-12 rounded-full bg-gold" />
-          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-emerald-900">Quản lý khách mời</h1>
+          <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-gold/15 border border-gold/60 flex items-center justify-center">
+            <GraduationCap className="w-7 h-7 text-gold" />
+          </div>
+          <h1 className="font-serif text-3xl sm:text-4xl font-bold">Quản lý khách mời</h1>
+          <p className="text-sm text-white/60 mt-1">Thiệp tốt nghiệp</p>
         </header>
         <LoginForm configured={status.configured} onDone={refreshStatus} />
       </main>
@@ -298,7 +304,7 @@ function LoginForm({ configured, onDone }: { configured: boolean; onDone: () => 
   };
 
   return (
-    <form onSubmit={submit} className={`${cardCls} w-full max-w-sm mx-auto space-y-4`}>
+    <form onSubmit={submit} className="w-full max-w-sm mx-auto space-y-4 rounded-2xl bg-white text-emerald-950 p-5 sm:p-6 shadow-soft-xl border-t-4 border-gold">
       <div className="flex items-center gap-2 text-emerald-900">
         <Lock className="w-4 h-4 text-gold-700" />
         <span className="font-semibold text-sm">Đăng nhập</span>
@@ -375,14 +381,18 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const pager = usePagination(filtered, query);
 
   return (
-    <main className="min-h-dvh bg-white text-emerald-950 font-sans pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-12">
-      {/* Thanh trên cùng: gọn trên điện thoại, có tab trên máy tính */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-emerald-900/10">
-        <div className="h-0.5 bg-gold" />
+    <main className={`min-h-dvh ${pageBg} text-emerald-950 font-sans pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-12`}>
+      {/* Thanh trên cùng: nền xanh đậm, đường vàng dưới */}
+      <header className="sticky top-0 z-30 bg-emerald-900 text-white border-b-2 border-gold shadow-soft-md">
         <div className="mx-auto max-w-5xl px-4 h-14 flex items-center justify-between gap-3">
-          <h1 className="font-serif text-xl sm:text-2xl font-bold text-emerald-900 truncate">Quản lý khách mời</h1>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="shrink-0 w-8 h-8 rounded-lg bg-gold/15 border border-gold/50 flex items-center justify-center">
+              <GraduationCap className="w-4 h-4 text-gold" />
+            </span>
+            <h1 className="font-serif text-lg sm:text-xl font-bold truncate">Quản lý khách mời</h1>
+          </div>
 
-          <nav className="hidden sm:inline-flex rounded-xl border border-emerald-900/15 p-0.5 bg-white" role="tablist">
+          <nav className="hidden sm:inline-flex rounded-xl bg-white/10 p-0.5" role="tablist">
             {TABS.map((t) => (
               <button
                 key={t.key}
@@ -390,8 +400,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 role="tab"
                 aria-selected={tab === t.key}
                 onClick={() => goTab(t.key)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs whitespace-nowrap rounded-lg cursor-pointer transition-colors ${
-                  tab === t.key ? "bg-emerald-900 text-white font-semibold" : "text-emerald-900/70 hover:text-gold-700"
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs whitespace-nowrap rounded-lg cursor-pointer transition-colors ${
+                  tab === t.key ? "bg-gold text-emerald-950 font-bold" : "text-white/75 hover:text-white"
                 }`}
               >
                 {t.icon}
@@ -403,7 +413,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           <button
             onClick={logout}
             aria-label="Đăng xuất"
-            className="inline-flex items-center justify-center gap-1.5 min-h-10 min-w-10 -mr-2 px-2 text-xs whitespace-nowrap text-emerald-900/70 hover:text-gold-700 cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 min-h-10 min-w-10 -mr-2 px-2 text-xs whitespace-nowrap text-white/75 hover:text-gold cursor-pointer"
           >
             <LogOut className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
             <span className="hidden sm:inline">Đăng xuất</span>
@@ -419,7 +429,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         {tab === "list" && (
           <section ref={listAnchor} className={`${cardCls} scroll-mt-16`}>
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h2 className="font-serif text-xl text-emerald-900 font-bold">Khách đã có ({guests.length})</h2>
+              <h2 className={h2Cls}>Khách đã có ({guests.length})</h2>
               <button
                 onClick={loadGuests}
                 aria-label="Tải lại danh sách"
@@ -449,7 +459,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 const url = guestUrl(slug);
                 const full = (g.devices || 0) >= MAX_DEVICES;
                 return (
-                  <li key={slug} className="py-3 flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3">
+                  <li key={slug} className="py-3.5 px-2 -mx-2 rounded-xl flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 hover:bg-[#F6F8F3] transition-colors">
                     <div className="min-w-0 flex-1">
                       <p className="text-base sm:text-sm font-semibold text-emerald-950 truncate">{g.name}</p>
                       <p className="text-xs sm:text-[11px] text-emerald-900/55 truncate">
@@ -485,7 +495,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
       {/* Thanh điều hướng dưới cùng — chỉ trên điện thoại */}
       <nav
-        className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-emerald-900/10 pb-[env(safe-area-inset-bottom)]"
+        className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-emerald-900/10 shadow-[0_-4px_16px_-8px_rgb(15_46_32/0.18)] pb-[env(safe-area-inset-bottom)]"
         role="tablist"
       >
         <div className="grid grid-cols-3">
@@ -496,12 +506,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               role="tab"
               aria-selected={tab === t.key}
               onClick={() => goTab(t.key)}
-              className={`relative flex flex-col items-center justify-center gap-0.5 h-16 text-[11px] cursor-pointer transition-colors ${
-                tab === t.key ? "text-emerald-900 font-semibold" : "text-emerald-900/50"
+              className={`flex flex-col items-center justify-center gap-1 h-16 text-[11px] cursor-pointer transition-colors ${
+                tab === t.key ? "text-emerald-900 font-bold" : "text-emerald-900/50"
               }`}
             >
-              {tab === t.key && <span className="absolute top-0 inset-x-6 h-0.5 rounded-full bg-gold" />}
-              {t.icon}
+              <span className={`px-4 py-1 rounded-full transition-colors ${tab === t.key ? "bg-gold/25" : ""}`}>{t.icon}</span>
               {t.label}
             </button>
           ))}
@@ -560,12 +569,10 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
 
   return (
     <section className={cardCls}>
-      <h2 className="font-serif text-xl text-emerald-900 font-bold mb-4 flex items-center gap-2">
-        <UserPlus className="w-5 h-5 text-gold-700" /> Thêm khách mới
-      </h2>
+      <h2 className={`${h2Cls} mb-5`}>Thêm khách mới</h2>
 
       {result && (
-        <div id="create-result" className="mb-5 p-4 rounded-xl bg-emerald-light/30 border border-gold/50 space-y-3">
+        <div id="create-result" className="mb-5 p-4 rounded-xl bg-[#F1F5EE] border-l-4 border-gold space-y-3">
           <p className="text-sm text-emerald-950">
             <Check className="inline w-4 h-4 text-emerald-700 mr-1 -mt-0.5" />
             Đã tạo link cho <span className="font-semibold text-emerald-900">{result.name}</span>

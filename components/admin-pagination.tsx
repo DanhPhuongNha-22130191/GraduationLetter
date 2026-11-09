@@ -64,7 +64,7 @@ export function Pagination({
   };
 
   const btn =
-    "inline-flex items-center justify-center gap-1 min-h-10 min-w-10 px-2.5 rounded-lg border border-emerald-900/15 bg-white text-sm sm:text-xs text-emerald-900/80 hover:border-gold hover:text-gold-700 disabled:opacity-30 disabled:pointer-events-none cursor-pointer transition-colors";
+    "inline-flex items-center justify-center gap-1 min-h-10 min-w-10 px-2.5 rounded-lg border border-emerald-900/20 bg-white text-sm sm:text-xs text-emerald-900/80 hover:border-gold hover:text-gold-700 disabled:opacity-30 disabled:pointer-events-none cursor-pointer transition-colors";
 
   return (
     <nav className="flex items-center justify-between gap-2 pt-3 mt-1 border-t border-emerald-900/10" aria-label="Phân trang">

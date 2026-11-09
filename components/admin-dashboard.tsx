@@ -103,6 +103,7 @@ const dayLabel = (day: string) => `${day.slice(8)}/${day.slice(5, 7)}`;
 
 /* ───────────────────────────── Biểu đồ cột (lượt mở theo ngày) ───────────────────────────── */
 
+const BAR = "rgb(var(--c-emerald-700))";
 const GOLD = "rgb(var(--c-gold-500))";
 const GRID = "rgb(var(--c-emerald-900) / 0.08)";
 const AXIS = "rgb(var(--c-emerald-900) / 0.25)";
@@ -184,8 +185,8 @@ function ColumnChart({ data, height = 200 }: { data: ColumnDatum[]; height?: num
               <g key={d.key}>
                 <path
                   d={columnPath(cx - barW / 2, y(d.value), barW, h)}
-                  fill={GOLD}
-                  opacity={hover === null || active ? 1 : 0.4}
+                  fill={active || i === data.length - 1 ? GOLD : BAR}
+                  opacity={hover === null || active ? 1 : 0.45}
                 />
                 {i % labelEvery === 0 && (
                   <text x={cx} y={height - 8} textAnchor="middle" fontSize={10} fill={MUTED}>
@@ -214,14 +215,14 @@ function ColumnChart({ data, height = 200 }: { data: ColumnDatum[]; height?: num
       )}
       {hover !== null && data[hover] && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-white border border-gold/50 px-2.5 py-1.5 text-[11px] shadow-soft-md whitespace-nowrap"
+          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-emerald-900 text-white border border-gold/60 px-2.5 py-1.5 text-[11px] shadow-soft-md whitespace-nowrap"
           style={{
             left: Math.min(Math.max(padL + band * hover + band / 2, 60), width - 60),
             top: Math.max(y(data[hover].value) - 8, 34),
           }}
         >
-          <div className="text-emerald-900/60">{data[hover].tip}</div>
-          <div className="font-semibold text-emerald-950">{data[hover].value} lượt</div>
+          <div className="text-white/70">{data[hover].tip}</div>
+          <div className="font-semibold text-gold">{data[hover].value} lượt</div>
         </div>
       )}
     </div>
@@ -230,7 +231,8 @@ function ColumnChart({ data, height = 200 }: { data: ColumnDatum[]; height?: num
 
 /* ───────────────────────────── Thành phần nhỏ ───────────────────────────── */
 
-const panelCls = "rounded-2xl bg-white border border-emerald-900/10 shadow-soft-sm p-4 sm:p-5";
+const panelCls = "rounded-2xl bg-white border border-emerald-900/10 shadow-soft-md p-4 sm:p-5";
+const titleCls = "text-sm font-bold text-emerald-900 border-l-4 border-gold pl-2.5";
 
 function StatTile({
   icon,
@@ -238,28 +240,36 @@ function StatTile({
   value,
   sub,
   meter,
+  tone = "green",
 }: {
   icon: React.ReactNode;
   label: string;
   value: string | number;
   sub?: string;
   meter?: number;
+  tone?: "green" | "gold";
 }) {
   return (
-    <div className="rounded-2xl bg-emerald-light/30 border border-emerald-900/10 p-4">
-      <div className="flex items-center gap-1.5 text-xs text-emerald-900/70 font-medium">
-        <span className="text-gold-700">{icon}</span>
-        {label}
-      </div>
-      <div className="font-serif font-bold text-emerald-950 mt-1 text-4xl leading-none" style={{ fontVariantNumeric: "tabular-nums" }}>
-        {value}
-      </div>
-      {meter !== undefined && (
-        <div className="mt-2.5 h-1.5 rounded-full overflow-hidden bg-emerald-900/10">
-          <div className="h-full rounded-full bg-gold" style={{ width: `${Math.round(meter * 100)}%` }} />
+    <div className="rounded-2xl bg-white border border-emerald-900/10 shadow-soft-md p-4 flex gap-3.5">
+      <span
+        className={`shrink-0 w-11 h-11 rounded-xl flex items-center justify-center ${
+          tone === "gold" ? "bg-gold/20 text-gold-700" : "bg-emerald-900 text-gold"
+        }`}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="text-xs text-emerald-900/65 font-medium">{label}</div>
+        <div className="font-serif font-bold text-emerald-900 mt-0.5 text-3xl leading-none" style={{ fontVariantNumeric: "tabular-nums" }}>
+          {value}
         </div>
-      )}
-      {sub && <div className="text-[11px] text-emerald-900/55 mt-2">{sub}</div>}
+        {meter !== undefined && (
+          <div className="mt-2.5 h-1.5 rounded-full overflow-hidden bg-emerald-900/10">
+            <div className="h-full rounded-full bg-gold" style={{ width: `${Math.round(meter * 100)}%` }} />
+          </div>
+        )}
+        {sub && <div className="text-[11px] text-emerald-900/55 mt-1.5">{sub}</div>}
+      </div>
     </div>
   );
 }
@@ -386,7 +396,7 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-serif text-xl sm:text-2xl font-bold text-emerald-900">Tổng quan</h2>
+        <h2 className="font-serif text-xl sm:text-2xl font-bold text-emerald-900 border-l-4 border-gold pl-3">Tổng quan</h2>
         <button
           onClick={load}
           aria-label="Tải lại số liệu"
@@ -409,7 +419,7 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
         <>
           {/* Cảnh báo: chỉ hiện khi có */}
           {s.alerts.length > 0 && (
-            <section role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5">
+            <section role="alert" className="rounded-2xl border border-amber-300 border-l-4 border-l-amber-500 bg-amber-50 p-4 sm:p-5 shadow-soft-sm">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-amber-900">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 Link bị mở trên thiết bị lạ ({s.alerts.length} khách)
@@ -437,20 +447,21 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
           {/* 3 số liệu chính */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <StatTile
-              icon={<Eye className="w-4 h-4" />}
+              icon={<Eye className="w-5 h-5" />}
               label="Lượt mở thiệp"
               value={s.opens.length}
               sub={`${s.uniqueViewers} người xem khác nhau`}
             />
             <StatTile
-              icon={<Users className="w-4 h-4" />}
+              icon={<Users className="w-5 h-5" />}
+              tone="gold"
               label="Khách đã mở link"
               value={`${s.openedGuests}/${s.guestRows.length}`}
               meter={s.guestRows.length ? s.openedGuests / s.guestRows.length : 0}
               sub={`${s.guestRows.length - s.openedGuests} khách chưa mở`}
             />
             <StatTile
-              icon={<UserCheck className="w-4 h-4" />}
+              icon={<UserCheck className="w-5 h-5" />}
               label="Xác nhận tham dự"
               value={s.yesPeople}
               sub={`${s.yes.length}/${s.rsvpList.length} phản hồi đồng ý · tính cả người đi cùng`}
@@ -460,8 +471,8 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
           {/* Biểu đồ duy nhất */}
           <section className={panelCls}>
             <div className="mb-3">
-              <h3 className="text-sm font-semibold text-emerald-950">Lượt mở thiệp theo ngày</h3>
-              <p className="text-[11px] text-emerald-900/55 mt-0.5">{CHART_DAYS} ngày gần nhất</p>
+              <h3 className={titleCls}>Lượt mở thiệp theo ngày</h3>
+              <p className="text-[11px] text-emerald-900/55 mt-1 pl-3.5">{CHART_DAYS} ngày gần nhất · cột vàng là hôm nay</p>
             </div>
             <ColumnChart data={s.byDay} height={200} />
           </section>
@@ -469,10 +480,10 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
           {/* Tình trạng từng khách */}
           <section className={panelCls}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-              <h3 ref={statusAnchor} className="text-sm font-semibold text-emerald-950 scroll-mt-20">
+              <h3 ref={statusAnchor} className={`${titleCls} scroll-mt-20`}>
                 Tình trạng từng khách mời
               </h3>
-              <div className="grid grid-cols-3 sm:inline-flex rounded-lg border border-emerald-900/15 p-0.5 bg-white" role="group" aria-label="Lọc khách">
+              <div className="grid grid-cols-3 sm:inline-flex rounded-lg bg-[#F1F5EE] p-0.5" role="group" aria-label="Lọc khách">
                 {([
                   ["all", `Tất cả (${s.guestRows.length})`],
                   ["opened", `Đã mở (${s.openedGuests})`],
@@ -484,7 +495,7 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
                     onClick={() => setGuestFilter(k)}
                     aria-pressed={guestFilter === k}
                     className={`min-h-10 sm:min-h-0 px-2.5 py-1 text-xs whitespace-nowrap rounded-md cursor-pointer transition-colors ${
-                      guestFilter === k ? "bg-emerald-900 text-white font-semibold" : "text-emerald-900/70 hover:text-gold-700"
+                      guestFilter === k ? "bg-emerald-900 text-white font-semibold shadow-soft-xs" : "text-emerald-900/70 hover:text-emerald-950"
                     }`}
                   >
                     {label}
@@ -531,18 +542,18 @@ export function AdminDashboard({ onUnauthorized }: { onUnauthorized: () => void 
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-left text-emerald-900/55 border-b border-gold/40">
-                    <th className="py-2 font-medium">Khách</th>
-                    <th className="py-2 font-medium">Vai xưng</th>
-                    <th className="py-2 font-medium text-right">Lượt mở</th>
-                    <th className="py-2 pl-4 font-medium">Lần cuối</th>
-                    <th className="py-2 font-medium">RSVP</th>
+                  <tr className="text-left text-emerald-900/70 bg-[#F1F5EE]">
+                    <th className="py-2 pl-3 font-semibold rounded-l-lg">Khách</th>
+                    <th className="py-2 font-semibold">Vai xưng</th>
+                    <th className="py-2 font-semibold text-right">Lượt mở</th>
+                    <th className="py-2 pl-4 font-semibold">Lần cuối</th>
+                    <th className="py-2 font-semibold rounded-r-lg">RSVP</th>
                   </tr>
                 </thead>
                 <tbody style={{ fontVariantNumeric: "tabular-nums" }}>
                   {statusPager.pageItems.map((g) => (
-                    <tr key={g.slug || g.name} className="border-b border-emerald-900/5 last:border-0">
-                      <td className="py-2 pr-2">
+                    <tr key={g.slug || g.name} className="border-b border-emerald-900/5 last:border-0 hover:bg-[#F6F8F3]">
+                      <td className="py-2.5 pl-3 pr-2">
                         <div className="text-emerald-950 font-medium">{g.name}</div>
                         <div className="text-[10px] text-emerald-900/40 font-mono">{g.slug}</div>
                       </td>
