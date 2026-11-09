@@ -105,7 +105,6 @@ export async function POST(request: Request) {
     customTime,
     customDate,
     canUpload: canUpload ? "true" : "false",
-    link: `${new URL(request.url).origin}/?u=${encodeURIComponent(code)}`,
     timestamp,
   };
 

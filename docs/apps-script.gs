@@ -201,6 +201,24 @@ function resetDevices(ss, data) {
 }
 
 // -------------------------------------------------------------
+// HELPER 6a: Nhận diện cột do ARRAYFORMULA tự điền (công thức đặt ở dòng 1 hoặc 2)
+// -------------------------------------------------------------
+function isArrayFormula(f) {
+  return /ARRAYFORMULA\s*\(/i.test(String(f || ""));
+}
+
+function arrayFormulaColumns(sheet, n) {
+  var rows = Math.min(2, sheet.getMaxRows());
+  var fs = sheet.getRange(1, 1, rows, n).getFormulas();
+  var out = [];
+  for (var c = 0; c < n; c++) {
+    out[c] = false;
+    for (var r = 0; r < fs.length; r++) if (isArrayFormula(fs[r][c])) out[c] = true;
+  }
+  return out;
+}
+
+// -------------------------------------------------------------
 // HELPER 6 [BỔ SUNG]: Thêm khách mới vào tab "guests" (từ trang /admin)
 //  - Dò cột theo tiêu đề hàng 1 (slug | name | mode | customMessage | customTime | customDate | canUpload)
 //  - Ghi cả dòng ở dạng CHỮ (@) để Sheet không tự đổi "04/12/2026" thành ngày tháng
@@ -263,8 +281,8 @@ function addGuestRow(ss, data) {
       customtime: String(data.customTime || ""),
       customdate: String(data.customDate || ""),
       canupload: String(data.canUpload === "false" || data.canUpload === false ? "false" : "true"),
-      specialphoto: "",
-      link: String(data.link || "")
+      specialphoto: ""
+      // KHÔNG ghi cột link: Sheet tự tạo link từ slug bằng ARRAYFORMULA ở H2
     };
 
     var row = headers.map(function (h) {
@@ -282,10 +300,43 @@ function addGuestRow(ss, data) {
     }
 
     var newRow = lastDataRow + 1;
-    var range = sheet.getRange(newRow, 1, 1, row.length);
-    range.setNumberFormat("@");
-    if (dateColIdx !== -1 && dm) sheet.getRange(newRow, dateColIdx + 1).setNumberFormat("dd/MM/yyyy");
+    var n = row.length;
+    var range = sheet.getRange(newRow, 1, 1, n);
+
+    // Giữ CÔNG THỨC của Sheet: cột nào ở dòng khách phía trên là công thức (vd cột link)
+    // thì dòng mới chép công thức đó xuống (R1C1 tự đổi tham chiếu theo dòng), không ghi giá trị cứng.
+    var prevFormulas = [], prevFormats = [];
+    if (lastDataRow >= 2) {
+      var prevRange = sheet.getRange(lastDataRow, 1, 1, n);
+      prevFormulas = prevRange.getFormulasR1C1()[0];
+      prevFormats = prevRange.getNumberFormats()[0];
+    }
+    var curFormulas = range.getFormulasR1C1()[0];
+    var arrayCols = arrayFormulaColumns(sheet, n);
+    var formulaAt = [];
+    var formats = [];
+    for (var c = 0; c < n; c++) {
+      formulaAt[c] = curFormulas[c] || prevFormulas[c] || "";
+      if (arrayCols[c] || isArrayFormula(formulaAt[c])) {
+        // Cột do ARRAYFORMULA tự điền (vd cột link) -> để TRỐNG, ghi gì vào cũng làm công thức báo #REF!
+        formulaAt[c] = "";
+        formats[c] = prevFormats[c] || "General";
+        row[c] = "";
+      } else if (formulaAt[c]) {
+        formats[c] = prevFormats[c] || "General";
+        row[c] = "";
+      } else if (c === dateColIdx && dm) {
+        formats[c] = "dd/MM/yyyy";
+      } else {
+        formats[c] = "@";
+      }
+    }
+
+    range.setNumberFormats([formats]);
     range.setValues([row]);
+    for (var f = 0; f < n; f++) {
+      if (formulaAt[f]) sheet.getRange(newRow, f + 1).setFormulaR1C1(formulaAt[f]);
+    }
 
     return jsonOut({ status: "success", slug: slug, row: newRow });
   } finally {
@@ -652,6 +703,92 @@ function doPost(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
+// =================================================================
+// [CHẠY TAY 1 LẦN] SỬA TAB "guests" SAU KHI TRANG ADMIN GHI VÀO
+//  1. Cột do ARRAYFORMULA tự điền (vd cột link: công thức ở H2):
+//     XOÁ mọi ô bên dưới công thức (giá trị cứng / công thức chép xuống gây #REF!)
+//     -> ARRAYFORMULA tự điền lại link cho TẤT CẢ khách.
+//  2. Cột công thức thường (không phải ARRAYFORMULA): dòng khách nào thiếu -> chép từ dòng mẫu.
+//  3. customDate đang là CHỮ "dd/MM/yyyy" -> đổi thành ngày thật.
+//  Cách chạy: chọn hàm fixGuestRowsBelow ở thanh trên của Apps Script → Run → xem Execution log.
+// =================================================================
+function fixGuestRowsBelow() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = findTargetSheet(ss, "guests");
+  if (!sheet) { Logger.log("Không tìm thấy tab guests"); return; }
+
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) { return normalizeStr(h); });
+  while (headers.length && !headers[headers.length - 1]) headers.pop();
+  var n = headers.length;
+  var slugCol = headers.indexOf("slug");
+  var dateCol = headers.indexOf("customdate");
+  var lastRow = sheet.getLastRow();
+  if (slugCol === -1 || lastRow < 3) { Logger.log("Không có gì để sửa"); return; }
+
+  // 1. Dọn cột ARRAYFORMULA
+  var head = sheet.getRange(1, 1, 2, n).getFormulas();
+  for (var c0 = 0; c0 < n; c0++) {
+    var fRow = isArrayFormula(head[0][c0]) ? 1 : (isArrayFormula(head[1][c0]) ? 2 : 0);
+    if (!fRow || lastRow <= fRow) continue;
+    sheet.getRange(fRow + 1, c0 + 1, lastRow - fRow, 1).clearContent();
+    Logger.log("Đã dọn cột " + headers[c0] + " từ dòng " + (fRow + 1) + " -> ARRAYFORMULA tự điền lại");
+  }
+  SpreadsheetApp.flush();
+  var arrayCols = arrayFormulaColumns(sheet, n);
+
+  var all = sheet.getRange(2, 1, lastRow - 1, n);
+  var vals = all.getValues();
+  var formulas = all.getFormulasR1C1();
+
+  // 2. Dòng mẫu = dòng khách cuối cùng có công thức thường
+  var tpl = -1;
+  for (var i = 0; i < vals.length; i++) {
+    if (String(vals[i][slugCol]).trim() === "") continue;
+    for (var k = 0; k < n; k++) {
+      if (!arrayCols[k] && formulas[i][k] && !isArrayFormula(formulas[i][k])) { tpl = i; break; }
+    }
+  }
+  var tplFormulas = tpl === -1 ? [] : formulas[tpl];
+  var tplFormats = tpl === -1 ? [] : sheet.getRange(tpl + 2, 1, 1, n).getNumberFormats()[0];
+  var fixed = 0;
+
+  for (var r = 0; r < vals.length; r++) {
+    if (String(vals[r][slugCol]).trim() === "") continue;
+    var sheetRow = r + 2;
+    var changed = false;
+
+    if (tpl !== -1 && r > tpl) {
+      for (var c = 0; c < n; c++) {
+        var tf = tplFormulas[c];
+        if (tf && !arrayCols[c] && !isArrayFormula(tf) && !formulas[r][c]) {
+          var cell = sheet.getRange(sheetRow, c + 1);
+          cell.setNumberFormat(tplFormats[c] || "General");
+          cell.setFormulaR1C1(tf);
+          changed = true;
+        }
+      }
+    }
+
+    // 3. Ngày dạng chữ -> ngày thật
+    if (dateCol !== -1 && !formulas[r][dateCol] && !(vals[r][dateCol] instanceof Date)) {
+      var dm = String(vals[r][dateCol]).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (dm) {
+        var dc = sheet.getRange(sheetRow, dateCol + 1);
+        dc.setNumberFormat("dd/MM/yyyy");
+        dc.setValue(new Date(+dm[3], +dm[2] - 1, +dm[1], 12, 0, 0));
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      fixed++;
+      Logger.log("Đã sửa dòng " + sheetRow + " (" + vals[r][slugCol] + ")");
+    }
+  }
+  Logger.log("Xong · số dòng sửa thêm: " + fixed);
+}
+
 // =================================================================
 // HÀM NẠP TỰ ĐỘNG TOÀN BỘ LỜI CHÚC MỚI VÀO SHEET "guests"
 // =================================================================

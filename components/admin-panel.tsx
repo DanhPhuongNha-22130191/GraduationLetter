@@ -39,37 +39,6 @@ interface Guest {
 
 const MAX_DEVICES = 2;
 
-/** Xoá các thiết bị đã ghi nhận để khách mở lại link được (vd đổi điện thoại) */
-function UnlockButton({ slug, name, onDone }: { slug: string; name: string; onDone: () => void }) {
-  const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
-  const run = async () => {
-    if (!window.confirm(`Mở khoá link của ${name}?\nCác thiết bị đã mở sẽ bị xoá; 2 thiết bị mở tiếp theo được xem lời nhắn riêng.`)) return;
-    setState("busy");
-    try {
-      const r = await fetch("/api/admin/guests", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug }),
-      });
-      const d = await r.json();
-      setState(r.ok && d.success ? "done" : "error");
-      if (r.ok && d.success) onDone();
-    } catch {
-      setState("error");
-    }
-  };
-  return (
-    <button
-      type="button"
-      onClick={run}
-      disabled={state === "busy"}
-      className={`${actionBtn} col-span-2 sm:col-span-1 bg-transparent border-white/20 text-ivory/80 hover:border-gold hover:text-gold disabled:opacity-50`}
-    >
-      {state === "busy" ? "Đang mở khoá…" : state === "done" ? "Đã mở khoá" : state === "error" ? "Lỗi — thử lại" : "Mở khoá"}
-    </button>
-  );
-}
-
 const MODE_LABEL: Record<Mode, string> = {
   friend: "Bạn bè — xưng Nhã (Thân mời)",
   elder: "Thầy cô / Người lớn — xưng con (Kính mời)",
@@ -90,13 +59,19 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "list", label: "Danh sách", icon: <List className="w-5 h-5 sm:w-3.5 sm:h-3.5" /> },
 ];
 
+/* ───────────── Kiểu dáng dùng chung: nền trắng, xanh làm chủ đạo, vàng điểm nhấn ───────────── */
+
 // text-base trên điện thoại: iPhone tự phóng to trang khi ô nhập có chữ < 16px
 const inputCls =
-  "w-full px-3.5 py-3 sm:py-2.5 rounded-xl bg-white/10 border border-gold/40 text-ivory placeholder-ivory/40 text-base sm:text-sm font-sans focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all";
-const labelCls = "block text-xs font-sans uppercase tracking-wider text-gold-light font-semibold mb-1.5";
-const cardCls = "rounded-2xl bg-emerald-deep border border-gold/40 p-4 sm:p-6 shadow-xl";
+  "w-full px-3.5 py-3 sm:py-2.5 rounded-xl bg-white border border-emerald-900/15 text-emerald-950 placeholder-emerald-900/35 text-base sm:text-sm font-sans focus:outline-none focus:border-gold-600 focus:ring-2 focus:ring-gold/30 transition-all";
+const labelCls = "block text-xs font-sans uppercase tracking-wider text-emerald-800 font-semibold mb-1.5";
+const cardCls = "rounded-2xl bg-white border border-emerald-900/10 p-4 sm:p-6 shadow-soft-sm";
 const actionBtn =
   "inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 px-3 py-2 sm:py-1.5 rounded-xl sm:rounded-lg border text-sm sm:text-xs font-semibold transition-colors cursor-pointer";
+const btnGold = "bg-gold/10 border-gold/50 text-gold-700 hover:bg-gold hover:text-emerald-950";
+const btnGhost = "bg-white border-emerald-900/15 text-emerald-900 hover:border-gold hover:text-gold-700";
+const btnPrimary =
+  "w-full min-h-12 rounded-xl bg-emerald-900 text-white font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-700 disabled:opacity-50 disabled:hover:bg-emerald-900 cursor-pointer transition-colors";
 
 function guestUrl(slug: string) {
   if (typeof window === "undefined") return "";
@@ -123,6 +98,37 @@ function formatDateVi(iso: string) {
     new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).getUTCDay()
   ];
   return `${wd}, ${m[3]}/${m[2]}/${m[1]}`;
+}
+
+/** Xoá các thiết bị đã ghi nhận để khách mở lại link được (vd đổi điện thoại) */
+function UnlockButton({ slug, name, onDone }: { slug: string; name: string; onDone: () => void }) {
+  const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
+  const run = async () => {
+    if (!window.confirm(`Mở khoá link của ${name}?\nCác thiết bị đã mở sẽ bị xoá; 2 thiết bị mở tiếp theo được xem lời nhắn riêng.`)) return;
+    setState("busy");
+    try {
+      const r = await fetch("/api/admin/guests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug }),
+      });
+      const d = await r.json();
+      setState(r.ok && d.success ? "done" : "error");
+      if (r.ok && d.success) onDone();
+    } catch {
+      setState("error");
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={run}
+      disabled={state === "busy"}
+      className={`${actionBtn} col-span-2 sm:col-span-1 ${btnGhost} disabled:opacity-50`}
+    >
+      {state === "busy" ? "Đang mở khoá…" : state === "done" ? "Đã mở khoá" : state === "error" ? "Lỗi — thử lại" : "Mở khoá"}
+    </button>
+  );
 }
 
 /**
@@ -158,23 +164,23 @@ function DateField({
               // trình duyệt không hỗ trợ showPicker -> để mặc định
             }
           }}
-          className="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none [color-scheme:dark]"
+          className="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none"
         />
         <div
           aria-hidden="true"
-          className={`${inputCls} flex items-center justify-between gap-2 pointer-events-none peer-focus:border-gold peer-focus:ring-1 peer-focus:ring-gold`}
+          className={`${inputCls} flex items-center justify-between gap-2 pointer-events-none peer-focus:border-gold-600 peer-focus:ring-2 peer-focus:ring-gold/30`}
         >
           <span className="truncate">{formatDateVi(shown)}</span>
-          <CalendarDays className="w-4 h-4 shrink-0 text-gold" />
+          <CalendarDays className="w-4 h-4 shrink-0 text-gold-700" />
         </div>
       </div>
       <div className="flex items-center justify-between gap-2 mt-1 text-[11px]">
-        <span className="text-ivory/40">{isDefault ? "Ngày mặc định của thiệp · chạm để đổi" : "Đã đổi ngày riêng cho khách này"}</span>
+        <span className="text-emerald-900/50">{isDefault ? "Ngày mặc định của thiệp · chạm để đổi" : "Đã đổi ngày riêng cho khách này"}</span>
         {!isDefault && (
           <button
             type="button"
             onClick={() => onChange("")}
-            className="text-gold-light underline underline-offset-2 cursor-pointer whitespace-nowrap"
+            className="text-gold-700 underline underline-offset-2 cursor-pointer whitespace-nowrap"
           >
             Về mặc định
           </button>
@@ -199,7 +205,7 @@ function CopyButton({ text, label = "Copy", className = "" }: { text: string; la
         setDone(true);
         setTimeout(() => setDone(false), 1800);
       }}
-      className={`${actionBtn} bg-gold/15 border-gold/40 text-gold hover:bg-gold hover:text-emerald-deep ${className}`}
+      className={`${actionBtn} ${btnGold} ${className}`}
     >
       {done ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
       {done ? "Đã copy" : label}
@@ -221,11 +227,7 @@ function ShareButton({ url, name, className = "" }: { url: string; name: string;
     window.open(`https://zalo.me/share?url=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer");
   };
   return (
-    <button
-      type="button"
-      onClick={share}
-      className={`${actionBtn} bg-white/5 border-white/20 text-ivory hover:border-gold hover:text-gold ${className}`}
-    >
+    <button type="button" onClick={share} className={`${actionBtn} ${btnGhost} ${className}`}>
       <Share2 className="w-4 h-4" /> Gửi
     </button>
   );
@@ -249,17 +251,18 @@ export const AdminPanel: React.FC = () => {
 
   if (!status) {
     return (
-      <main className="min-h-dvh bg-emerald-950 text-ivory font-sans flex items-center justify-center">
-        <p className="text-sm text-ivory/60">Đang tải…</p>
+      <main className="min-h-dvh bg-white text-emerald-950 font-sans flex items-center justify-center">
+        <p className="text-sm text-emerald-900/60">Đang tải…</p>
       </main>
     );
   }
 
   if (!status.loggedIn) {
     return (
-      <main className="min-h-dvh bg-emerald-950 text-ivory font-sans px-4 py-10 flex flex-col justify-center">
+      <main className="min-h-dvh bg-white text-emerald-950 font-sans px-4 py-10 flex flex-col justify-center">
         <header className="text-center mb-6">
-          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-gold-shimmer">Quản lý khách mời</h1>
+          <div className="mx-auto mb-3 h-1 w-12 rounded-full bg-gold" />
+          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-emerald-900">Quản lý khách mời</h1>
         </header>
         <LoginForm configured={status.configured} onDone={refreshStatus} />
       </main>
@@ -296,12 +299,12 @@ function LoginForm({ configured, onDone }: { configured: boolean; onDone: () => 
 
   return (
     <form onSubmit={submit} className={`${cardCls} w-full max-w-sm mx-auto space-y-4`}>
-      <div className="flex items-center gap-2 text-gold">
-        <Lock className="w-4 h-4" />
+      <div className="flex items-center gap-2 text-emerald-900">
+        <Lock className="w-4 h-4 text-gold-700" />
         <span className="font-semibold text-sm">Đăng nhập</span>
       </div>
       {!configured && (
-        <p className="text-xs text-amber-200 bg-amber-500/10 border border-amber-400/30 rounded-lg p-2.5">
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-300 rounded-lg p-2.5">
           Chưa có biến môi trường <code>ADMIN_PASSWORD</code>. Thêm trong Vercel → Settings → Environment Variables rồi deploy lại.
         </p>
       )}
@@ -317,12 +320,8 @@ function LoginForm({ configured, onDone }: { configured: boolean; onDone: () => 
           autoFocus
         />
       </div>
-      {error && <p className="text-sm text-red-300">{error}</p>}
-      <button
-        type="submit"
-        disabled={busy || !password}
-        className="w-full min-h-12 rounded-xl bg-gold-gradient text-emerald-deep font-bold text-sm uppercase tracking-wider disabled:opacity-50 cursor-pointer"
-      >
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <button type="submit" disabled={busy || !password} className={btnPrimary}>
         {busy ? "Đang kiểm tra…" : "Vào trang quản lý"}
       </button>
     </form>
@@ -376,13 +375,14 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const pager = usePagination(filtered, query);
 
   return (
-    <main className="min-h-dvh bg-emerald-950 text-ivory font-sans pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-12">
+    <main className="min-h-dvh bg-white text-emerald-950 font-sans pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-12">
       {/* Thanh trên cùng: gọn trên điện thoại, có tab trên máy tính */}
-      <header className="sticky top-0 z-30 bg-emerald-950/90 backdrop-blur-md border-b border-gold/20">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-emerald-900/10">
+        <div className="h-0.5 bg-gold" />
         <div className="mx-auto max-w-5xl px-4 h-14 flex items-center justify-between gap-3">
-          <h1 className="font-serif text-xl sm:text-2xl font-bold text-gold-shimmer truncate">Quản lý khách mời</h1>
+          <h1 className="font-serif text-xl sm:text-2xl font-bold text-emerald-900 truncate">Quản lý khách mời</h1>
 
-          <nav className="hidden sm:inline-flex rounded-xl border border-gold/40 p-0.5 bg-emerald-deep" role="tablist">
+          <nav className="hidden sm:inline-flex rounded-xl border border-emerald-900/15 p-0.5 bg-white" role="tablist">
             {TABS.map((t) => (
               <button
                 key={t.key}
@@ -391,7 +391,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 aria-selected={tab === t.key}
                 onClick={() => goTab(t.key)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs whitespace-nowrap rounded-lg cursor-pointer transition-colors ${
-                  tab === t.key ? "bg-gold text-emerald-deep font-semibold" : "text-ivory/70 hover:text-gold"
+                  tab === t.key ? "bg-emerald-900 text-white font-semibold" : "text-emerald-900/70 hover:text-gold-700"
                 }`}
               >
                 {t.icon}
@@ -403,7 +403,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           <button
             onClick={logout}
             aria-label="Đăng xuất"
-            className="inline-flex items-center justify-center gap-1.5 min-h-10 min-w-10 -mr-2 px-2 text-xs whitespace-nowrap text-ivory/70 hover:text-gold cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 min-h-10 min-w-10 -mr-2 px-2 text-xs whitespace-nowrap text-emerald-900/70 hover:text-gold-700 cursor-pointer"
           >
             <LogOut className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
             <span className="hidden sm:inline">Đăng xuất</span>
@@ -419,11 +419,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         {tab === "list" && (
           <section ref={listAnchor} className={`${cardCls} scroll-mt-16`}>
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h2 className="font-serif text-xl text-gold font-semibold">Khách đã có ({guests.length})</h2>
+              <h2 className="font-serif text-xl text-emerald-900 font-bold">Khách đã có ({guests.length})</h2>
               <button
                 onClick={loadGuests}
                 aria-label="Tải lại danh sách"
-                className="inline-flex items-center justify-center gap-1 min-h-10 min-w-10 -mr-2 px-2 text-xs text-gold-light hover:text-gold cursor-pointer"
+                className="inline-flex items-center justify-center gap-1 min-h-10 min-w-10 -mr-2 px-2 text-xs text-emerald-900/70 hover:text-gold-700 cursor-pointer"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                 <span className="hidden sm:inline">Tải lại</span>
@@ -431,7 +431,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             </div>
 
             <div className="relative mb-2">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ivory/40" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-emerald-900/40" />
               <input
                 type="search"
                 value={query}
@@ -441,29 +441,26 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               />
             </div>
 
-            {listError && <p className="text-sm text-red-300 mb-2">{listError}</p>}
+            {listError && <p className="text-sm text-red-600 mb-2">{listError}</p>}
 
-            <ul className="divide-y divide-white/10">
+            <ul className="divide-y divide-emerald-900/10">
               {pager.pageItems.map((g) => {
                 const slug = g.slug || g.name;
                 const url = guestUrl(slug);
+                const full = (g.devices || 0) >= MAX_DEVICES;
                 return (
                   <li key={slug} className="py-3 flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-base sm:text-sm font-semibold text-ivory truncate">{g.name}</p>
-                      <p className="text-xs sm:text-[11px] text-ivory/50 truncate">
+                      <p className="text-base sm:text-sm font-semibold text-emerald-950 truncate">{g.name}</p>
+                      <p className="text-xs sm:text-[11px] text-emerald-900/55 truncate">
                         {MODE_SHORT[g.mode] || g.mode}
                         {g.customDate ? ` · ${g.customDate}` : ""}
                         {g.customTime ? ` · ${g.customTime}` : ""}
                       </p>
-                      <p className="font-mono text-xs sm:text-[11px] text-gold/70 truncate">?u={slug}</p>
-                      <p
-                        className={`text-xs sm:text-[11px] ${
-                          (g.devices || 0) >= MAX_DEVICES ? "text-[#ec835a]" : "text-ivory/50"
-                        }`}
-                      >
+                      <p className="font-mono text-xs sm:text-[11px] text-gold-700 truncate">?u={slug}</p>
+                      <p className={`text-xs sm:text-[11px] ${full ? "text-amber-700 font-medium" : "text-emerald-900/50"}`}>
                         Thiết bị đã mở: {g.devices || 0}/{MAX_DEVICES}
-                        {(g.devices || 0) >= MAX_DEVICES ? " · đã khoá thiết bị mới" : ""}
+                        {full ? " · đã khoá thiết bị mới" : ""}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 sm:flex gap-2 shrink-0">
@@ -475,10 +472,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 );
               })}
               {!loading && filtered.length === 0 && (
-                <li className="py-6 text-center text-sm text-ivory/50">Không có khách nào</li>
+                <li className="py-6 text-center text-sm text-emerald-900/50">Không có khách nào</li>
               )}
               {loading && guests.length === 0 && (
-                <li className="py-6 text-center text-sm text-ivory/50">Đang tải…</li>
+                <li className="py-6 text-center text-sm text-emerald-900/50">Đang tải…</li>
               )}
             </ul>
             <Pagination {...pager} anchorRef={listAnchor} />
@@ -488,7 +485,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
       {/* Thanh điều hướng dưới cùng — chỉ trên điện thoại */}
       <nav
-        className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-emerald-deep/95 backdrop-blur-md border-t border-gold/30 pb-[env(safe-area-inset-bottom)]"
+        className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-emerald-900/10 pb-[env(safe-area-inset-bottom)]"
         role="tablist"
       >
         <div className="grid grid-cols-3">
@@ -499,10 +496,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               role="tab"
               aria-selected={tab === t.key}
               onClick={() => goTab(t.key)}
-              className={`flex flex-col items-center justify-center gap-0.5 h-16 text-[11px] cursor-pointer transition-colors ${
-                tab === t.key ? "text-gold font-semibold" : "text-ivory/60"
+              className={`relative flex flex-col items-center justify-center gap-0.5 h-16 text-[11px] cursor-pointer transition-colors ${
+                tab === t.key ? "text-emerald-900 font-semibold" : "text-emerald-900/50"
               }`}
             >
+              {tab === t.key && <span className="absolute top-0 inset-x-6 h-0.5 rounded-full bg-gold" />}
               {t.icon}
               {t.label}
             </button>
@@ -562,17 +560,19 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
 
   return (
     <section className={cardCls}>
-      <h2 className="font-serif text-xl text-gold font-semibold mb-4 flex items-center gap-2">
-        <UserPlus className="w-5 h-5" /> Thêm khách mới
+      <h2 className="font-serif text-xl text-emerald-900 font-bold mb-4 flex items-center gap-2">
+        <UserPlus className="w-5 h-5 text-gold-700" /> Thêm khách mới
       </h2>
 
       {result && (
-        <div id="create-result" className="mb-5 p-4 rounded-xl bg-black/30 border border-gold/40 space-y-3">
-          <p className="text-sm">
-            <Check className="inline w-4 h-4 text-gold mr-1 -mt-0.5" />
-            Đã tạo link cho <span className="font-semibold text-gold">{result.name}</span>
+        <div id="create-result" className="mb-5 p-4 rounded-xl bg-emerald-light/30 border border-gold/50 space-y-3">
+          <p className="text-sm text-emerald-950">
+            <Check className="inline w-4 h-4 text-emerald-700 mr-1 -mt-0.5" />
+            Đã tạo link cho <span className="font-semibold text-emerald-900">{result.name}</span>
           </p>
-          <p className="font-mono text-xs text-gold/90 break-all select-all bg-black/20 rounded-lg px-3 py-2">{result.url}</p>
+          <p className="font-mono text-xs text-emerald-900 break-all select-all bg-white border border-emerald-900/10 rounded-lg px-3 py-2">
+            {result.url}
+          </p>
           <div className="grid grid-cols-2 sm:flex gap-2">
             <CopyButton text={result.url} label="Copy link" />
             <ShareButton url={result.url} name={result.name} />
@@ -580,18 +580,18 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
               href={`https://zalo.me/share?url=${encodeURIComponent(result.url)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className={`${actionBtn} col-span-2 sm:col-span-1 bg-white/5 border-white/20 text-ivory hover:border-gold hover:text-gold`}
+              className={`${actionBtn} col-span-2 sm:col-span-1 ${btnGhost}`}
             >
               <Send className="w-4 h-4" /> Gửi qua Zalo
             </a>
           </div>
           {!result.verified && (
-            <p className="flex items-start gap-1.5 text-xs text-amber-200">
+            <p className="flex items-start gap-1.5 text-xs text-amber-800">
               <AlertTriangle className="w-4 h-4 shrink-0" />
               Chưa thấy dòng mới trong Sheet. Mở tab &ldquo;Danh sách&rdquo; sau vài giây để kiểm tra; nếu vẫn không có, kiểm tra Apps Script đã Deploy bản mới chưa.
             </p>
           )}
-          <button type="button" onClick={onViewList} className="text-xs text-gold-light underline underline-offset-2 cursor-pointer">
+          <button type="button" onClick={onViewList} className="text-xs text-gold-700 underline underline-offset-2 cursor-pointer">
             Xem danh sách khách
           </button>
         </div>
@@ -615,12 +615,7 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
           </div>
           <div>
             <label className={labelCls} htmlFor="g-mode">Vai xưng</label>
-            <select
-              id="g-mode"
-              value={mode}
-              onChange={(e) => setMode(e.target.value as Mode)}
-              className={`${inputCls} [&>option]:text-charcoal`}
-            >
+            <select id="g-mode" value={mode} onChange={(e) => setMode(e.target.value as Mode)} className={inputCls}>
               {(Object.keys(MODE_LABEL) as Mode[]).map((m) => (
                 <option key={m} value={m}>{MODE_LABEL[m]}</option>
               ))}
@@ -639,7 +634,7 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
             placeholder="Để trống nếu dùng lời mời mặc định"
             className={inputCls}
           />
-          <p className="text-right text-[11px] text-ivory/40 mt-1">{customMessage.length}/1500</p>
+          <p className="text-right text-[11px] text-emerald-900/45 mt-1">{customMessage.length}/1500</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -665,7 +660,7 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
                     setCustomTime("");
                     document.getElementById("g-time")?.focus();
                   }}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-lg text-ivory/50 hover:text-gold hover:bg-white/10 cursor-pointer"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-lg text-emerald-900/50 hover:text-gold-700 hover:bg-emerald-900/5 cursor-pointer"
                   aria-label="Xoá giờ"
                   title="Xoá giờ để nhập giờ khác"
                 >
@@ -677,7 +672,7 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
               <button
                 type="button"
                 onClick={() => setCustomTime(DEFAULT_TIME)}
-                className="text-[11px] text-gold-light underline underline-offset-2 mt-1 cursor-pointer"
+                className="text-[11px] text-gold-700 underline underline-offset-2 mt-1 cursor-pointer"
               >
                 Dùng lại giờ mặc định ({DEFAULT_TIME})
               </button>
@@ -685,24 +680,20 @@ function CreateGuestForm({ onCreated, onViewList }: { onCreated: () => void; onV
           </div>
         </div>
 
-        <label className="flex items-center gap-3 min-h-11 text-sm text-ivory/80 cursor-pointer">
+        <label className="flex items-center gap-3 min-h-11 text-sm text-emerald-900 cursor-pointer">
           <input
             type="checkbox"
             checked={canUpload}
             onChange={(e) => setCanUpload(e.target.checked)}
-            className="accent-gold w-5 h-5"
+            className="accent-emerald-800 w-5 h-5"
           />
           Cho phép khách tải ảnh lên
         </label>
 
-        {error && <p className="text-sm text-red-300">{error}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={busy || !name.trim()}
-          className="w-full min-h-12 rounded-xl bg-gold-gradient text-emerald-deep font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-        >
-          <Link2 className="w-4 h-4" />
+        <button type="submit" disabled={busy || !name.trim()} className={btnPrimary}>
+          <Link2 className="w-4 h-4 text-gold" />
           {busy ? "Đang tạo & ghi vào Sheet…" : "Tạo link thiệp"}
         </button>
       </form>

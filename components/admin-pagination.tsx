@@ -64,20 +64,20 @@ export function Pagination({
   };
 
   const btn =
-    "inline-flex items-center justify-center gap-1 min-h-10 min-w-10 px-2.5 rounded-lg border border-gold/30 text-sm sm:text-xs text-ivory/80 hover:border-gold hover:text-gold disabled:opacity-30 disabled:pointer-events-none cursor-pointer transition-colors";
+    "inline-flex items-center justify-center gap-1 min-h-10 min-w-10 px-2.5 rounded-lg border border-emerald-900/15 bg-white text-sm sm:text-xs text-emerald-900/80 hover:border-gold hover:text-gold-700 disabled:opacity-30 disabled:pointer-events-none cursor-pointer transition-colors";
 
   return (
-    <nav className="flex items-center justify-between gap-2 pt-3 mt-1 border-t border-white/10" aria-label="Phân trang">
+    <nav className="flex items-center justify-between gap-2 pt-3 mt-1 border-t border-emerald-900/10" aria-label="Phân trang">
       <button type="button" className={btn} onClick={() => go(page - 1)} disabled={page <= 1} aria-label="Trang trước">
         <ChevronLeft className="w-4 h-4" />
         <span className="hidden sm:inline">Trước</span>
       </button>
 
       <div className="text-center leading-tight">
-        <div className="text-sm sm:text-xs text-ivory" style={{ fontVariantNumeric: "tabular-nums" }}>
+        <div className="text-sm sm:text-xs text-emerald-950" style={{ fontVariantNumeric: "tabular-nums" }}>
           Trang {page}/{totalPages}
         </div>
-        <div className="text-[11px] text-ivory/50" style={{ fontVariantNumeric: "tabular-nums" }}>
+        <div className="text-[11px] text-emerald-900/50" style={{ fontVariantNumeric: "tabular-nums" }}>
           {from}–{to} / {total}
         </div>
       </div>
