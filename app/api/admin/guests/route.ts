@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import type { GuestProfile } from "@/config/guests";
 import { normalizeSheetDate } from "@/config/date-utils";
 import { generateGuestCode, isAdminRequest } from "@/lib/admin-auth";
-import { MAX_DEVICES_PER_LINK, deviceCounts, listGuestsServer, resetDevices } from "@/lib/guests-server";
+import {
+  MAX_DEVICES_PER_LINK,
+  deviceCounts,
+  invalidateGuests,
+  listGuestsServer,
+  resetDevices,
+} from "@/lib/guests-server";
 import { getScriptUrl, isSheetConfigured, sheetPostInit } from "@/lib/sheet";
 
 export const dynamic = "force-dynamic";
@@ -133,6 +139,9 @@ export async function POST(request: Request) {
     console.error("[Admin guests POST]", err);
     return NextResponse.json({ success: false, error: "Không kết nối được Google Sheet" }, { status: 502 });
   }
+
+  // Khách mới -> làm mới cache để link mở được ngay
+  invalidateGuests();
 
   // Kiểm tra lại: dòng mới đã thực sự xuất hiện trong Sheet chưa
   let verified = false;

@@ -298,6 +298,26 @@ function doGet(e) {
     var sheetParam = e && e.parameter && (e.parameter.sheet || e.parameter.tab || e.parameter.name);
     var action = e && e.parameter && e.parameter.action;
 
+    // [CHẨN ĐOÁN] ?action=where&slug=xxx -> file, tab, số dòng thật của khách (chỉ đọc)
+    if (action === "where") {
+      var gs = findTargetSheet(ss, "guests");
+      var info = {
+        file: ss.getName(),
+        url: ss.getUrl(),
+        tabs: ss.getSheets().map(function (s) { return s.getName(); }),
+        guestTab: gs ? gs.getName() : null,
+        lastRow: gs ? gs.getLastRow() : 0,
+        lastColumn: gs ? gs.getLastColumn() : 0,
+        found: []
+      };
+      var want = normalizeStr(e.parameter.slug || "");
+      if (gs && want) {
+        var tf = gs.createTextFinder(String(e.parameter.slug)).matchEntireCell(true).findAll();
+        for (var t = 0; t < tf.length; t++) info.found.push(tf[t].getA1Notation());
+      }
+      return jsonOut(info);
+    }
+
     if (!sheetParam && action) {
       var actNorm = normalizeStr(action);
       if (actNorm.indexOf("avatar") !== -1) sheetParam = "avatars";

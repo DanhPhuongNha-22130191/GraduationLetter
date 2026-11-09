@@ -4,9 +4,41 @@
  */
 import { normalizeSheetDate } from "@/config/date-utils";
 import { normalizePronounMode, parseDateTimeToTimestamp, type GuestProfile } from "@/config/guests";
+import { revalidateTag, unstable_cache } from "next/cache";
+import { after } from "next/server";
 import { sheetGetRows, sheetPost } from "@/lib/sheet";
 
 export const MAX_DEVICES_PER_LINK = 2;
+
+/*
+ * Mỗi lần gọi Apps Script mất ~2-3 giây. Để khách mở thiệp thấy tên NGAY, danh sách khách và
+ * danh sách thiết bị được lưu trong Data Cache của Next (dùng chung mọi instance trên Vercel).
+ * Cache được làm mới ngay khi admin thêm khách / mở khoá, hoặc khi có thiết bị mới được ghi nhận.
+ */
+const GUESTS_TAG = "sheet-guests";
+const DEVICES_TAG = "sheet-devices";
+const GUESTS_REVALIDATE = 120; // sửa tay trong Sheet: tối đa 2 phút là web nhận
+const DEVICES_REVALIDATE = 300;
+
+const cachedGuestRows = unstable_cache(() => sheetGetRows("guests"), ["sheet-rows-guests"], {
+  revalidate: GUESTS_REVALIDATE,
+  tags: [GUESTS_TAG],
+});
+const cachedDeviceRows = unstable_cache(() => sheetGetRows("devices"), ["sheet-rows-devices"], {
+  revalidate: DEVICES_REVALIDATE,
+  tags: [DEVICES_TAG],
+});
+
+function safeRevalidate(tag: string) {
+  try {
+    revalidateTag(tag);
+  } catch (err) {
+    console.warn("[guests-server] revalidateTag failed:", tag, err);
+  }
+}
+
+/** Gọi sau khi thêm/sửa khách để trang khách thấy ngay */
+export const invalidateGuests = () => safeRevalidate(GUESTS_TAG);
 export const DEVICE_COOKIE = "inv_dev";
 
 const cleanKey = (s: string) => s.trim().toLowerCase().replace(/[-_]/g, "");
@@ -43,11 +75,15 @@ function parseGuestRow(item: Record<string, unknown>): GuestProfile | null {
 let cache: { at: number; list: GuestProfile[] } | null = null;
 const CACHE_MS = 15_000;
 
-/** Toàn bộ khách (chỉ dùng trên server). `fresh` bỏ qua bộ nhớ đệm 15 giây. */
+/**
+ * Toàn bộ khách (chỉ dùng trên server).
+ * `fresh` (trang admin): đọc thẳng Sheet và làm mới luôn cache dùng chung.
+ */
 export async function listGuestsServer(fresh = false): Promise<GuestProfile[]> {
   if (!fresh && cache && Date.now() - cache.at < CACHE_MS) return cache.list;
   try {
-    const rows = await sheetGetRows("guests");
+    const rows = fresh ? await sheetGetRows("guests") : await cachedGuestRows();
+    if (fresh) invalidateGuests();
     const seen = new Set<string>();
     const list: GuestProfile[] = [];
     for (const r of rows) {
@@ -148,10 +184,67 @@ export async function claimDevice(
   return "error";
 }
 
+/** Thiết bị đã ghi nhận theo slug, đọc từ cache dùng chung (null nếu không đọc được) */
+async function cachedDeviceMap(): Promise<Map<string, Set<string>> | null> {
+  try {
+    const rows = await cachedDeviceRows();
+    const map = new Map<string, Set<string>>();
+    for (const r of rows) {
+      const s = cleanKey(str(r.slug));
+      const d = str(r.deviceId);
+      if (!s || !d) continue;
+      if (!map.has(s)) map.set(s, new Set());
+      map.get(s)!.add(d);
+    }
+    return map;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Như claimDevice nhưng KHÔNG bắt khách chờ Apps Script khi không cần:
+ *  - Thiết bị đã có trong danh sách -> cho phép ngay.
+ *  - Link còn chỗ trống -> cho phép ngay, ghi nhận vào Sheet chạy nền (sau khi đã trả kết quả).
+ *  - Link đã đủ thiết bị -> hỏi Apps Script thật (có khoá) để quyết định chính xác.
+ */
+export async function claimDeviceFast(
+  slug: string,
+  deviceId: string,
+  meta: { userAgent?: string } = {}
+): Promise<ClaimResult> {
+  const key = `${cleanKey(slug)}|${deviceId}`;
+  const hit = allowedCache.get(key);
+  if (hit && Date.now() - hit < ALLOWED_CACHE_MS) return "allowed";
+
+  const map = await cachedDeviceMap();
+  if (map) {
+    const known = map.get(cleanKey(slug)) || new Set<string>();
+    if (known.has(deviceId)) {
+      allowedCache.set(key, Date.now());
+      return "allowed";
+    }
+    if (known.size < MAX_DEVICES_PER_LINK) {
+      allowedCache.set(key, Date.now());
+      after(async () => {
+        const r = await claimDevice(slug, deviceId, meta).catch(() => "error" as const);
+        if (r === "allowed") safeRevalidate(DEVICES_TAG);
+        else allowedCache.delete(key); // Apps Script từ chối -> lần sau sẽ hỏi lại
+      });
+      return "allowed";
+    }
+  }
+
+  const r = await claimDevice(slug, deviceId, meta);
+  if (r === "allowed") safeRevalidate(DEVICES_TAG);
+  return r;
+}
+
 /** Mở khoá: xoá toàn bộ thiết bị đã ghi nhận của một link */
 export async function resetDevices(slug: string): Promise<boolean> {
   for (const k of [...allowedCache.keys()]) if (k.startsWith(`${cleanKey(slug)}|`)) allowedCache.delete(k);
   const r = await sheetPost({ type: "RESET_DEVICES", action: "RESET_DEVICES", sheet: "devices", slug: cleanKey(slug) });
+  safeRevalidate(DEVICES_TAG);
   return r.ok && r.data?.status === "success";
 }
 

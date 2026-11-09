@@ -4,7 +4,7 @@ import { describeDevice, getClientIp, vnNow } from "@/lib/device";
 import {
   DEVICE_COOKIE,
   MAX_DEVICES_PER_LINK,
-  claimDevice,
+  claimDeviceFast,
   earliestDefaults,
   findGuest,
   listGuestsServer,
@@ -49,14 +49,7 @@ export async function POST(request: Request) {
   const isNewDevice = !/^D[A-Z0-9]{8,32}$/.test(deviceId);
   if (isNewDevice) deviceId = newDeviceId();
 
-  // Đọc danh sách khách và ghi nhận thiết bị CÙNG LÚC (mỗi lần gọi Apps Script mất ~1 giây)
-  // Mã link chỉ gồm chữ thường + số (đúng định dạng mã do trang admin tạo) mới được ghi nhận sớm.
-  const slugKey = slug.toLowerCase().replace(/[-_]/g, "");
-  const earlyClaim =
-    slug && !isAdmin && /^[a-z0-9]{3,40}$/.test(slugKey)
-      ? claimDevice(slugKey, deviceId, { userAgent: describeDevice(ua) }).catch(() => "error" as const)
-      : null;
-
+  // Danh sách khách đọc từ cache dùng chung (không phải chờ Apps Script ~2-3 giây)
   let list;
   try {
     list = await listGuestsServer();
@@ -95,10 +88,9 @@ export async function POST(request: Request) {
 
   // Link cũ khớp theo tên (mã trên link khác slug thật) -> ghi nhận theo slug thật
   const guestKey = (guest.slug || slug).toLowerCase().replace(/[-_]/g, "");
-  const result =
-    earlyClaim && guestKey === slugKey
-      ? await earlyClaim
-      : await claimDevice(guestKey, deviceId, { userAgent: describeDevice(ua) });
+  const result = await claimDeviceFast(guestKey, deviceId, { userAgent: describeDevice(ua) }).catch(
+    () => "error" as const
+  );
 
   if (result === "locked") {
     const res = NextResponse.json({ found: true, locked: true, defaults }, { headers: noStore });
