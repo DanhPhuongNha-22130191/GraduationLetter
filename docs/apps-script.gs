@@ -226,10 +226,25 @@ function addGuestRow(ss, data) {
 
     var lastCol = sheet.getLastColumn();
     var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) { return normalizeStr(h); });
+    // Chỉ ghi tới cột tiêu đề cuối cùng (không đụng vào các cột trống / ghi chú bên phải)
+    while (headers.length && !headers[headers.length - 1]) headers.pop();
 
     // Chống trùng slug
     var slugColIdx = headers.indexOf("slug");
+    var nameColIdx = headers.indexOf("name");
     var lastRow = sheet.getLastRow();
+
+    // Dòng cuối THỰC SỰ có dữ liệu khách (theo cột slug/name), không dùng getLastRow()
+    // vì getLastRow() tính cả ô lạc ở cột/dòng xa -> khách mới bị ghi xuống tận dưới.
+    var keyCol = slugColIdx !== -1 ? slugColIdx : (nameColIdx !== -1 ? nameColIdx : 0);
+    var lastDataRow = 1;
+    if (lastRow > 1) {
+      var keyVals = sheet.getRange(2, keyCol + 1, lastRow - 1, 1).getValues();
+      for (var k = keyVals.length - 1; k >= 0; k--) {
+        if (String(keyVals[k][0]).trim() !== "") { lastDataRow = k + 2; break; }
+      }
+    }
+
     if (slugColIdx !== -1 && lastRow > 1) {
       var slugs = sheet.getRange(2, slugColIdx + 1, lastRow - 1, 1).getValues();
       var target = normalizeStr(slug);
@@ -248,14 +263,15 @@ function addGuestRow(ss, data) {
       customtime: String(data.customTime || ""),
       customdate: String(data.customDate || ""),
       canupload: String(data.canUpload === "false" || data.canUpload === false ? "false" : "true"),
-      specialphoto: ""
+      specialphoto: "",
+      link: String(data.link || "")
     };
 
     var row = headers.map(function (h) {
       return values.hasOwnProperty(h) ? values[h] : "";
     });
 
-    var newRow = lastRow + 1;
+    var newRow = lastDataRow + 1;
     var range = sheet.getRange(newRow, 1, 1, row.length);
     range.setNumberFormat("@");
     range.setValues([row]);
