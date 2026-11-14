@@ -84,33 +84,49 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
         {/* Liên hệ */}
         <Reveal className="flex flex-col items-center gap-5">
           <p className="eyebrow eyebrow-on-dark">{x.contact}</p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <a href={`tel:${graduationConfig.phone.replace(/\s+/g, "")}`} className="btn-outline btn-outline-on-dark !normal-case !tracking-wide">
-              <Phone className="w-3.5 h-3.5" strokeWidth={1.75} />
+          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 w-full max-w-xs sm:max-w-none">
+            <a
+              href={`tel:${graduationConfig.phone.replace(/\s+/g, "")}`}
+              className="btn-outline btn-outline-on-dark !normal-case !tracking-wide !w-full sm:!w-auto justify-center whitespace-nowrap"
+            >
+              <Phone className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
               {graduationConfig.phone}
             </a>
-            <a href={`mailto:${graduationConfig.email}`} className="btn-outline btn-outline-on-dark !normal-case !tracking-wide">
-              <Mail className="w-3.5 h-3.5" strokeWidth={1.75} />
+            <a
+              href={`mailto:${graduationConfig.email}`}
+              className="btn-outline btn-outline-on-dark !normal-case !tracking-wide !w-full sm:!w-auto justify-center whitespace-nowrap"
+            >
+              <Mail className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
               {graduationConfig.email}
             </a>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
-            <button type="button" onClick={handleShare} className="btn-gold">
-              {copiedLink ? <Check className="w-4 h-4" strokeWidth={1.75} /> : <Share2 className="w-4 h-4" strokeWidth={1.75} />}
+          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 mt-2 w-full max-w-xs sm:max-w-none">
+            <button
+              type="button"
+              onClick={handleShare}
+              className="btn-gold !w-full sm:!w-auto justify-center whitespace-nowrap"
+            >
+              {copiedLink ? <Check className="w-4 h-4 shrink-0" strokeWidth={1.75} /> : <Share2 className="w-4 h-4 shrink-0" strokeWidth={1.75} />}
               <span>{copiedLink ? u.linkCopied : u.share}</span>
             </button>
             {onReopenEnvelope && (
-              <button type="button" onClick={onReopenEnvelope} className="btn-outline btn-outline-on-dark">
-                <ArrowUp className="w-3.5 h-3.5" strokeWidth={1.75} />
+              <button
+                type="button"
+                onClick={onReopenEnvelope}
+                className="btn-outline btn-outline-on-dark !w-full sm:!w-auto justify-center whitespace-nowrap"
+              >
+                <ArrowUp className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
                 <span>{t.nav.backToEnvelope}</span>
               </button>
             )}
           </div>
         </Reveal>
 
-        <p className="text-center text-[0.7rem] tracking-[0.2em] uppercase text-ivory-100/50 mt-14">
-          {uiCopy[lang].profile.university} · {x.classOf} {graduationConfig.year}
+        <p className="text-center text-[0.65rem] sm:text-[0.7rem] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-ivory-100/50 mt-14 pb-24 sm:pb-0 text-balance flex flex-col sm:block items-center gap-1">
+          <span>{uiCopy[lang].profile.university}</span>
+          <span className="hidden sm:inline"> · </span>
+          <span>{x.classOf} {graduationConfig.year}</span>
         </p>
       </div>
     </footer>
