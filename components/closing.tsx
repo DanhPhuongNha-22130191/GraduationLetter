@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Phone, Mail, Share2, Check, ArrowUp } from "lucide-react";
+import { Phone, Mail, Share2, Check, ArrowUp, Copy } from "lucide-react";
 import { graduationConfig } from "@/config/graduation";
 import { useLanguage } from "@/context/language-context";
 import { uiCopy } from "@/config/ui-copy";
@@ -40,6 +40,22 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
     navigator.clipboard?.writeText(window.location.href);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const [copiedField, setCopiedField] = useState<"phone" | "email" | null>(null);
+  const handleCopy = async (field: "phone" | "email", value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
   };
 
   const thanks = [
@@ -82,43 +98,66 @@ export const ClosingSection: React.FC<ClosingSectionProps> = ({ onReopenEnvelope
         <AnimatedFlourishDivider className="my-10" />
 
         {/* Liên hệ */}
-        <Reveal className="flex flex-col items-center gap-5">
+        <Reveal className="flex flex-col items-center gap-6 text-center">
           <p className="eyebrow eyebrow-on-dark">{x.contact}</p>
-          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 w-full max-w-xs sm:max-w-none">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex items-center gap-1">
             <a
               href={`tel:${graduationConfig.phone.replace(/\s+/g, "")}`}
-              className="btn-outline btn-outline-on-dark !normal-case !tracking-wide !w-full sm:!w-auto justify-center whitespace-nowrap"
+              className="inline-flex items-center gap-2.5 font-serif text-xl sm:text-2xl text-ivory-50 hover:text-gold-200 transition-colors"
             >
-              <Phone className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
-              {graduationConfig.phone}
+              <Phone className="w-4 h-4 text-gold-500 shrink-0" strokeWidth={1.5} />
+              <span>{graduationConfig.phone}</span>
             </a>
+            <button
+              type="button"
+              onClick={() => handleCopy("phone", graduationConfig.phone)}
+              aria-label="Copy"
+              className="p-1.5 text-gold-500/70 hover:text-gold-200 transition-colors"
+            >
+              {copiedField === "phone" ? <Check className="w-4 h-4" strokeWidth={1.75} /> : <Copy className="w-4 h-4" strokeWidth={1.5} />}
+            </button>
+            </div>
+            <div className="flex items-center gap-1">
             <a
               href={`mailto:${graduationConfig.email}`}
-              className="btn-outline btn-outline-on-dark !normal-case !tracking-wide !w-full sm:!w-auto justify-center whitespace-nowrap"
+              className="inline-flex items-center gap-2.5 font-serif text-base sm:text-xl text-ivory-50 hover:text-gold-200 transition-colors break-all"
             >
-              <Mail className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
-              {graduationConfig.email}
+              <Mail className="w-4 h-4 text-gold-500 shrink-0" strokeWidth={1.5} />
+              <span>{graduationConfig.email}</span>
             </a>
+            <button
+              type="button"
+              onClick={() => handleCopy("email", graduationConfig.email)}
+              aria-label="Copy"
+              className="p-1.5 text-gold-500/70 hover:text-gold-200 transition-colors shrink-0"
+            >
+              {copiedField === "email" ? <Check className="w-4 h-4" strokeWidth={1.75} /> : <Copy className="w-4 h-4" strokeWidth={1.5} />}
+            </button>
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 mt-2 w-full max-w-xs sm:max-w-none">
+          <div className="flex items-center justify-center gap-4 text-[0.7rem] tracking-[0.25em] uppercase">
             <button
               type="button"
               onClick={handleShare}
-              className="btn-gold !w-full sm:!w-auto justify-center whitespace-nowrap"
+              className="inline-flex items-center gap-2 text-gold-200 hover:text-gold-500 transition-colors border-b border-gold-500/40 pb-1"
             >
-              {copiedLink ? <Check className="w-4 h-4 shrink-0" strokeWidth={1.75} /> : <Share2 className="w-4 h-4 shrink-0" strokeWidth={1.75} />}
+              {copiedLink ? <Check className="w-3.5 h-3.5" strokeWidth={1.75} /> : <Share2 className="w-3.5 h-3.5" strokeWidth={1.75} />}
               <span>{copiedLink ? u.linkCopied : u.share}</span>
             </button>
             {onReopenEnvelope && (
-              <button
-                type="button"
-                onClick={onReopenEnvelope}
-                className="btn-outline btn-outline-on-dark !w-full sm:!w-auto justify-center whitespace-nowrap"
-              >
-                <ArrowUp className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
-                <span>{t.nav.backToEnvelope}</span>
-              </button>
+              <>
+                <span className="text-gold-500/50" aria-hidden>◆</span>
+                <button
+                  type="button"
+                  onClick={onReopenEnvelope}
+                  className="inline-flex items-center gap-2 text-ivory-100/70 hover:text-gold-200 transition-colors border-b border-ivory-100/20 pb-1"
+                >
+                  <ArrowUp className="w-3.5 h-3.5" strokeWidth={1.75} />
+                  <span>{t.nav.backToEnvelope}</span>
+                </button>
+              </>
             )}
           </div>
         </Reveal>
